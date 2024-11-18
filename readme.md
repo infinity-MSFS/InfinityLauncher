@@ -9,5 +9,6 @@
 ### Linux
 
 ```shell
+chmod +x ./build.sh
 ./build.sh
 ```

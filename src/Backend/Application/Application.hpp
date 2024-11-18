@@ -1,5 +1,9 @@
+
 #pragma once
 
+
+#include "Backend/Layer/Layer.hpp"
+#include "Backend/Image/Image.hpp"
 
 #include <filesystem>
 #include <functional>
@@ -8,29 +12,25 @@
 #include <optional>
 #include <queue>
 #include <string>
-#include <utility>
 #include <vector>
+#include <utility>
+
 
 #include "imgui.h"
-#include "Backend/VulkanManager/VulkanManager.hpp"
-#include "GLFW/glfw3.h"
 #include "vulkan/vulkan.h"
-#include "Backend/Image/Image.hpp"
-#include "Backend/Layer/Layer.hpp"
 
-void check_vk_result(VkResult result);
+
+void check_vk_result(VkResult err);
 
 struct GLFWwindow;
 
 namespace Infinity {
     struct ApplicationSpecifications {
         std::string name;
-        std::pair<uint32_t, uint32_t> size;
+        std::pair<uint32_t, uint32_t> window_size;
         std::pair<uint32_t, uint32_t> max_size;
         std::pair<uint32_t, uint32_t> min_size;
-
         std::filesystem::path icon_path;
-
         bool resizable;
         bool custom_titlebar;
         bool center_window;
@@ -91,11 +91,11 @@ namespace Infinity {
             m_EventQueue.push(func);
         }
 
+
         static void SetWindowTitle(const std::string &title);
 
-        static GLFWwindow *s_WindowHandle;
 
-        static VulkanManager *s_VulkanManager;
+        static GLFWwindow *s_WindowHandle;
 
     private:
         void Init();
@@ -108,13 +108,12 @@ namespace Infinity {
 
         void UI_DrawMenubar() const;
 
+
     private:
         ApplicationSpecifications m_Specification;
         GLFWwindow *m_WindowHandle = nullptr;
-        VulkanManager m_Vulkan;
 
         bool m_Running = false;
-
 
         float m_TimeStep = 0.0f;
         float m_FrameTime = 0.0f;
@@ -122,11 +121,11 @@ namespace Infinity {
 
         bool m_TitleBarHovered = false;
 
-        std::vector<std::shared_ptr<Layer> > m_LayerStack;
+        std::vector<std::shared_ptr<Layer>> m_LayerStack;
         std::function<void()> m_MenubarCallback;
 
         std::mutex m_EventQueueMutex;
-        std::queue<std::function<void()> > m_EventQueue;
+        std::queue<std::function<void()>> m_EventQueue;
 
 
         std::shared_ptr<Image> m_AppHeaderIcon;

@@ -31,6 +31,7 @@ namespace Infinity {
 
         static void *Decode(const void *data, uint64_t length, uint32_t &outWidth, uint32_t &outHeight);
 
+
     private:
         void AllocateMemory(uint64_t size);
 

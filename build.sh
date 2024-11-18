@@ -1,3 +1,5 @@
+#!/bin/bash
+
 echo "Select build type:"
 echo "1. Debug (default)"
 echo "2. Release"
@@ -49,7 +51,7 @@ if [ $? -ne 0 ]; then
 fi
 
 echo "Building project in $BuildType mode..."
-cmake --build "$BUILD_DIR" --target InfinityLauncher
+cmake --build "$BUILD_DIR" --target InfinityLauncher -- -j 22
 if [ $? -ne 0 ]; then
     echo "Build failed!" >&2
     exit 1

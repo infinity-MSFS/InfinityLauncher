@@ -183,7 +183,6 @@ add_executable(InfinityLauncher
         src/Backend/Layer/Layer.hpp
         src/Backend/UIHelpers/UiHelpers.cpp
         src/Backend/UIHelpers/UiHelpers.hpp
-        src/Backend/VulkanManager/VulkanManager.cpp
         src/Backend/VulkanManager/VulkanManager.hpp
         # -- Util Source Files --
         src/Util/State/State.hpp

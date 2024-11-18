@@ -2,8 +2,8 @@
 #include "Image.hpp"
 #include "backends/imgui_impl_vulkan.h"
 #include "imgui.h"
-
 #include "Backend/Application/Application.hpp"
+
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "Backend/VulkanManager/VulkanManager.hpp"
@@ -82,7 +82,7 @@ namespace Infinity {
                 info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
                 info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
                 err = vkCreateImage(device, &info, nullptr, &m_Image);
-                InfinityCheckVkResult(err);
+                Vulkan::inf_check_vk_result(err);
                 VkMemoryRequirements req;
                 vkGetImageMemoryRequirements(device, m_Image, &req);
                 VkMemoryAllocateInfo alloc_info = {};
@@ -90,9 +90,9 @@ namespace Infinity {
                 alloc_info.allocationSize = req.size;
                 alloc_info.memoryTypeIndex = Utils::GetVulkanMemoryType(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, req.memoryTypeBits);
                 err = vkAllocateMemory(device, &alloc_info, nullptr, &m_Memory);
-                InfinityCheckVkResult(err);
+                Vulkan::inf_check_vk_result(err);
                 err = vkBindImageMemory(device, m_Image, m_Memory, 0);
-                InfinityCheckVkResult(err);
+                Vulkan::inf_check_vk_result(err);
             }
 
             // Create the Image View:
@@ -106,7 +106,7 @@ namespace Infinity {
                 info.subresourceRange.levelCount = 1;
                 info.subresourceRange.layerCount = 1;
                 err = vkCreateImageView(device, &info, nullptr, &m_ImageView);
-                InfinityCheckVkResult(err);
+                Vulkan::inf_check_vk_result(err);
             }
 
             // Create sampler:
@@ -123,7 +123,7 @@ namespace Infinity {
                 info.maxLod = 1000;
                 info.maxAnisotropy = 1.0f;
                 err = vkCreateSampler(device, &info, nullptr, &m_Sampler);
-                InfinityCheckVkResult(err);
+                Vulkan::inf_check_vk_result(err);
             }
 
             // Create the Descriptor Set:
@@ -133,16 +133,16 @@ namespace Infinity {
 
     void Image::Release() {
         Application::SubmitResourceFree(
-            [sampler = m_Sampler, imageView = m_ImageView, image = m_Image, memory = m_Memory, stagingBuffer = m_StagingBuffer, stagingBufferMemory = m_StagingBufferMemory]() {
-                if (const auto device = Application::GetDevice(); device.has_value()) {
-                    vkDestroySampler(*device, sampler, nullptr);
-                    vkDestroyImageView(*device, imageView, nullptr);
-                    vkDestroyImage(*device, image, nullptr);
-                    vkFreeMemory(*device, memory, nullptr);
-                    vkDestroyBuffer(*device, stagingBuffer, nullptr);
-                    vkFreeMemory(*device, stagingBufferMemory, nullptr);
-                };
-            });
+                [sampler = m_Sampler, imageView = m_ImageView, image = m_Image, memory = m_Memory, stagingBuffer = m_StagingBuffer, stagingBufferMemory = m_StagingBufferMemory]() {
+                    if (const auto device = Application::GetDevice(); device.has_value()) {
+                        vkDestroySampler(*device, sampler, nullptr);
+                        vkDestroyImageView(*device, imageView, nullptr);
+                        vkDestroyImage(*device, image, nullptr);
+                        vkFreeMemory(*device, memory, nullptr);
+                        vkDestroyBuffer(*device, stagingBuffer, nullptr);
+                        vkFreeMemory(*device, stagingBufferMemory, nullptr);
+                    };
+                });
 
         m_Sampler = nullptr;
         m_ImageView = nullptr;
@@ -154,6 +154,7 @@ namespace Infinity {
 
     void Image::SetData(const void *data) {
         if (const auto device_opt = Application::GetDevice(); device_opt.has_value()) {
+
             VkDevice device = *device_opt;
 
             size_t upload_size = m_Width * m_Height * Utils::BytesPerPixel(m_Format);
@@ -169,7 +170,7 @@ namespace Infinity {
                     buffer_info.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
                     buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
                     err = vkCreateBuffer(device, &buffer_info, nullptr, &m_StagingBuffer);
-                    InfinityCheckVkResult(err);
+                    Vulkan::inf_check_vk_result(err);
                     VkMemoryRequirements req;
                     vkGetBufferMemoryRequirements(device, m_StagingBuffer, &req);
                     m_AlignedSize = req.size;
@@ -178,9 +179,9 @@ namespace Infinity {
                     alloc_info.allocationSize = req.size;
                     alloc_info.memoryTypeIndex = Utils::GetVulkanMemoryType(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, req.memoryTypeBits);
                     err = vkAllocateMemory(device, &alloc_info, nullptr, &m_StagingBufferMemory);
-                    InfinityCheckVkResult(err);
+                    Vulkan::inf_check_vk_result(err);
                     err = vkBindBufferMemory(device, m_StagingBuffer, m_StagingBufferMemory, 0);
-                    InfinityCheckVkResult(err);
+                    Vulkan::inf_check_vk_result(err);
                 }
             }
 
@@ -188,14 +189,14 @@ namespace Infinity {
             {
                 char *map = nullptr;
                 err = vkMapMemory(device, m_StagingBufferMemory, 0, m_AlignedSize, 0, (void **) (&map));
-                InfinityCheckVkResult(err);
+                Vulkan::inf_check_vk_result(err);
                 memcpy(map, data, upload_size);
                 VkMappedMemoryRange range[1] = {};
                 range[0].sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
                 range[0].memory = m_StagingBufferMemory;
                 range[0].size = m_AlignedSize;
                 err = vkFlushMappedMemoryRanges(device, 1, range);
-                InfinityCheckVkResult(err);
+                Vulkan::inf_check_vk_result(err);
                 vkUnmapMemory(device, m_StagingBufferMemory);
             }
 
@@ -244,11 +245,7 @@ namespace Infinity {
     }
 
     void Image::Resize(uint32_t width, uint32_t height) {
-        if (m_Image && m_Width
-
-            ==
-            width && m_Height == height
-        )
+        if (m_Image && m_Width == width && m_Height == height)
             return;
 
         // TODO: max size?
@@ -265,7 +262,7 @@ namespace Infinity {
         uint8_t *buffer = nullptr;
         uint64_t size = 0;
 
-        buffer = stbi_load_from_memory((const stbi_uc *) data, static_cast<int>(length), &width, &height, &channels, 4);
+        buffer = stbi_load_from_memory((const stbi_uc *) data, length, &width, &height, &channels, 4);
         size = width * height * 4;
 
         outWidth = width;

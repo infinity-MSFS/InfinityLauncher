@@ -1,7 +1,7 @@
 #pragma once
 
 namespace Infinity {
-    class Layer abstract {
+    class Layer {
     public:
         virtual ~Layer() = default;
 
