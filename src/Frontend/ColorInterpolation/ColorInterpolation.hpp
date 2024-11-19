@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <tuple>
 #include <utility>
 #include "imgui.h"
 
@@ -15,9 +16,11 @@ public:
 
     static ColorInterpolation &GetInstance();
 
-    void ChangeGradientColors(const ImVec4 &endColor1, const ImVec4 &endColor2, float durationSec);
+    void ChangeGradientColors(const ImVec4 &GradientStart, const ImVec4 &GradientEnd, const ImVec4 &CircleColor1, const ImVec4 &CircleColor2, const ImVec4 &CircleColor3, const ImVec4 &CircleColor4,
+                              const ImVec4 &CircleColor5, float durationSec);
 
-    std::pair<ImVec4, ImVec4> GetCurrentGradientColors();
+    std::tuple<ImVec4, ImVec4, ImVec4, ImVec4, ImVec4, ImVec4, ImVec4> GetCurrentGradientColors();
+    // Bg gradient start, Bg Gradient end, Circle color1 ,circle color2, circle color3, circle color 4, circle color5
 
 private:
     ColorInterpolation();
@@ -27,10 +30,12 @@ private:
         ImVec4 startColor;
         ImVec4 endColor;
         ImVec4 currentColor;
+
+        explicit Interpolation(const ImVec4 &start = ImVec4(0, 0, 0, 0), const ImVec4 &end = ImVec4(1, 1, 1, 1), const ImVec4 &current = ImVec4(0.5f, 0.5f, 0.5f, 1.0f)) :
+            startColor(start), endColor(end), currentColor(current) {}
     };
 
-    Interpolation m_Color1;
-    Interpolation m_Color2;
+    std::tuple<Interpolation, Interpolation, Interpolation, Interpolation, Interpolation, Interpolation, Interpolation> m_Colors;
 
     float m_Duration;
     TimePoint m_StartTime;

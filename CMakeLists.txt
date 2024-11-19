@@ -191,6 +191,8 @@ add_executable(InfinityLauncher
         src/Frontend/Theme/Theme.hpp
         src/Frontend/ColorInterpolation/ColorInterpolation.cpp
         src/Frontend/ColorInterpolation/ColorInterpolation.hpp
+        src/Frontend/Background/Background.cpp
+        src/Frontend/Background/Background.hpp
 )
 
 message("${Blue}Gathering ImGui Source Files")
