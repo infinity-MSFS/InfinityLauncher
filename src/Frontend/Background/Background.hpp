@@ -54,13 +54,13 @@ namespace Infinity {
         }
 
     private:
-        void RenderBackgroundDotsLayer() const;
+        static void RenderBackgroundDotsLayer();
 
-        void RenderBackgroundGradientLayer() const;
+        static void RenderBackgroundGradientLayer();
 
-        void RenderBackgroundBaseLayer() const;
+        static void RenderBackgroundBaseLayer();
 
-        void RenderGradientCircle(ImVec2 center, float radius, float maxOpacity, ImU32 color) const;
+        static void RenderGradientCircle(ImVec2 center, float radius, float maxOpacity, ImU32 color);
 
         static void InitializeCirclePosition(const int index, const ImVec2 position) {
             if (index >= 0 && index < m_circlePos.size() && m_circlePos[index].x == 0 && m_circlePos[index].y == 0) {

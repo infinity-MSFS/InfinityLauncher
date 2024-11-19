@@ -13,33 +13,40 @@ class PageRenderLayer final : public Infinity::Layer {
 public:
     void OnAttach() override {
         auto &interpolator = ColorInterpolation::GetInstance();
-        interpolator.ChangeGradientColors(Infinity::HomePagePrimary, Infinity::HomePageSecondary, {18.0f / 255.0f, 113.0f / 255.f, 1.0f, 0.01f}, {221.0f / 255.f, 74.0f / 255.f, 1.0f, 0.01f},
-                                          {100.0f / 255.f, 220.0f / 255.f, 1.0f, 0.01f}, {200.0f / 255.f, 50.0f / 255.f, 50.0f / 255.f, 0.01f}, {180.0f / 255.f, 180.0f / 255.f, 50.0f / 255.f, 0.01f},
+        interpolator.ChangeGradientColors(Infinity::HomePagePrimary, Infinity::HomePageSecondary, {18.0f / 255.0f, 113.0f / 255.f, 1.0f, 0.002f}, {221.0f / 255.f, 74.0f / 255.f, 1.0f, 0.002f},
+                                          {100.0f / 255.f, 220.0f / 255.f, 1.0f, 0.002f}, {200.0f / 255.f, 50.0f / 255.f, 50.0f / 255.f, 0.002f},
+                                          {180.0f / 255.f, 180.0f / 255.f, 50.0f / 255.f, 0.002f},
                                           1.0f);
     }
 
     void OnUIRender() override {
-        auto bg = Infinity::Background::GetInstance();
+        const auto bg = Infinity::Background::GetInstance();
         bg.RenderBackground();
         auto &interpolator = ColorInterpolation::GetInstance();
 
-        bg.UpdateColorScheme();
+        Infinity::Background::UpdateColorScheme();
 
         if (ImGui::Button("Color1")) {
-            interpolator.ChangeGradientColors(ImVec4(1.0f, 0.3f, 0.2f, 0.11f), ImVec4(0.3f, 0.2f, 0.0f, 0.11f), ImVec4(0.0f, 0.3f, 0.2f, 0.11f), ImVec4(0.0f, 0.3f, 0.2f, 0.11f),
-                                              ImVec4(0.0f, 0.3f, 0.2f, 0.11f), ImVec4(0.0f, 0.3f, 0.2f, 0.11f), ImVec4(0.0f, 0.3f, 0.2f, 0.11f), 1.01f);
-            bg.SetHomePage(false);
+            interpolator.ChangeGradientColors(ImVec4(0.3f, 0.2f, 0.0f, 0.11f), ImVec4(1.0f, 0.3f, 0.2f, 0.11f), {18.0f / 255.0f, 113.0f / 255.f, 1.0f, 0.002f},
+                                              {221.0f / 255.f, 74.0f / 255.f, 1.0f, 0.002f},
+                                              {100.0f / 255.f, 220.0f / 255.f, 1.0f, 0.002f}, {200.0f / 255.f, 50.0f / 255.f, 50.0f / 255.f, 0.002f},
+                                              {180.0f / 255.f, 180.0f / 255.f, 50.0f / 255.f, 0.002f}, 1.01f);
+
         }
 
         if (ImGui::Button("Color2")) {
-            interpolator.ChangeGradientColors(ImVec4(0.2f, 0.0f, 0.3f, 0.11f), ImVec4(0.3f, 1.0f, 0.3f, 0.11f), ImVec4(0.2f, 0.0f, 0.3f, 0.11f), ImVec4(0.2f, 0.0f, 0.3f, 0.11f),
-                                              ImVec4(0.2f, 0.0f, 0.3f, 0.11f), ImVec4(0.2f, 0.0f, 0.3f, 0.11f), ImVec4(0.2f, 0.0f, 0.3f, 0.11f), 1.01f);
-            bg.SetHomePage(false);
+            interpolator.ChangeGradientColors(ImVec4(0.2f, 0.0f, 0.3f, 0.11f), ImVec4(0.3f, 1.0f, 0.3f, 0.11f), {18.0f / 255.0f, 113.0f / 255.f, 1.0f, 0.002f},
+                                              {221.0f / 255.f, 74.0f / 255.f, 1.0f, 0.002f},
+                                              {100.0f / 255.f, 220.0f / 255.f, 1.0f, 0.002f}, {200.0f / 255.f, 50.0f / 255.f, 50.0f / 255.f, 0.002f},
+                                              {180.0f / 255.f, 180.0f / 255.f, 50.0f / 255.f, 0.002f}, 1.01f);
+
         }
 
         if (ImGui::Button("Default")) {
-
-            bg.SetHomePage(true);
+            interpolator.ChangeGradientColors(Infinity::HomePagePrimary, Infinity::HomePageSecondary, {18.0f / 255.0f, 113.0f / 255.f, 1.0f, 0.002f}, {221.0f / 255.f, 74.0f / 255.f, 1.0f, 0.002f},
+                                              {100.0f / 255.f, 220.0f / 255.f, 1.0f, 0.002f}, {200.0f / 255.f, 50.0f / 255.f, 50.0f / 255.f, 0.002f},
+                                              {180.0f / 255.f, 180.0f / 255.f, 50.0f / 255.f, 0.002f},
+                                              1.0f);
         }
 
         ImGui::Text("The Monkeys will win the war");

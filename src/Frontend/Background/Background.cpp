@@ -35,7 +35,7 @@ namespace Infinity {
     }
 
 
-    void Background::RenderBackgroundBaseLayer() const {
+    void Background::RenderBackgroundBaseLayer() {
 
 
         ImGui::GetWindowDrawList()->AddRectFilled(m_windowPos, ImVec2(m_windowPos.x + m_windowSize.x, m_windowPos.y + m_windowSize.y), ImColor(0.0f, 0.0f, 0.0f, 1.0f));
@@ -44,13 +44,14 @@ namespace Infinity {
                                                             ImColor(m_secondaryColor), ImColor(m_secondaryColor));
     }
 
-    void Background::RenderGradientCircle(const ImVec2 center, const float radius, const float maxOpacity, const ImU32 color) const {
-        constexpr int layers = 60;
+    void Background::RenderGradientCircle(const ImVec2 center, const float radius, const float maxOpacity, const ImU32 color) {
+        constexpr int layers = 80;
 
         const ImVec4 colorVec = ImGui::ColorConvertU32ToFloat4(color);
 
         for (int i = 0; i < layers; i++) {
-            constexpr int segments = 100;
+            constexpr int segments = 150;
+
             const float layerRadius = radius * (layers - static_cast<float>(i)) / layers;
             float alpha = colorVec.w * (static_cast<float>(i) + 1.0f) / layers;
 
@@ -75,7 +76,7 @@ namespace Infinity {
         }
     }
 
-    void Background::RenderBackgroundDotsLayer() const {
+    void Background::RenderBackgroundDotsLayer() {
         const auto offsetPosition = ImVec2(m_windowPos.x + 10, m_windowPos.y + 10);
         const auto dotCount2D = ImVec2(150, 150);
         const auto color = ImColor(1.0f, 1.0f, 1.0f, 0.3f);
@@ -83,14 +84,14 @@ namespace Infinity {
         for (int y = 0; static_cast<float>(y) < dotCount2D.y; y++) {
             for (int x = 0; static_cast<float>(x) < dotCount2D.x; x++) {
                 constexpr int radius = 1;
-                constexpr float spacing = 20.0f;
+                constexpr float spacing = 15.0f;
                 auto pos = ImVec2(offsetPosition.x + static_cast<float>(x) * spacing, offsetPosition.y + static_cast<float>(y) * spacing);
                 ImGui::GetWindowDrawList()->AddCircleFilled(pos, radius, color);
             }
         }
     }
 
-    void Background::RenderBackgroundGradientLayer() const {
+    void Background::RenderBackgroundGradientLayer() {
         static float circle1angle = 0.0f;
         static float circle2angle = 0.0f;
         static float circle3angle = 0.0f;

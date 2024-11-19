@@ -185,6 +185,7 @@ add_executable(InfinityLauncher
         src/Backend/UIHelpers/UiHelpers.hpp
         src/Backend/VulkanManager/VulkanManager.hpp
         # -- Util Source Files --
+        src/Util/Easing/Easing.hpp
         src/Util/State/State.hpp
         # -- Frontend Source Files --
         src/Frontend/Theme/Theme.cpp
@@ -193,6 +194,9 @@ add_executable(InfinityLauncher
         src/Frontend/ColorInterpolation/ColorInterpolation.hpp
         src/Frontend/Background/Background.cpp
         src/Frontend/Background/Background.hpp
+        src/Backend/Router/Router.cpp
+        src/Backend/Router/Router.hpp
+        src/Util/Error/Error.hpp
 )
 
 message("${Blue}Gathering ImGui Source Files")
