@@ -27,11 +27,14 @@ namespace Infinity {
 
         Background();
 
-        void RenderBackground() const;
+        static void RenderBackground();
 
         static void UpdateColorScheme() {
             auto &interpolator = ColorInterpolation::GetInstance();
-            auto colors = interpolator.GetCurrentGradientColors();
+
+            constexpr auto easing_types = Easing::EasingTypes::EaseInOutCubic;
+
+            const auto colors = interpolator.GetCurrentGradientColors(easing_types);
             m_primaryColor = std::get<0>(colors);
             m_secondaryColor = std::get<1>(colors);
             m_circleColor1 = std::get<2>(colors);

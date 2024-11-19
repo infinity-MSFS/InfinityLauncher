@@ -7,11 +7,11 @@
 namespace Infinity {
     ImVec4 Background::m_primaryColor = HomePagePrimary;
     ImVec4 Background::m_secondaryColor = HomePageSecondary;
-    ImVec4 Background::m_circleColor1 = {18.0f / 255.0f, 113.0f / 255.f, 1.0f, 0.01f};
-    ImVec4 Background::m_circleColor2 = {221.0f / 255.f, 74.0f / 255.f, 1.0f, 0.01f};
-    ImVec4 Background::m_circleColor3 = {100.0f / 255.f, 220.0f / 255.f, 1.0f, 0.01f};
-    ImVec4 Background::m_circleColor4 = {200.0f / 255.f, 50.0f / 255.f, 50.0f / 255.f, 0.01f};
-    ImVec4 Background::m_circleColor5 = {180.0f / 255.f, 180.0f / 255.f, 50.0f / 255.f, 0.01f};
+    ImVec4 Background::m_circleColor1 = {18.0f / 255.0f, 113.0f / 255.f, 1.0f, 0.002f};
+    ImVec4 Background::m_circleColor2 = {221.0f / 255.f, 74.0f / 255.f, 1.0f, 0.002f};
+    ImVec4 Background::m_circleColor3 = {100.0f / 255.f, 220.0f / 255.f, 1.0f, 0.002f};
+    ImVec4 Background::m_circleColor4 = {200.0f / 255.f, 50.0f / 255.f, 50.0f / 255.f, 0.002f};
+    ImVec4 Background::m_circleColor5 = {180.0f / 255.f, 180.0f / 255.f, 50.0f / 255.f, 0.002f};
     ImVec2 Background::m_windowPos = {0.0f, 0.0f};
     ImVec2 Background::m_windowSize = {0.0f, 0.0f};
     bool Background::m_HomePage = true;
@@ -26,7 +26,7 @@ namespace Infinity {
         }
     }
 
-    void Background::RenderBackground() const {
+    void Background::RenderBackground() {
         m_windowPos = ImGui::GetWindowPos();
         m_windowSize = ImGui::GetWindowSize();
         RenderBackgroundBaseLayer();

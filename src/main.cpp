@@ -5,9 +5,26 @@
 #include "Frontend/Background/Background.hpp"
 #include "Frontend/ColorInterpolation/ColorInterpolation.hpp"
 #include "imgui_internal.h"
+#include "Util/State/GroupStateManager.hpp"
+#include "Util/State/State.hpp"
+#include "Util/State/RenderGroupData.hpp"
 
 bool g_ApplicationRunning = true;
 
+
+class MainState : public Infinity::PageState {
+public:
+    Infinity::GroupDataState state;
+
+    MainState(Infinity::GroupDataState &state) :
+        state(state) {
+    }
+
+    void PrintState() const override {
+        std::cout << "MainState::PrintState()" << std::endl;
+    }
+
+};
 
 class PageRenderLayer final : public Infinity::Layer {
 public:
@@ -17,6 +34,9 @@ public:
                                           {100.0f / 255.f, 220.0f / 255.f, 1.0f, 0.002f}, {200.0f / 255.f, 50.0f / 255.f, 50.0f / 255.f, 0.002f},
                                           {180.0f / 255.f, 180.0f / 255.f, 50.0f / 255.f, 0.002f},
                                           1.0f);
+        auto &state = Infinity::State::GetInstance();
+        auto groups = Infinity::fetch_and_decode_groups();
+        state.RegisterPageState("main", std::make_shared<MainState>(groups));
     }
 
     void OnUIRender() override {
@@ -25,6 +45,16 @@ public:
         auto &interpolator = ColorInterpolation::GetInstance();
 
         Infinity::Background::UpdateColorScheme();
+
+        auto &state = Infinity::State::GetInstance();
+        auto main_state = state.GetPageState<MainState>("main");
+
+        if (main_state.has_value()) {
+            const std::shared_ptr<MainState> &statePtr = *main_state;
+            ImGui::Begin("Main State");
+            RenderGroupDataState(statePtr->state);
+            ImGui::End();
+        }
 
         if (ImGui::Button("Color1")) {
             interpolator.ChangeGradientColors(ImVec4(0.3f, 0.2f, 0.0f, 0.11f), ImVec4(1.0f, 0.3f, 0.2f, 0.11f), {18.0f / 255.0f, 113.0f / 255.f, 1.0f, 0.002f},

@@ -59,6 +59,18 @@ else ()
     set(VCPKG_TRIPLET "x64-linux-static")
 endif ()
 
+message("${Blue}Installing Zlib${ColorReset}${Green}")
+execute_process(
+        COMMAND ${VCPKG_SOURCE_PATH}/vcpkg install zlib
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+message("${Blue}Installing msgpack${ColorReset}${Green}")
+execute_process(
+        COMMAND ${VCPKG_SOURCE_PATH}/vcpkg install msgpack
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
 message("${Blue}Installing OpenSSL${ColorReset}${Green}")
 execute_process(
         COMMAND ${VCPKG_SOURCE_PATH}/vcpkg install openssl
@@ -106,9 +118,11 @@ project(InfinityLauncher)
 set(CMAKE_CXX_STANDARD 23)
 
 message("${Blue}Using toolchain file: ${Green}${CMAKE_TOOLCHAIN_FILE}")
+find_package(ZLIB REQUIRED)
 find_package(Vulkan REQUIRED)
 find_package(CURL REQUIRED)
 find_package(OpenSSL REQUIRED)
+find_package(msgpack-cxx CONFIG REQUIRED)
 find_package(unofficial-minizip CONFIG REQUIRED)
 find_package(zoe CONFIG REQUIRED PATHS "${VCPKG_SOURCE_PATH}/packages/zoe_${VCPKG_TRIPLET}/")
 if (WIN32)
@@ -184,9 +198,12 @@ add_executable(InfinityLauncher
         src/Backend/UIHelpers/UiHelpers.cpp
         src/Backend/UIHelpers/UiHelpers.hpp
         src/Backend/VulkanManager/VulkanManager.hpp
+        src/Backend/Router/Router.cpp
+        src/Backend/Router/Router.hpp
         # -- Util Source Files --
         src/Util/Easing/Easing.hpp
         src/Util/State/State.hpp
+        src/Util/Error/Error.hpp
         # -- Frontend Source Files --
         src/Frontend/Theme/Theme.cpp
         src/Frontend/Theme/Theme.hpp
@@ -194,9 +211,8 @@ add_executable(InfinityLauncher
         src/Frontend/ColorInterpolation/ColorInterpolation.hpp
         src/Frontend/Background/Background.cpp
         src/Frontend/Background/Background.hpp
-        src/Backend/Router/Router.cpp
-        src/Backend/Router/Router.hpp
-        src/Util/Error/Error.hpp
+        src/Util/State/GroupStateManager.hpp
+        src/Util/State/RenderGroupData.hpp
 )
 
 message("${Blue}Gathering ImGui Source Files")
@@ -281,4 +297,4 @@ else ()
     endif ()
 endif ()
 message("${Blue}Configuring Linker")
-target_link_libraries(InfinityLauncher PRIVATE Vulkan::Vulkan glfw Boxer CURL::libcurl OpenSSL::SSL OpenSSL::Crypto unofficial::minizip::minizip ${ZOE_LIB} ${TOAST_LIB})
+target_link_libraries(InfinityLauncher PRIVATE Vulkan::Vulkan glfw Boxer CURL::libcurl OpenSSL::SSL OpenSSL::Crypto unofficial::minizip::minizip ZLIB::ZLIB ${ZOE_LIB} msgpack-cxx ${TOAST_LIB})

@@ -1,5 +1,8 @@
 #include "ColorInterpolation.hpp"
 
+#include "Util/Easing/Easing.hpp"
+#include "Util/Error/Error.hpp"
+
 ColorInterpolation &ColorInterpolation::GetInstance() {
     static ColorInterpolation instance;
     return instance;
@@ -13,7 +16,8 @@ ColorInterpolation::ColorInterpolation() :
              Interpolation(ImVec4(0.0f, 0.0f, 0.0f, 1.0f), ImVec4(0.0f, 0.0f, 0.0f, 1.0f), ImVec4(0.0f, 0.0f, 0.0f, 1.0f)),
              Interpolation(ImVec4(0.0f, 0.0f, 0.0f, 1.0f), ImVec4(0.0f, 0.0f, 0.0f, 1.0f), ImVec4(0.0f, 0.0f, 0.0f, 1.0f)),
              Interpolation(ImVec4(0.0f, 0.0f, 0.0f, 1.0f), ImVec4(0.0f, 0.0f, 0.0f, 1.0f), ImVec4(0.0f, 0.0f, 0.0f, 1.0f))},
-    m_Duration(0.0f), m_Active(false) {}
+    m_Duration(0.0f), m_Active(false) {
+}
 
 void ColorInterpolation::ChangeGradientColors(const ImVec4 &GradientStart, const ImVec4 &GradientEnd, const ImVec4 &CircleColor1, const ImVec4 &CircleColor2, const ImVec4 &CircleColor3,
                                               const ImVec4 &CircleColor4, const ImVec4 &CircleColor5, float durationSec) {
@@ -43,10 +47,14 @@ void ColorInterpolation::ChangeGradientColors(const ImVec4 &GradientStart, const
     m_Active = true;
 }
 
-std::tuple<ImVec4, ImVec4, ImVec4, ImVec4, ImVec4, ImVec4, ImVec4> ColorInterpolation::GetCurrentGradientColors() {
+using Infinity::Easing::EasingTypes;
+
+std::tuple<ImVec4, ImVec4, ImVec4, ImVec4, ImVec4, ImVec4, ImVec4> ColorInterpolation::GetCurrentGradientColors(EasingTypes easing_type) {
     if (m_Active) {
         float elapsedTime = std::chrono::duration<float>(Clock::now() - m_StartTime).count();
-        float t = std::clamp(elapsedTime / m_Duration, 0.0f, 1.0f);
+        float raw_t = std::clamp(elapsedTime / m_Duration, 0.0f, 1.0f);
+
+        const float t = GetEasing(easing_type, raw_t);
 
         Interpolation &interpolation0 = std::get<0>(m_Colors);
         interpolation0.currentColor.x = interpolation0.startColor.x + (interpolation0.endColor.x - interpolation0.startColor.x) * t;
