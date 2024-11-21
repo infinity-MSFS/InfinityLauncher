@@ -15,12 +15,16 @@ namespace Infinity::Errors {
         Warning,
     };
 
+
     struct Error {
         ErrorType error_type;
         std::string error_message;
 
+
         [[nodiscard]] ErrorType GetErrorType() const { return error_type; }
         [[nodiscard]] std::string &GetErrorMessage() { return error_message; }
+
+        void Dispatch();
     };
 
 
@@ -53,8 +57,14 @@ namespace Infinity::Errors {
         }
     }
 
+
     inline void ShowErrorPopup(const ErrorType error_type, const std::string &error_message) {
         auto error = Error{error_type, error_message};
         ShowErrorPopup(error);
     }
+
+    inline void Error::Dispatch() {
+        ShowErrorPopup(*this);
+    }
+
 }

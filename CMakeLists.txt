@@ -148,7 +148,6 @@ if (UNIX)
     FetchContent_Declare(MiniKDENotify GIT_REPOSITORY https://github.com/rikka-gh/MiniKDENotify.git)
 
     FetchContent_MakeAvailable(GLFW Boxer Infinity MiniKDENotify)
-    option(MINIKDENOTIFY_BUILD_EXAMPLES OFF)
 else ()
     FetchContent_MakeAvailable(GLFW Boxer Infinity)
 endif ()
@@ -213,6 +212,7 @@ add_executable(InfinityLauncher
         src/Frontend/Background/Background.hpp
         src/Util/State/GroupStateManager.hpp
         src/Util/State/RenderGroupData.hpp
+        src/Frontend/SVG/SVGDrawing.hpp
 )
 
 message("${Blue}Gathering ImGui Source Files")
@@ -290,7 +290,7 @@ if (WIN32)
     )
 else ()
 
-    if (CMAKE_BUILD_TYPE MATCHES DEBUG)
+    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
         set(ZOE_LIB ${VCPKG_SOURCE_PATH}/packages/zoe_x64-linux/debug/lib/liblibZoe-d.a)
     else ()
         set(ZOE_LIB ${VCPKG_SOURCE_PATH}/packages/zoe_x64-linux/lib/liblibZoe.a)
