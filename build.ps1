@@ -30,7 +30,8 @@ $sourceDir = $PSScriptRoot
 $buildDirDebug = Join-Path $sourceDir "cmake-build-debug"
 $buildDirRelease = Join-Path $sourceDir "cmake-build-release"
 
-$cmakePath = "C:\Users\Taco\AppData\Local\Programs\CLion\bin\cmake\win\x64\bin\cmake.exe"
+$cmakePath = "cmake"
+# $cmakePath = "C:\Users\Taco\AppData\Local\Programs\CLion\bin\cmake\win\x64\bin\cmake.exe"
 
 if ($BuildType -eq "Debug") {
     if (!(Test-Path $buildDirDebug)) {

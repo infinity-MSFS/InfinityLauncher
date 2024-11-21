@@ -78,7 +78,7 @@ namespace Infinity {
 
     void Background::RenderBackgroundDotsLayer() {
         const auto offsetPosition = ImVec2(m_windowPos.x + 10, m_windowPos.y + 10);
-        const auto dotCount2D = ImVec2(150, 150);
+        const auto dotCount2D = ImVec2(300, 150);
         const auto color = ImColor(1.0f, 1.0f, 1.0f, 0.3f);
 
         for (int y = 0; static_cast<float>(y) < dotCount2D.y; y++) {

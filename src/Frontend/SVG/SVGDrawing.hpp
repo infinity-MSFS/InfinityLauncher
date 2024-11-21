@@ -1,16 +1,15 @@
 
 #pragma once
 
-#include "imgui.h"
-#include <utility>
-#include <vector>
 #include <cmath>
-#include <string>
-#include <sstream>
-#include <utility>
+#include <fstream>
 #include <optional>
 #include <random>
-#include <fstream>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
+#include "imgui.h"
 
 #include "Util/Error/Error.hpp"
 
@@ -32,9 +31,7 @@ inline void PrintSVGData(const std::vector<std::pair<ImVec2, ImVec2>> &svg_data)
 
     if (!printed) {
         for (const auto &segment: svg_data) {
-            printf("(%.2f,%.2f)->(%.2f,%.2f)\n",
-                   segment.first.x, segment.first.y,
-                   segment.second.x, segment.second.y);
+            printf("(%.2f,%.2f)->(%.2f,%.2f)\n", segment.first.x, segment.first.y, segment.second.x, segment.second.y);
         }
     }
 
@@ -42,13 +39,7 @@ inline void PrintSVGData(const std::vector<std::pair<ImVec2, ImVec2>> &svg_data)
 }
 
 class SVGFlatten {
-    enum class PathCommand {
-        MoveTo,
-        LineTo,
-        CubicBezier,
-        SmoothCubicBezier,
-        ClosePath
-    };
+    enum class PathCommand { MoveTo, LineTo, CubicBezier, SmoothCubicBezier, ClosePath };
 
     struct PathCommandData {
         PathCommand type;
@@ -56,17 +47,12 @@ class SVGFlatten {
     };
 
 public:
-    explicit SVGFlatten(std::string path_raw, const double resolution):
-        m_PathRaw(std::move(path_raw)), m_Resolution(resolution), m_CurrentPoint({0.0, 0.0}), m_LastControlPoint(std::nullopt) {
-    }
+    explicit SVGFlatten(std::string path_raw, const double resolution) : m_PathRaw(std::move(path_raw)), m_Resolution(resolution), m_CurrentPoint({0.0, 0.0}), m_LastControlPoint(std::nullopt) {}
 
     std::vector<std::pair<ImVec2, ImVec2>> GetPoints() {
         for (const auto commands = ParsePath(m_PathRaw); const auto &command: commands) {
             auto segments = FlattenCommand(command);
-            m_Points.insert(
-                    m_Points.end(),
-                    segments.begin(),
-                    segments.end());
+            m_Points.insert(m_Points.end(), segments.begin(), segments.end());
         }
         std::vector<std::pair<ImVec2, ImVec2>> result;
 
@@ -110,48 +96,33 @@ public:
             float random1 = dis1(gen2);
             float random2 = dis2(gen2);
             std::cout << random << std::endl;
-            draw_list->AddLine(
-                    {i.first.x * scale + offset.x, i.first.y * scale + offset.y},
-                    {i.second.x * scale + offset.x, i.second.y * scale + offset.y},
-                    ImColor(random1, random, random2, 1.0f),
-                    thickness
-                    );
-
+            draw_list->AddLine({i.first.x * scale + offset.x, i.first.y * scale + offset.y}, {i.second.x * scale + offset.x, i.second.y * scale + offset.y}, ImColor(random1, random, random2, 1.0f),
+                               thickness);
         }
 
         //  }
     }
 
-    void write_points_to_file(const std::vector<std::pair<ImVec2, ImVec2>> &points,
-                              const std::string &filename) {
+    void write_points_to_file(const std::vector<std::pair<ImVec2, ImVec2>> &points, const std::string &filename) {
         std::ofstream file(filename);
         if (!file.is_open()) {
             throw std::runtime_error("Could not open file");
         }
 
         for (size_t i = 1; i < points.size(); ++i) {
-            file << "DrawLogoLine({"
-                    << points[i].first.x << ", " << points[i].first.y << "}, {"
-                    << points[i].second.x << ", " << points[i].second.y << "}, scale, offset);\n";
+            file << "DrawLogoLine({" << points[i].first.x << ", " << points[i].first.y << "}, {" << points[i].second.x << ", " << points[i].second.y << "}, scale, offset);\n";
         }
     }
 
 private:
-    static ImVec2 cubic_bezier(const float t,
-                               const ImVec2 &p0,
-                               const ImVec2 &p1,
-                               const ImVec2 &p2,
-                               const ImVec2 &p3) {
+    static ImVec2 cubic_bezier(const float t, const ImVec2 &p0, const ImVec2 &p1, const ImVec2 &p2, const ImVec2 &p3) {
         const float u = 1.0f - t;
         const float tt = t * t;
         const float uu = u * u;
         const float uuu = uu * u;
         const float ttt = tt * t;
 
-        return {
-                uuu * p0.x + 3.0f * uu * t * p1.y + 3.0f * u * tt * p2.x + ttt * p3.y,
-                uuu * p0.x + 3.0f * uu * t * p1.y + 3.0f * u * tt * p2.x + ttt * p3.y
-        };
+        return {uuu * p0.x + 3.0f * uu * t * p1.y + 3.0f * u * tt * p2.x + ttt * p3.y, uuu * p0.x + 3.0f * uu * t * p1.y + 3.0f * u * tt * p2.x + ttt * p3.y};
     }
 
     std::vector<ImVec2> FlattenCommand(const PathCommandData &command) {
@@ -182,11 +153,7 @@ private:
             }
             case PathCommand::SmoothCubicBezier: {
                 const auto start = m_CurrentPoint;
-                const ImVec2 control1 = m_LastControlPoint.has_value()
-                                            ? ImVec2(
-                                                    start.x + (start.x - m_LastControlPoint->x), start.y + (start.y - m_LastControlPoint->y)
-                                                    )
-                                            : start;
+                const ImVec2 control1 = m_LastControlPoint.has_value() ? ImVec2(start.x + (start.x - m_LastControlPoint->x), start.y + (start.y - m_LastControlPoint->y)) : start;
                 ImVec2 control2 = {command.coords[0], command.coords[1]};
                 const ImVec2 end = {command.coords[2], command.coords[3]};
 
@@ -235,9 +202,8 @@ private:
                 case 'l':
                 case 'c':
                 case 's':
-                case'z': {
-                    auto error = Infinity::Errors::Error{
-                            Infinity::Errors::ErrorType::NonFatal, "Relative Paths commands not supported"};
+                case 'z': {
+                    auto error = Infinity::Errors::Error{Infinity::Errors::ErrorType::NonFatal, "Relative Paths commands not supported"};
                     error.Dispatch();
                 }
                 case 'M': {
@@ -290,16 +256,11 @@ private:
 };
 
 
-inline void DrawLogoLine(const ImVec2 pos1, const ImVec2 pos2, const float scale = 1.0f, const ImVec2 offset = {0, 0}, const float thickness = 1.0f, int index,
-                         const std::vector<unsigned int> &active_index) {
+inline void DrawLogoLine(const ImVec2 pos1, const ImVec2 pos2, const float scale = 1.0f, const ImVec2 offset = {0, 0}, const float thickness = 1.0f, int index = 0,
+                         const std::vector<unsigned int> &active_index = {}) {
 
     const auto dl = ImGui::GetWindowDrawList();
-    dl->AddLine(
-            {pos1.x * scale + offset.x, pos1.y * scale + offset.y},
-            {pos2.x * scale + offset.x, pos2.y * scale + offset.y},
-            ImColor(255, 0, 255, 255),
-            thickness
-            );
+    dl->AddLine({pos1.x * scale + offset.x, pos1.y * scale + offset.y}, {pos2.x * scale + offset.x, pos2.y * scale + offset.y}, ImColor(255, 0, 255, 255), thickness);
 }
 
 // Generated by Rust function -> TODO: Repo link
@@ -465,7 +426,6 @@ inline void DrawLeftLogoHalf(const float scale = 1.0f, const ImVec2 offset = {0,
     DrawLogoLine({315.00, 726.29}, {298.00, 728.27}, scale, offset, 1.0f, 157, active_index);
     DrawLogoLine({298.00, 728.27}, {280.80, 728.90}, scale, offset, 1.0f, 158, active_index);
     DrawLogoLine({280.80, 728.90}, {280.80, 728.90}, scale, offset, 1.0f, 159, active_index);
-
 }
 
 inline void DrawLogoRightHalf(float scale = 1.0f, ImVec2 offset = {0.0f, 0.0f}) {
@@ -630,24 +590,23 @@ inline void DrawLogoRightHalf(float scale = 1.0f, ImVec2 offset = {0.0f, 0.0f}) 
     DrawLogoLine({777.38, 726.28}, {760.35, 728.27}, scale, offset, 1.0f, 157, active_index);
     DrawLogoLine({760.35, 728.27}, {743.10, 728.90}, scale, offset, 1.0f, 158, active_index);
     DrawLogoLine({743.10, 728.90}, {743.10, 728.90}, scale, offset, 1.0f, 159, active_index);
-
 }
 
 
-//C 280.8,728.9    223.1,729.1    167.7,706.2    127.1,665.3 //
-//C 127.1,665.3    42.8,580.6     42.8,442.9     127.,358.3 //
-//C 127.,358.3     167.7,317.3    223.1,294.4    280.9,294.6 //
-//C 280.9,294.6    339,294.6      393.6,317.2    434.6,358.2 //
-//L 434.6,358.2    550,473.7//
-//C 550,473.7      564,487.2      569.6,507.2    564.7,526 //
-//S 564.7,526      545.1,559.5    526.3,564.4 //
-//S 526.3,564.4    487.5,563.7    474,549.7//
-//L 474,549.7      358.5,434.3 //
-//C 358.5,434.3    317,392.8      244.6,392.8    203.2,434.3 //
-//C 203.2,434.3    160.7,477.2    160.7,546.4    203.3,589.3 //
-//C 203.3,589.3    244.5,630.5    317,630.7      358.4,589.2 //
-//L 358.4,589.2    372.4,575.2 //
-//C 372.4,575.2    393.4,554.2    427.5,554.2    448.5,575.2 //
-//S 448.5,575.2    469.5,630.3    448.5,651.3 //
-//L 448.5,651.3    434.5,665.3
-//C 434.5,665.3    393.8,706.2    338.4,729.1    280.8,728.9
+// C 280.8,728.9    223.1,729.1    167.7,706.2    127.1,665.3 //
+// C 127.1,665.3    42.8,580.6     42.8,442.9     127.,358.3 //
+// C 127.,358.3     167.7,317.3    223.1,294.4    280.9,294.6 //
+// C 280.9,294.6    339,294.6      393.6,317.2    434.6,358.2 //
+// L 434.6,358.2    550,473.7//
+// C 550,473.7      564,487.2      569.6,507.2    564.7,526 //
+// S 564.7,526      545.1,559.5    526.3,564.4 //
+// S 526.3,564.4    487.5,563.7    474,549.7//
+// L 474,549.7      358.5,434.3 //
+// C 358.5,434.3    317,392.8      244.6,392.8    203.2,434.3 //
+// C 203.2,434.3    160.7,477.2    160.7,546.4    203.3,589.3 //
+// C 203.3,589.3    244.5,630.5    317,630.7      358.4,589.2 //
+// L 358.4,589.2    372.4,575.2 //
+// C 372.4,575.2    393.4,554.2    427.5,554.2    448.5,575.2 //
+// S 448.5,575.2    469.5,630.3    448.5,651.3 //
+// L 448.5,651.3    434.5,665.3
+// C 434.5,665.3    393.8,706.2    338.4,729.1    280.8,728.9
