@@ -24,13 +24,7 @@ function(print_system_dependencies_info)
     else ()
         message(FATAL_ERROR "MiniZip Not Found")
     endif ()
-
-    if (zoe_VERSION)
-        message("${Blue}Zoe Version: ${Green}${zoe_VERSION} ${ColorReset}")
-    else ()
-        message(FATAL_ERROR "Zoe Not Found")
-    endif ()
-
+    
     if (WIN32)
         if (WinToast_LIBRARY_DEBUG)
             message("${Blue}WinToast Found: ${Green}${WinToast_LIBRARY_DEBUG} ${ColorReset}")

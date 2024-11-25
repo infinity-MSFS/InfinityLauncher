@@ -2,116 +2,27 @@ cmake_minimum_required(VERSION 3.29)
 
 include(cmake/util.cmake)
 include(cmake/colors.cmake)
+include(cmake/key_loading.cmake)
 include(FetchContent)
 
 
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(VCPKG_SOURCE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg-debug")
-    message("${Blue}Creating vcpkg at: ${Green}${VCPKG_SOURCE_PATH}${ColorReset}")
-else ()
-    set(VCPKG_SOURCE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg-release")
-    message("${Blue}Creating vcpkg at: ${Green}${VCPKG_SOURCE_PATH}${ColorReset}")
-endif ()
-
-set(ENV{VCPKG_ENABLE_MANIFEST_MODE} "OFF")
-set(ENV{VCPKG_ROOT} "${VCPKG_SOURCE_PATH}")
-if (NOT EXISTS "${VCPKG_SOURCE_PATH}")
-
-    FetchContent_Declare(
-            vcpkg
-            GIT_REPOSITORY https://github.com/microsoft/vcpkg.git
-            GIT_TAG 2024.10.21
-            SOURCE_DIR ${VCPKG_SOURCE_PATH}
-    )
-    FetchContent_MakeAvailable(vcpkg)
-
-    if (WIN32)
-        set(BOOTSTRAP_COMMAND "${VCPKG_SOURCE_PATH}/bootstrap-vcpkg.bat")
-
-    else ()
-        set(BOOTSTRAP_COMMAND "${VCPKG_SOURCE_PATH}/bootstrap-vcpkg.sh")
-
-    endif ()
-
-    if (WIN32)
-        if (NOT EXISTS "${VCPKG_SOURCE_PATH}/vcpkg.exe")
-            message("${Green}Bootstrapping vcpkg...${ColorReset}")
-            execute_process(
-                    COMMAND ${BOOTSTRAP_COMMAND}
-                    WORKING_DIRECTORY ${VCPKG_SOURCE_PATH}
-            )
-        endif ()
-    else ()
-        if (NOT EXISTS "${VCPKG_SOURCE_PATH}/vcpkg")
-            message("${Green}Bootstrapping vcpkg...${ColorReset}")
-            execute_process(
-                    COMMAND ${BOOTSTRAP_COMMAND}
-                    WORKING_DIRECTORY ${VCPKG_SOURCE_PATH}
-            )
-        endif ()
-    endif ()
-
-endif ()
-
 if (WIN32)
-    set(VCPKG_TRIPLET "x64-windows-static")
+    set(VCPKG_TRIPLET "x64-windows")
 else ()
-    set(VCPKG_TRIPLET "x64-linux-static")
+    set(VCPKG_TRIPLET "x64-linux")
 endif ()
-
-message("${Blue}Installing Zlib${ColorReset}${Green}")
-execute_process(
-        COMMAND ${VCPKG_SOURCE_PATH}/vcpkg install zlib
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-)
-
-message("${Blue}Installing msgpack${ColorReset}${Green}")
-execute_process(
-        COMMAND ${VCPKG_SOURCE_PATH}/vcpkg install msgpack
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-)
-
-message("${Blue}Installing OpenSSL${ColorReset}${Green}")
-execute_process(
-        COMMAND ${VCPKG_SOURCE_PATH}/vcpkg install openssl
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-)
-
-message("${Blue}Installing Vulkan${ColorReset}${Green}")
-execute_process(
-        COMMAND ${VCPKG_SOURCE_PATH}/vcpkg install vulkan
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-)
-
-message("${Blue}Installing Curl${ColorReset}${Green}")
-execute_process(
-        COMMAND ${VCPKG_SOURCE_PATH}/vcpkg install curl
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-)
-
-message("${Blue}Installing MiniZip${ColorReset}${Green}")
-execute_process(
-        COMMAND ${VCPKG_SOURCE_PATH}/vcpkg install minizip
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-)
-
-message("${Blue}Installing Zoe${ColorReset}${Green}")
-execute_process(
-        COMMAND ${VCPKG_SOURCE_PATH}/vcpkg install zoe
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-)
-
-if (WIN32)
-    message("${Blue}Installing WinToast${ColorReset}${Green}")
-    execute_process(
-            COMMAND ${VCPKG_SOURCE_PATH}/vcpkg install wintoast
-            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    )
+if (NOT VCPKG_ROOT)
+    set(VCPKG_ROOT $ENV{VCPKG_ROOT})
+endif ()
+if (VCPKG_ROOT)
+    set(CMAKE_TOOLCHAIN_FILE "${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
+    message("${Blue}Using Toolchain file: ${Green}${CMAKE_TOOLCHAIN_FILE}${ColorReset}")
+else ()
+    message(FATAL_ERROR "VCPKG_ROOT is not set in the environment!")
 endif ()
 
 
-set(CMAKE_TOOLCHAIN_FILE "${VCPKG_SOURCE_PATH}/scripts/buildsystems/vcpkg.cmake"
-        CACHE STRING "Vcpkg toolchain file")
+load_keys()
 
 project(InfinityLauncher)
 
@@ -124,7 +35,6 @@ find_package(CURL REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(msgpack-cxx CONFIG REQUIRED)
 find_package(unofficial-minizip CONFIG REQUIRED)
-find_package(zoe CONFIG REQUIRED PATHS "${VCPKG_SOURCE_PATH}/packages/zoe_${VCPKG_TRIPLET}/")
 if (WIN32)
     find_package(unofficial-wintoast REQUIRED)
 endif ()
@@ -213,6 +123,10 @@ add_executable(InfinityLauncher
         src/Util/State/GroupStateManager.hpp
         src/Util/State/RenderGroupData.hpp
         src/Frontend/SVG/SVGDrawing.hpp
+        src/Backend/Encryption/Encryption.cpp
+        src/Backend/Encryption/Encryption.hpp
+        src/Backend/Encryption/Encryption.cpp
+        src/Backend/Encryption/Encryption.hpp
 )
 
 message("${Blue}Gathering ImGui Source Files")
@@ -238,9 +152,10 @@ if (UNIX)
             ${CMAKE_CURRENT_SOURCE_DIR}/src
             ${infinity_SOURCE_DIR}/include
             ${infinity_SOURCE_DIR}/src/imgui
-            ${ZOE_INCLUDE_DIR}
+            ${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TRIPLET}/include
             ${MINIZIP_INCLUDE_DIR}
             ${minikdenotify_SOURCE_DIR}/include
+            keys/include
             ${DBUS_INCLUDE_DIRS}
     )
 else ()
@@ -248,7 +163,8 @@ else ()
             ${CMAKE_CURRENT_SOURCE_DIR}/src
             ${infinity_SOURCE_DIR}/include
             ${infinity_SOURCE_DIR}/src/imgui
-            ${ZOE_INCLUDE_DIR}
+            ${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TRIPLET}/include
+            keys/include
             ${MINIZIP_INCLUDE_DIR}
     )
 endif ()
@@ -263,22 +179,6 @@ if (WIN32)
             $<$<CONFIG:Release>:/SUBSYSTEM:WINDOWS>
             $<$<NOT:$<CONFIG:Release>>:/SUBSYSTEM:CONSOLE>
     )
-    message("${Blue}Setting Up Zoe Dynamic Link")
-    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-        set(ZOE_LIB ${VCPKG_SOURCE_PATH}/packages/zoe_x64-windows/debug/lib/libZoe-d.lib)
-        add_custom_command(TARGET InfinityLauncher POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy
-                ${VCPKG_SOURCE_PATH}/packages/zoe_x64-windows/debug/bin/libZoe-d.dll
-                $<TARGET_FILE_DIR:InfinityLauncher>
-        )
-    else ()
-        set(ZOE_LIB ${VCPKG_SOURCE_PATH}/packages/zoe_x64-windows/lib/libZoe.lib)
-        add_custom_command(TARGET InfinityLauncher POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy
-                ${VCPKG_SOURCE_PATH}/packages/zoe_x64-windows/bin/libZoe.dll
-                $<TARGET_FILE_DIR:InfinityLauncher>
-        )
-    endif ()
 
     set(TOAST_LIB unofficial::wintoast::wintoast)
 
@@ -291,9 +191,17 @@ if (WIN32)
 else ()
 
     if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-        set(ZOE_LIB ${VCPKG_SOURCE_PATH}/packages/zoe_x64-linux/debug/lib/liblibZoe-d.a)
+        if (UNIX)
+            set(ZOE_LIB ${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TRIPLET}/debug/lib/libzoe-static-d.a)
+        else ()
+            set(ZOE_LIB ${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TRIPLET}/debug/lib/libzoe-static-d.lib)
+        endif ()
     else ()
-        set(ZOE_LIB ${VCPKG_SOURCE_PATH}/packages/zoe_x64-linux/lib/liblibZoe.a)
+        if (UNIX)
+            set(ZOE_LIB ${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TRIPLET}/lib/libzoe-static.a)
+        else ()
+            set(ZOE_LIB ${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TRIPLET}/lib/libzoe-static.lib)
+        endif ()
     endif ()
 endif ()
 message("${Blue}Configuring Linker")

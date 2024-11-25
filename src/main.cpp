@@ -22,14 +22,16 @@ public:
     void PrintState() const override { std::cout << "MainState::PrintState()" << std::endl; }
 };
 
-static bool write = true;
 
 class PageRenderLayer final : public Infinity::Layer {
 public:
     void OnAttach() override {
         auto &interpolator = ColorInterpolation::GetInstance();
-        interpolator.ChangeGradientColors(Infinity::HomePagePrimary, Infinity::HomePageSecondary, {18.0f / 255.0f, 113.0f / 255.f, 1.0f, 0.002f}, {221.0f / 255.f, 74.0f / 255.f, 1.0f, 0.002f},
-                                          {100.0f / 255.f, 220.0f / 255.f, 1.0f, 0.002f}, {200.0f / 255.f, 50.0f / 255.f, 50.0f / 255.f, 0.002f},
+        interpolator.ChangeGradientColors(Infinity::HomePagePrimary, Infinity::HomePageSecondary,
+                                          {18.0f / 255.0f, 113.0f / 255.f, 1.0f, 0.002f},
+                                          {221.0f / 255.f, 74.0f / 255.f, 1.0f, 0.002f},
+                                          {100.0f / 255.f, 220.0f / 255.f, 1.0f, 0.002f},
+                                          {200.0f / 255.f, 50.0f / 255.f, 50.0f / 255.f, 0.002f},
                                           {180.0f / 255.f, 180.0f / 255.f, 50.0f / 255.f, 0.002f}, 1.0f);
         auto &state = Infinity::State::GetInstance();
         auto groups = Infinity::fetch_and_decode_groups();
@@ -57,20 +59,29 @@ public:
         DrawLeftLogoHalf(0.5f, {50.0f, 50.0f});
         DrawLogoRightHalf(0.5f, {50.0f, 50.0f});
         if (ImGui::Button("Color1")) {
-            interpolator.ChangeGradientColors(ImVec4(0.3f, 0.2f, 0.0f, 0.11f), ImVec4(1.0f, 0.3f, 0.2f, 0.11f), {18.0f / 255.0f, 113.0f / 255.f, 1.0f, 0.002f},
-                                              {221.0f / 255.f, 74.0f / 255.f, 1.0f, 0.002f}, {100.0f / 255.f, 220.0f / 255.f, 1.0f, 0.002f}, {200.0f / 255.f, 50.0f / 255.f, 50.0f / 255.f, 0.002f},
+            interpolator.ChangeGradientColors(ImVec4(0.3f, 0.2f, 0.0f, 0.11f), ImVec4(1.0f, 0.3f, 0.2f, 0.11f),
+                                              {18.0f / 255.0f, 113.0f / 255.f, 1.0f, 0.002f},
+                                              {221.0f / 255.f, 74.0f / 255.f, 1.0f, 0.002f},
+                                              {100.0f / 255.f, 220.0f / 255.f, 1.0f, 0.002f},
+                                              {200.0f / 255.f, 50.0f / 255.f, 50.0f / 255.f, 0.002f},
                                               {180.0f / 255.f, 180.0f / 255.f, 50.0f / 255.f, 0.002f}, 1.01f);
         }
 
         if (ImGui::Button("Color2")) {
-            interpolator.ChangeGradientColors(ImVec4(0.2f, 0.0f, 0.3f, 0.11f), ImVec4(0.3f, 1.0f, 0.3f, 0.11f), {18.0f / 255.0f, 113.0f / 255.f, 1.0f, 0.002f},
-                                              {221.0f / 255.f, 74.0f / 255.f, 1.0f, 0.002f}, {100.0f / 255.f, 220.0f / 255.f, 1.0f, 0.002f}, {200.0f / 255.f, 50.0f / 255.f, 50.0f / 255.f, 0.002f},
+            interpolator.ChangeGradientColors(ImVec4(0.2f, 0.0f, 0.3f, 0.11f), ImVec4(0.3f, 1.0f, 0.3f, 0.11f),
+                                              {18.0f / 255.0f, 113.0f / 255.f, 1.0f, 0.002f},
+                                              {221.0f / 255.f, 74.0f / 255.f, 1.0f, 0.002f},
+                                              {100.0f / 255.f, 220.0f / 255.f, 1.0f, 0.002f},
+                                              {200.0f / 255.f, 50.0f / 255.f, 50.0f / 255.f, 0.002f},
                                               {180.0f / 255.f, 180.0f / 255.f, 50.0f / 255.f, 0.002f}, 1.01f);
         }
 
         if (ImGui::Button("Default")) {
-            interpolator.ChangeGradientColors(Infinity::HomePagePrimary, Infinity::HomePageSecondary, {18.0f / 255.0f, 113.0f / 255.f, 1.0f, 0.002f}, {221.0f / 255.f, 74.0f / 255.f, 1.0f, 0.002f},
-                                              {100.0f / 255.f, 220.0f / 255.f, 1.0f, 0.002f}, {200.0f / 255.f, 50.0f / 255.f, 50.0f / 255.f, 0.002f},
+            interpolator.ChangeGradientColors(Infinity::HomePagePrimary, Infinity::HomePageSecondary,
+                                              {18.0f / 255.0f, 113.0f / 255.f, 1.0f, 0.002f},
+                                              {221.0f / 255.f, 74.0f / 255.f, 1.0f, 0.002f},
+                                              {100.0f / 255.f, 220.0f / 255.f, 1.0f, 0.002f},
+                                              {200.0f / 255.f, 50.0f / 255.f, 50.0f / 255.f, 0.002f},
                                               {180.0f / 255.f, 180.0f / 255.f, 50.0f / 255.f, 0.002f}, 1.0f);
         }
 
@@ -87,7 +98,7 @@ Infinity::Application *Infinity::CreateApplication(int argc, char **argv) {
                                                                                path,
                                                                                true,
 #ifdef WIN32
-                                                                               true,
+            true,
 #else
                                                                                false,
 #endif

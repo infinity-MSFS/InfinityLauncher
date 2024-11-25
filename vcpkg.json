@@ -1,0 +1,18 @@
+{
+  "name": "infinity-launcher",
+  "version": "0.0.1",
+  "dependencies": [
+    "zlib",
+    "msgpack",
+    "openssl",
+    "vulkan",
+    "curl",
+    "minizip",
+    "zoe",
+    {
+      "name": "wintoast",
+      "platform": "windows"
+    }
+  ],
+  "builtin-baseline": "7f9f0e44db287e8e67c0e888141bfa200ab45121"
+}
