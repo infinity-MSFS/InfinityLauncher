@@ -15,7 +15,7 @@ function(load_keys)
     set(CLIENT_KEY_BIN "${CMAKE_CURRENT_SOURCE_DIR}/keys/client_key.bin")
     set(CLIENT_KEY_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/keys/include/client_key.h")
     execute_process(
-            COMMAND xxd -n "admin_key" -i ${CLIENT_KEY_BIN}
+            COMMAND xxd -n "client_key" -i ${CLIENT_KEY_BIN}
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
             RESULT_VARIABLE xxd_result
             OUTPUT_VARIABLE xxd_output
