@@ -109,10 +109,18 @@ add_executable(InfinityLauncher
         src/Backend/VulkanManager/VulkanManager.hpp
         src/Backend/Router/Router.cpp
         src/Backend/Router/Router.hpp
+        src/Backend/Encryption/Encryption.cpp
+        src/Backend/Encryption/Encryption.hpp
+        src/Backend/Encryption/Encryption.cpp
+        src/Backend/Encryption/Encryption.hpp
+
         # -- Util Source Files --
         src/Util/Easing/Easing.hpp
         src/Util/State/State.hpp
         src/Util/Error/Error.hpp
+        src/Util/State/GroupStateManager.hpp
+        src/Util/State/RenderGroupData.hpp
+
         # -- Frontend Source Files --
         src/Frontend/Theme/Theme.cpp
         src/Frontend/Theme/Theme.hpp
@@ -120,13 +128,15 @@ add_executable(InfinityLauncher
         src/Frontend/ColorInterpolation/ColorInterpolation.hpp
         src/Frontend/Background/Background.cpp
         src/Frontend/Background/Background.hpp
-        src/Util/State/GroupStateManager.hpp
-        src/Util/State/RenderGroupData.hpp
         src/Frontend/SVG/SVGDrawing.hpp
-        src/Backend/Encryption/Encryption.cpp
-        src/Backend/Encryption/Encryption.hpp
-        src/Backend/Encryption/Encryption.cpp
-        src/Backend/Encryption/Encryption.hpp
+        src/Frontend/Pages/Downloads/Downloads.cpp
+        src/Frontend/Pages/Downloads/Downloads.hpp
+        src/Frontend/Pages/Home/Home.cpp
+        src/Frontend/Pages/Home/Home.hpp
+        src/Frontend/Pages/Settings/Settings.cpp
+        src/Frontend/Pages/Settings/Settings.hpp
+        src/Frontend/Pages/Project/Project.cpp
+        src/Frontend/Pages/Project/Project.hpp
 )
 
 message("${Blue}Gathering ImGui Source Files")

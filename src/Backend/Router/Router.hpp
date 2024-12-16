@@ -10,12 +10,12 @@
 #include <unordered_map>
 
 #include "Util/Error/Error.hpp"
-
+#include "Util/State/GroupStateManager.hpp"
 
 namespace Infinity::Utils {
     class Router {
     public:
-        static void configure(std::unordered_map<int, std::function<void()>> pages);
+        static void configure(std::unordered_map<int, std::pair<std::function<void()>, Palette>> pages);
 
         static std::optional<Router *> getInstance();
 
@@ -26,11 +26,11 @@ namespace Infinity::Utils {
         void RenderCurrentPage();
 
     private:
-        explicit Router(std::unordered_map<int, std::function<void()>> pages);
+        explicit Router(std::unordered_map<int, std::pair<std::function<void()>, Palette>> pages);
 
         static std::unique_ptr<Router> m_Instance;
         int m_CurrentPageID;
-        std::unordered_map<int, std::function<void()>> m_Pages;
+        std::unordered_map<int, std::pair<std::function<void()>, Palette>> m_PageData;
     };
 }
 

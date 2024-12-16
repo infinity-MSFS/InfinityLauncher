@@ -14,10 +14,12 @@
 #include "zlib.h"
 #include "Json/json.hpp"
 #include "msgpack.hpp"
+#include "imgui.h"
+#include "State.hpp"
 
 namespace Infinity {
 
-    size_t WriteCallback(char *ptr, size_t size, size_t nmemb, void *userdata) {
+    inline size_t WriteCallback(char *ptr, size_t size, size_t nmemb, void *userdata) {
         if (!userdata)
             return 0;
 
@@ -76,12 +78,12 @@ namespace Infinity {
     struct Palette {
         std::string primary;
         std::string secondary;
-        // std::string circle1;
-        // std::string circle2;
-        // std::string circle3;
-        // std::string circle4;
-        // std::string circle5;
-        MSGPACK_DEFINE(primary, secondary);
+        std::string circle1;
+        std::string circle2;
+        std::string circle3;
+        std::string circle4;
+        std::string circle5;
+        MSGPACK_DEFINE(primary, secondary, circle1, circle2, circle3, circle4, circle5);
     };
 
     struct BetaProject {
@@ -108,10 +110,9 @@ namespace Infinity {
     };
 
     using GroupMap = std::map<std::string, GroupData>;
-    GroupMap group_data;
+    static GroupMap group_data;
 
-    std::map<std::string, GroupData> decode_bin(const std::vector<uint8_t> &raw_data) {
-        // Step 1: Decompress the data
+    inline std::map<std::string, GroupData> decode_bin(const std::vector<uint8_t> &raw_data) {
         z_stream strm{};
         strm.next_in = reinterpret_cast<Bytef *>(const_cast<uint8_t *>(raw_data.data()));
         strm.avail_in = static_cast<uInt>(raw_data.size());
@@ -121,7 +122,7 @@ namespace Infinity {
         }
 
         std::vector<uint8_t> decompressed_data;
-        std::array<uint8_t, 8192> buffer;
+        std::array<uint8_t, 8192> buffer{};
 
         int ret;
         do {
@@ -140,7 +141,6 @@ namespace Infinity {
 
         inflateEnd(&strm);
 
-        // Step 2: Deserialize the decompressed data (MessagePack)
         try {
             msgpack::object_handle oh = msgpack::unpack(reinterpret_cast<const char *>(decompressed_data.data()), decompressed_data.size());
             msgpack::object obj = oh.get();
@@ -154,7 +154,19 @@ namespace Infinity {
         }
     }
 
-    inline GroupDataState fetch_and_decode_groups() {
+    class MainState : public PageState {
+    public:
+        GroupDataState state;
+
+        MainState(GroupDataState &state) :
+            state(state) {
+        }
+
+        void PrintState() const override { std::cout << "MainState::PrintState()" << std::endl; }
+    };
+
+
+    inline void fetch_and_decode_groups(std::shared_ptr<MainState> &thread_state_ptr) {
         const auto url = "https://github.com/infinity-MSFS/groups/raw/refs/heads/main/groups.bin";
         std::vector<uint8_t> received_data;
 
@@ -186,7 +198,35 @@ namespace Infinity {
         }
         GroupDataState state;
         state.groups = decode_bin(received_data);
-        return state;
+        thread_state_ptr->state = state;
+    }
 
+    inline ImVec4 hexToImVec4(const std::string &hexColor) {
+        const std::string hex = (hexColor[0] == '#') ? hexColor.substr(1) : hexColor;
+
+        if (hex.length() != 6 && hex.length() != 8) {
+            throw std::invalid_argument("Invalid hex color format");
+        }
+
+        float alpha = 1.0f;
+
+        unsigned int colorValue;
+        std::stringstream ss;
+        ss << std::hex << hex;
+        ss >> colorValue;
+
+        float r, g, b;
+
+        if (hex.length() == 6) {
+            r = ((colorValue >> 16) & 0xFF) / 255.0f;
+            g = ((colorValue >> 8) & 0xFF) / 255.0f;
+            b = (colorValue & 0xFF) / 255.0f;
+        } else {
+            r = ((colorValue >> 24) & 0xFF) / 255.0f;
+            g = ((colorValue >> 16) & 0xFF) / 255.0f;
+            b = ((colorValue >> 8) & 0xFF) / 255.0f;
+            alpha = (colorValue & 0xFF) / 255.0f;
+        }
+        return {r, g, b, alpha};
     }
 }

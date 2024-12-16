@@ -1,15 +1,16 @@
 
 #include "Router.hpp"
 
+#include "Frontend/ColorInterpolation/ColorInterpolation.hpp"
 #include "Util/Error/Error.hpp"
 
 
 namespace Infinity::Utils {
     std::unique_ptr<Router> Router::m_Instance = nullptr;
 
-    void Router::configure(std::unordered_map<int, std::function<void()>> pages) {
+    void Router::configure(std::unordered_map<int, std::pair<std::function<void()>, Palette>> page_content) {
         if (!m_Instance) {
-            m_Instance = std::unique_ptr<Router>(new Router(std::move(pages)));
+            m_Instance = std::unique_ptr<Router>(new Router(std::move(page_content)));
         }
     }
 
@@ -21,8 +22,13 @@ namespace Infinity::Utils {
     }
 
     std::expected<bool, Errors::Error> Router::setPage(const int pageId) {
-        if (m_Pages.contains(pageId)) {
+        if (m_PageData.contains(pageId)) {
             m_CurrentPageID = pageId;
+            ColorInterpolation::GetInstance().ChangeGradientColors(hexToImVec4(m_PageData[m_CurrentPageID].second.primary), hexToImVec4(m_PageData[m_CurrentPageID].second.secondary),
+                                                                   hexToImVec4(m_PageData[m_CurrentPageID].second.circle1), hexToImVec4(m_PageData[m_CurrentPageID].second.circle2),
+                                                                   hexToImVec4(m_PageData[m_CurrentPageID].second.circle3), hexToImVec4(m_PageData[m_CurrentPageID].second.circle4),
+                                                                   hexToImVec4(m_PageData[m_CurrentPageID].second.circle5),
+                                                                   1.0f);
             return true;
         } else {
             std::ostringstream oss;
@@ -39,14 +45,14 @@ namespace Infinity::Utils {
     }
 
     void Router::RenderCurrentPage() {
-        if (m_Pages.contains(m_CurrentPageID)) {
-            m_Pages[m_CurrentPageID]();
+        if (m_PageData.contains(m_CurrentPageID)) {
+            m_PageData[m_CurrentPageID].first();
         } else {
             throw std::runtime_error("Failed to render page: Page does not exist.");
         }
     }
 
-    Router::Router(std::unordered_map<int, std::function<void()>> pages) :
-        m_CurrentPageID(0), m_Pages(std::move(pages)) {
+    Router::Router(std::unordered_map<int, std::pair<std::function<void()>, Palette>> pages) :
+        m_CurrentPageID(0), m_PageData(std::move(pages)) {
     }
 }

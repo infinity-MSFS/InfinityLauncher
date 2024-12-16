@@ -13,16 +13,6 @@
 bool g_ApplicationRunning = true;
 
 
-class MainState : public Infinity::PageState {
-public:
-    Infinity::GroupDataState state;
-
-    MainState(Infinity::GroupDataState &state) : state(state) {}
-
-    void PrintState() const override { std::cout << "MainState::PrintState()" << std::endl; }
-};
-
-
 class PageRenderLayer final : public Infinity::Layer {
 public:
     void OnAttach() override {
@@ -33,9 +23,18 @@ public:
                                           {100.0f / 255.f, 220.0f / 255.f, 1.0f, 0.002f},
                                           {200.0f / 255.f, 50.0f / 255.f, 50.0f / 255.f, 0.002f},
                                           {180.0f / 255.f, 180.0f / 255.f, 50.0f / 255.f, 0.002f}, 1.0f);
+
         auto &state = Infinity::State::GetInstance();
-        auto groups = Infinity::fetch_and_decode_groups();
-        state.RegisterPageState("main", std::make_shared<MainState>(groups));
+        Infinity::GroupDataState group_state;
+        state.RegisterPageState("main", std::make_shared<Infinity::MainState>(group_state));
+
+        std::thread([] {
+            auto thread_state = Infinity::State::GetInstance().GetPageState<Infinity::MainState>("main");
+            std::shared_ptr<Infinity::MainState> &thread_state_ptr = *thread_state;
+
+            Infinity::fetch_and_decode_groups(thread_state_ptr);
+
+        }).detach();
     }
 
     void OnUIRender() override {
@@ -46,14 +45,19 @@ public:
         Infinity::Background::UpdateColorScheme();
 
         auto &state = Infinity::State::GetInstance();
-        auto main_state = state.GetPageState<MainState>("main");
+        auto main_state = state.GetPageState<Infinity::MainState>("main");
 
-        // if (main_state.has_value()) {
-        //     const std::shared_ptr<MainState> &statePtr = *main_state;
-        //     ImGui::Begin("Main State");
-        //     RenderGroupDataState(statePtr->state);
-        //     ImGui::End();
-        // }
+
+        if (main_state.has_value()) {
+            if (const std::shared_ptr<Infinity::MainState> &statePtr = *main_state; statePtr->state.groups.empty()) {
+                ImGui::Text("Loading...");
+                return;
+            }
+            const std::shared_ptr<Infinity::MainState> &statePtr = *main_state;
+            ImGui::Begin("Main State");
+            RenderGroupDataState(statePtr->state);
+            ImGui::End();
+        }
 
 
         DrawLeftLogoHalf(0.5f, {50.0f, 50.0f});
@@ -98,7 +102,7 @@ Infinity::Application *Infinity::CreateApplication(int argc, char **argv) {
                                                                                path,
                                                                                true,
 #ifdef WIN32
-            true,
+                                                                               true,
 #else
                                                                                false,
 #endif
