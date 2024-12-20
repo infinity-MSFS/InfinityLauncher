@@ -6,11 +6,16 @@
 
 
 #define STB_IMAGE_IMPLEMENTATION
+#include <iostream>
+#include <stdexcept>
+
 #include "Backend/VulkanManager/VulkanManager.hpp"
 #include "stb_image/stb_image.h"
 
 namespace Infinity {
     namespace Utils {
+
+
         static uint32_t GetVulkanMemoryType(const VkMemoryPropertyFlags properties, const uint32_t type_bits) {
             VkPhysicalDeviceMemoryProperties prop;
             if (const auto device = Application::GetPhysicalDevice(); device.has_value()) {
@@ -49,10 +54,68 @@ namespace Infinity {
             return (VkFormat) 0;
         }
     } // namespace Utils
-    Image::Image(const uint32_t width, const uint32_t height, const ImageFormat format, const void *data) : m_Width(width), m_Height(height), m_Format(format) {
+    Image::Image(const uint32_t width, const uint32_t height, const ImageFormat format, const void *data) :
+        m_Width(width), m_Height(height), m_Format(format) {
         AllocateMemory(m_Width * m_Height * Utils::BytesPerPixel(m_Format));
         if (data)
             SetData(data);
+    }
+
+    static size_t WriteImageCallback(void *contents, size_t size, size_t nmemb, void *userp) {
+        auto *buffer = static_cast<std::vector<uint8_t> *>(userp);
+        size_t realSize = size * nmemb;
+        buffer->insert(buffer->end(), static_cast<uint8_t *>(contents),
+                       static_cast<uint8_t *>(contents) + realSize);
+        return realSize;
+    }
+
+    Image::Image(const std::string &url) :
+        m_Format(ImageFormat::RGBA) {
+        CURL *curl = curl_easy_init();
+        if (!curl) {
+            std::cerr << "curl_easy_init failed" << std::endl;
+        }
+
+        std::vector<uint8_t> buffer;
+
+        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteImageCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &buffer);
+        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+
+
+        CURLcode res = curl_easy_perform(curl);
+        curl_easy_cleanup(curl);
+
+        if (res != CURLE_OK) {
+            throw std::runtime_error("Failed to download image: " +
+                                     std::string(curl_easy_strerror(res)));
+        }
+
+
+        uint32_t width, height;
+        void *decodedData = Decode(buffer.data(), buffer.size(), width, height);
+
+        if (!decodedData) {
+            throw std::runtime_error("Failed to decode image data");
+        }
+
+        m_Width = width;
+        m_Height = height;
+
+        AllocateMemory(m_Width * m_Height * 4);
+        SetData(decodedData);
+        stbi_image_free(decodedData);
+    }
+
+    std::unique_ptr<Image> Image::LoadFromURL(const std::string &url) {
+        try {
+            return std::make_unique<Image>(url);
+        } catch (const std::exception &e) {
+            std::cerr << "Failed to load image: " << e.what() << std::endl;
+            return nullptr;
+        }
     }
 
     Image::~Image() { Release(); }

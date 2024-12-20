@@ -23,6 +23,7 @@
 #include <utility>
 
 #include <vulkan/vulkan.h>
+
 #include "GLFW/glfw3.h"
 #include "GLFW/glfw3native.h"
 #include "stb_image/stb_image.h"
@@ -58,7 +59,8 @@ GLFWwindow *Infinity::Application::s_WindowHandle = nullptr;
 #include "Assets/Images/windowIcons.h"
 
 namespace Infinity {
-    Application::Application(ApplicationSpecifications applicationSpecification) : m_Specification(std::move(applicationSpecification)) {
+    Application::Application(ApplicationSpecifications applicationSpecification) :
+        m_Specification(std::move(applicationSpecification)) {
         s_Instance = this;
         Init();
     }
@@ -333,8 +335,8 @@ namespace Infinity {
             ImGui::ResumeLayout();
         }
 
-        const ImU32 buttonColN = UI::Colors::ColorWithMultipliedValue(UI::Colors::Theme::text, 0.9f);
-        const ImU32 buttonColH = UI::Colors::ColorWithMultipliedValue(UI::Colors::Theme::text, 1.2f);
+        const ImU32 buttonColN = UI::Colors::Theme::accent;
+        const ImU32 buttonColH = UI::Colors::Theme::accent;
         constexpr ImU32 buttonColP = UI::Colors::Theme::text_darker;
         constexpr float buttonWidth = 14.0f;
         constexpr float buttonHeight = 14.0f;
@@ -386,7 +388,7 @@ namespace Infinity {
                 }
             }
 
-            DrawButtonImage(m_IconClose, UI::Colors::Theme::text, UI::Colors::ColorWithMultipliedValue(UI::Colors::Theme::text, 1.4f), buttonColP);
+            DrawButtonImage(m_IconClose, UI::Colors::Theme::text, UI::Colors::Theme::compliment, buttonColP);
         }
 
         ImGui::Spring(-1.0f, 18.0f);
@@ -635,6 +637,7 @@ namespace Infinity {
 
         return s_Fonts.at(name);
     }
+
     void Application::SetWindowTitle(const std::string &title) {
         if (s_WindowHandle != nullptr) {
             glfwSetWindowTitle(s_WindowHandle, title.c_str());

@@ -2,8 +2,11 @@
 #pragma once
 
 #include <string>
+#include <memory>
+#include <vector>
 
 #include "vulkan/vulkan.h"
+#include "curl/curl.h"
 
 namespace Infinity {
     enum class ImageFormat {
@@ -14,11 +17,14 @@ namespace Infinity {
 
     class Image {
     public:
+        explicit Image(const std::string &url);
         explicit Image(std::string_view path);
 
         Image(uint32_t width, uint32_t height, ImageFormat format, const void *data = nullptr);
 
         ~Image();
+
+        static std::unique_ptr<Image> LoadFromURL(const std::string &url);
 
         void SetData(const void *data);
 
@@ -30,7 +36,6 @@ namespace Infinity {
         [[nodiscard]] uint32_t GetHeight() const { return m_Height; }
 
         static void *Decode(const void *data, uint64_t length, uint32_t &outWidth, uint32_t &outHeight);
-
 
     private:
         void AllocateMemory(uint64_t size);

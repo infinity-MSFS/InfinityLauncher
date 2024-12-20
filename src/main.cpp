@@ -13,6 +13,9 @@
 bool g_ApplicationRunning = true;
 
 
+std::shared_ptr<Infinity::Image> g_TestImage;
+
+
 class PageRenderLayer final : public Infinity::Layer {
 public:
     void OnAttach() override {
@@ -29,10 +32,15 @@ public:
         state.RegisterPageState("main", std::make_shared<Infinity::MainState>(group_state));
 
         std::thread([] {
+
+            g_TestImage = Infinity::Image::LoadFromURL(
+                    "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhv3EFkMhx5sjkLckEobUVUz3Kva_Y6EWKhXkxz8i1UrWnGOYBvT2N7me2t-JmN1dDnOvavDKRjrmmRNq-Bda2a2H4UxAjUZfr4fjfvpIeIJLy9jRXMsFp52SC_tt-fr6lQUrYHIJq2gWlOKnfJ7eW6JL5Ln3OU3X3vsJket3D10TYte6Xa-qiKErIouujo/w720/High%20School%20DxD%20-%20Himejima%20Akeno%20Render%20%2311792.png");
+
             auto thread_state = Infinity::State::GetInstance().GetPageState<Infinity::MainState>("main");
             std::shared_ptr<Infinity::MainState> &thread_state_ptr = *thread_state;
 
             Infinity::fetch_and_decode_groups(thread_state_ptr);
+
 
         }).detach();
     }
@@ -41,6 +49,7 @@ public:
         const auto bg = Infinity::Background::GetInstance();
         bg.RenderBackground();
         auto &interpolator = ColorInterpolation::GetInstance();
+
 
         Infinity::Background::UpdateColorScheme();
 
@@ -58,6 +67,9 @@ public:
             RenderGroupDataState(statePtr->state);
             ImGui::End();
         }
+
+        if (g_TestImage)
+            ImGui::GetWindowDrawList()->AddImage(g_TestImage->GetDescriptorSet(), {20.0f, 20.0f}, {20.0f + g_TestImage->GetWidth(), 20.0f + g_TestImage->GetHeight()});
 
 
         DrawLeftLogoHalf(0.5f, {50.0f, 50.0f});
