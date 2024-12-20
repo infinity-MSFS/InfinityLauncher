@@ -5,6 +5,7 @@
 #include <memory>
 #include <vector>
 
+#include "imgui.h"
 #include "vulkan/vulkan.h"
 #include "curl/curl.h"
 
@@ -35,7 +36,26 @@ namespace Infinity {
         [[nodiscard]] uint32_t GetWidth() const { return m_Width; }
         [[nodiscard]] uint32_t GetHeight() const { return m_Height; }
 
-        static void *Decode(const void *data, uint64_t length, uint32_t &outWidth, uint32_t &outHeight);
+        static void *Decode(const uint8_t *data, uint64_t bin_size, uint32_t &outWidth, uint32_t &outHeight);
+
+
+        /// <summary>
+        /// Renders a pre-constructed image with no controls for width and height, only scale
+        /// </summary>
+        /// <param name="image">Shared pointer to an Infinity::Image</param>
+        /// <param name="pos">X and Y position for the image</param>
+        /// <param name="scale">Scale of the image 1.0f - 0.0f</param>
+        static void RenderImage(const std::shared_ptr<Image> &image, ImVec2 pos, float scale);
+
+        /// <summary>
+        /// Renders a pre-constructed image with a specified width and height. The image will always fill the height requirement (if the image width > specified width, the image will be clipped evenly left and right)
+        /// </summary>
+        /// <param name="image">Shared pointer to an Infinity::Image</param>
+        /// <param name="pos">X any Y position to render the image</param>
+        /// <param name="size">Size of the image (Width, Height)</param>
+        static void RenderImage(const std::shared_ptr<Image> &image, ImVec2 pos, ImVec2 size);
+
+        // TODO: overflow for scaling an image inside of a specified frame (hover action for the cards zooms in)
 
     private:
         void AllocateMemory(uint64_t size);

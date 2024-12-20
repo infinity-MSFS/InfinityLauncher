@@ -33,13 +33,13 @@ public:
 
         std::thread([] {
 
-            g_TestImage = Infinity::Image::LoadFromURL(
-                    "https://cdn.jsdelivr.net/gh/infinity-MSFS/assets@master/lunar/767_civ_bg.webp");
 
             auto thread_state = Infinity::State::GetInstance().GetPageState<Infinity::MainState>("main");
             std::shared_ptr<Infinity::MainState> &thread_state_ptr = *thread_state;
 
             Infinity::fetch_and_decode_groups(thread_state_ptr);
+
+            g_TestImage = Infinity::Image::LoadFromURL(thread_state_ptr->state.groups["aero_dynamics"].projects[0].background);
 
 
         }).detach();
@@ -68,9 +68,10 @@ public:
             ImGui::End();
         }
 
-        if (g_TestImage)
-            ImGui::GetWindowDrawList()->AddImage(g_TestImage->GetDescriptorSet(), {20.0f, 20.0f}, {20.0f + g_TestImage->GetWidth(), 20.0f + g_TestImage->GetHeight()});
-
+        if (g_TestImage) {
+            Infinity::Image::RenderImage(g_TestImage, {50.0f, 50.0f}, 0.2f);
+            Infinity::Image::RenderImage(g_TestImage, {50.0f, 20.0f}, {500.0f, 900.0f});
+        }
 
         DrawLeftLogoHalf(0.5f, {50.0f, 50.0f});
         DrawLogoRightHalf(0.5f, {50.0f, 50.0f});

@@ -7,9 +7,9 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <iostream>
-#include <stdexcept>
 
 #include "Backend/VulkanManager/VulkanManager.hpp"
+#include "Util/Error/Error.hpp"
 #include "stb_image/stb_image.h"
 #include "webp/decode.h"
 
@@ -321,28 +321,52 @@ namespace Infinity {
         AllocateMemory(m_Width * m_Height * Utils::BytesPerPixel(m_Format));
     }
 
-    void *Image::Decode(const void *data, const uint64_t length, uint32_t &outWidth, uint32_t &outHeight) {
+    void *Image::Decode(const uint8_t *data, const uint64_t bin_size, uint32_t &outWidth, uint32_t &outHeight) {
         int width, height, channels;
-        stbi_uc *decodedData = nullptr;
-        uint64_t size = 0;
-
-        decodedData = stbi_load_from_memory(static_cast<const stbi_uc *>(data), length, &width, &height, &channels, STBI_rgb_alpha);
-        if (decodedData) {
+        if (uint8_t *decodedData = stbi_load_from_memory(data, bin_size, &width, &height, &channels, STBI_rgb_alpha)) {
             outWidth = static_cast<uint32_t>(width);
             outHeight = static_cast<uint32_t>(height);
             return decodedData;
         }
-        if (WebPGetInfo((uint8_t *) data, length, &width, &height)) {
+        width = 0; // In case stb image fucks with these even if it fails to decode
+        height = 0;
+        if (WebPGetInfo(data, bin_size, &width, &height)) {
             outWidth = static_cast<uint32_t>(width);
             outHeight = static_cast<uint32_t>(height);
-            uint8_t *webpData = WebPDecodeRGBA((uint8_t *) data, length, &width, &height);
-            if (webpData) {
+            if (uint8_t *webpData = WebPDecodeRGBA(data, bin_size, &width, &height)) {
                 return webpData;
             }
-
         }
-
-        throw std::runtime_error("Failed to decode image: Unsupported format or invalid data.");
-
+        Errors::Error(Errors::ErrorType::Warning, "Failed to decode image.").Dispatch();
+        return nullptr;
     }
-} // namespace InfinityRenderer
+
+    void Image::RenderImage(const std::shared_ptr<Image> &image, const ImVec2 pos, const float scale) {
+        ImGui::GetWindowDrawList()->AddImage(image->GetDescriptorSet(), pos, {pos.x + image->GetWidth() * scale, pos.y + image->GetHeight() * scale});
+    }
+
+    void Image::RenderImage(const std::shared_ptr<Image> &image, const ImVec2 pos, const ImVec2 size) {
+        if (!image)
+            return;
+
+        const float imgWidth = image->GetWidth();
+        const float imgHeight = image->GetHeight();
+
+        auto getProperWidth = [](const ImVec2 &original_size, ImVec2 &new_size) {
+            const float aspect_ratio = original_size.x / original_size.y;
+            new_size.x = new_size.y * aspect_ratio;
+        };
+
+        const ImVec2 image_size(imgWidth, imgHeight);
+        ImVec2 rescaled_image_size(0.0f, size.y);
+        getProperWidth(image_size, rescaled_image_size);
+
+        const float aspect_shown = rescaled_image_size.x / size.x;
+
+        const float uv_x = 1.0f / aspect_shown;
+
+
+        ImGui::GetWindowDrawList()->AddImage(image->GetDescriptorSet(), pos, {pos.x + size.x, pos.y + size.y}, {0.5f - uv_x / 2.0f, 0.0f}, {0.5f + uv_x / 2.0f, 1.0f});
+    }
+
+}
