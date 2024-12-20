@@ -9,6 +9,7 @@
     "curl",
     "minizip",
     "zoe",
+    "libwebp",
     {
       "name": "wintoast",
       "platform": "windows"

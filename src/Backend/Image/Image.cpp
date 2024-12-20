@@ -11,6 +11,7 @@
 
 #include "Backend/VulkanManager/VulkanManager.hpp"
 #include "stb_image/stb_image.h"
+#include "webp/decode.h"
 
 namespace Infinity {
     namespace Utils {
@@ -322,15 +323,26 @@ namespace Infinity {
 
     void *Image::Decode(const void *data, const uint64_t length, uint32_t &outWidth, uint32_t &outHeight) {
         int width, height, channels;
-        uint8_t *buffer = nullptr;
+        stbi_uc *decodedData = nullptr;
         uint64_t size = 0;
 
-        buffer = stbi_load_from_memory((const stbi_uc *) data, length, &width, &height, &channels, 4);
-        size = width * height * 4;
+        decodedData = stbi_load_from_memory(static_cast<const stbi_uc *>(data), length, &width, &height, &channels, STBI_rgb_alpha);
+        if (decodedData) {
+            outWidth = static_cast<uint32_t>(width);
+            outHeight = static_cast<uint32_t>(height);
+            return decodedData;
+        }
+        if (WebPGetInfo((uint8_t *) data, length, &width, &height)) {
+            outWidth = static_cast<uint32_t>(width);
+            outHeight = static_cast<uint32_t>(height);
+            uint8_t *webpData = WebPDecodeRGBA((uint8_t *) data, length, &width, &height);
+            if (webpData) {
+                return webpData;
+            }
 
-        outWidth = width;
-        outHeight = height;
+        }
 
-        return buffer;
+        throw std::runtime_error("Failed to decode image: Unsupported format or invalid data.");
+
     }
 } // namespace InfinityRenderer

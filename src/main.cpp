@@ -34,7 +34,7 @@ public:
         std::thread([] {
 
             g_TestImage = Infinity::Image::LoadFromURL(
-                    "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhv3EFkMhx5sjkLckEobUVUz3Kva_Y6EWKhXkxz8i1UrWnGOYBvT2N7me2t-JmN1dDnOvavDKRjrmmRNq-Bda2a2H4UxAjUZfr4fjfvpIeIJLy9jRXMsFp52SC_tt-fr6lQUrYHIJq2gWlOKnfJ7eW6JL5Ln3OU3X3vsJket3D10TYte6Xa-qiKErIouujo/w720/High%20School%20DxD%20-%20Himejima%20Akeno%20Render%20%2311792.png");
+                    "https://cdn.jsdelivr.net/gh/infinity-MSFS/assets@master/lunar/767_civ_bg.webp");
 
             auto thread_state = Infinity::State::GetInstance().GetPageState<Infinity::MainState>("main");
             std::shared_ptr<Infinity::MainState> &thread_state_ptr = *thread_state;
