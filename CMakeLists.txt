@@ -36,6 +36,7 @@ find_package(OpenSSL REQUIRED)
 find_package(msgpack-cxx CONFIG REQUIRED)
 find_package(unofficial-minizip CONFIG REQUIRED)
 find_package(WebP CONFIG REQUIRED)
+find_package(zoe CONFIG REQUIRED)
 if (WIN32)
     find_package(unofficial-wintoast REQUIRED)
 endif ()
@@ -138,6 +139,8 @@ add_executable(InfinityLauncher
         src/Frontend/Pages/Settings/Settings.hpp
         src/Frontend/Pages/Project/Project.cpp
         src/Frontend/Pages/Project/Project.hpp
+        src/Backend/Downloads/Downloads.cpp
+        src/Backend/Downloads/Downloads.hpp
 )
 
 message("${Blue}Gathering ImGui Source Files")
@@ -199,21 +202,6 @@ if (WIN32)
             ${infinity_SOURCE_DIR}/bin/libcrypto-3-x64.dll
             $<TARGET_FILE_DIR:InfinityLauncher>
     )
-else ()
-
-    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-        if (UNIX)
-            set(ZOE_LIB ${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TRIPLET}/debug/lib/libzoe-static-d.a)
-        else ()
-            set(ZOE_LIB ${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TRIPLET}/debug/lib/libzoe-static-d.lib)
-        endif ()
-    else ()
-        if (UNIX)
-            set(ZOE_LIB ${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TRIPLET}/lib/libzoe-static.a)
-        else ()
-            set(ZOE_LIB ${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TRIPLET}/lib/libzoe-static.lib)
-        endif ()
-    endif ()
 endif ()
 message("${Blue}Configuring Linker")
-target_link_libraries(InfinityLauncher PRIVATE WebP::webp WebP::webpdecoder WebP::webpdemux Vulkan::Vulkan glfw Boxer CURL::libcurl OpenSSL::SSL OpenSSL::Crypto unofficial::minizip::minizip ZLIB::ZLIB ${ZOE_LIB} msgpack-cxx ${TOAST_LIB})
+target_link_libraries(InfinityLauncher PRIVATE WebP::webp WebP::webpdecoder zoe::zoe WebP::webpdemux Vulkan::Vulkan glfw Boxer CURL::libcurl OpenSSL::SSL OpenSSL::Crypto unofficial::minizip::minizip ZLIB::ZLIB msgpack-cxx ${TOAST_LIB})

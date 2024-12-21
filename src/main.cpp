@@ -9,12 +9,13 @@
 #include "Util/State/RenderGroupData.hpp"
 #include "Util/State/State.hpp"
 #include "imgui_internal.h"
+#include "Backend/Downloads/Downloads.hpp"
 
 bool g_ApplicationRunning = true;
 
 
 std::shared_ptr<Infinity::Image> g_TestImage;
-
+static int downloadID = -1;
 
 class PageRenderLayer final : public Infinity::Layer {
 public:
@@ -71,6 +72,27 @@ public:
         if (g_TestImage) {
             Infinity::Image::RenderImage(g_TestImage, {50.0f, 50.0f}, 0.2f);
             Infinity::Image::RenderImage(g_TestImage, {50.0f, 20.0f}, {500.0f, 900.0f});
+        }
+
+        auto &downloader = Infinity::Downloads::GetInstance();
+        if (ImGui::Button("Download")) {
+            downloadID = downloader.StartDownload("http://link.testfile.org/150MB", "/home/katelyn/test/test_file.zip");
+        }
+        if (downloadID != -1) {
+            auto *downloadDataPtr = downloader.GetDownloadData(downloadID);
+            ImGui::Text("Downloading...");
+            ImGui::Text("Download ID: %d", downloadDataPtr->zoe->state());
+
+            if (ImGui::Button("Pause")) {
+                downloader.PauseDownload(downloadID);
+            }
+            if (ImGui::Button("Resume")) {
+                downloader.ResumeDownload(downloadID);
+            }
+
+            if (downloadDataPtr) {
+                ImGui::Text("Download Progress: %.2f", downloadDataPtr->progress);
+            }
         }
 
         DrawLeftLogoHalf(0.5f, {50.0f, 50.0f});
