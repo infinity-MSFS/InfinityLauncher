@@ -141,6 +141,11 @@ add_executable(InfinityLauncher
         src/Frontend/Pages/Project/Project.hpp
         src/Backend/Downloads/Downloads.cpp
         src/Backend/Downloads/Downloads.hpp
+        src/Backend/ZipExtractor/ZipExtractor.cpp
+        src/Backend/ZipExtractor/ZipExtractor.hpp
+        src/Backend/Installer/Installer.cpp
+        src/Backend/Installer/Installer.hpp
+        src/Util/GroupUtil/GroupUtil.hpp
 )
 
 message("${Blue}Gathering ImGui Source Files")
