@@ -12,8 +12,8 @@
 
 namespace Infinity {
 
-    const ImVec4 HomePagePrimary{18.0f / 255.0f, 113.0f / 255.f, 1.0f, 0.11f};
-    const ImVec4 HomePageSecondary{221.0f / 255.f, 74.0f / 255.f, 1.0f, 0.11f};
+    const ImVec4 HomePagePrimary(18.0f / 255.0f, 113.0f / 255.f, 1.0f, 0.11f);
+    const ImVec4 HomePageSecondary(221.0f / 255.f, 74.0f / 255.f, 1.0f, 0.11f);
 
     static std::vector<ImVec2> m_circlePos;
 

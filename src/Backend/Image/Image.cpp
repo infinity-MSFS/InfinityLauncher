@@ -70,6 +70,8 @@ namespace Infinity {
         return realSize;
     }
 
+    std::map<ImGuiID, float> Image::s_animation_progress;
+
     Image::Image(const std::string &url) :
         m_Format(ImageFormat::RGBA) {
         CURL *curl = curl_easy_init();
@@ -365,8 +367,97 @@ namespace Infinity {
 
         const float uv_x = 1.0f / aspect_shown;
 
-
         ImGui::GetWindowDrawList()->AddImage(image->GetDescriptorSet(), pos, {pos.x + size.x, pos.y + size.y}, {0.5f - uv_x / 2.0f, 0.0f}, {0.5f + uv_x / 2.0f, 1.0f});
     }
 
+
+    void Image::RenderHomeImage(const std::shared_ptr<Image> &image, const ImVec2 pos, const ImVec2 size, bool is_hovered) {
+        if (!image)
+            return;
+
+        // Generate a unique ID for this image instance based on its position
+        ImGuiID id = ImGui::GetID(std::to_string(pos.x + pos.y).c_str());
+
+        // Initialize animation progress for this instance if it doesn't exist
+        if (s_animation_progress.find(id) == s_animation_progress.end()) {
+            s_animation_progress[id] = 0.0f;
+        }
+
+        const float imgWidth = image->GetWidth();
+        const float imgHeight = image->GetHeight();
+
+        auto getProperWidth = [](const ImVec2 &original_size, ImVec2 &new_size) {
+            const float aspect_ratio = original_size.x / original_size.y;
+            new_size.x = new_size.y * aspect_ratio;
+        };
+
+        const ImVec2 image_size(imgWidth, imgHeight);
+        ImVec2 rescaled_image_size(0.0f, size.y);
+        getProperWidth(image_size, rescaled_image_size);
+
+        const float aspect_shown = rescaled_image_size.x / size.x;
+        const float base_uv_x = 1.0f / aspect_shown;
+
+        ImDrawList *draw_list = ImGui::GetWindowDrawList();
+
+        // Animation parameters
+        const float animation_speed = 3.1f;
+        const float hover_opacity_boost = 0.3f;
+        const float zoom_factor = -0.01f;
+
+        // Update animation progress using the map
+        if (is_hovered) {
+            s_animation_progress[id] = min(1.0f, s_animation_progress[id] + ImGui::GetIO().DeltaTime * animation_speed);
+        } else {
+            s_animation_progress[id] = max(0.0f, s_animation_progress[id] - ImGui::GetIO().DeltaTime * animation_speed);
+        }
+
+        // Number of gradient segments
+        const int segments = 60;
+
+        // Calculate segment dimensions
+        const float segment_height = size.y / segments;
+        const float uv_segment_height = 1.0f / segments;
+
+        // Calculate zoom effect on UV coordinates
+        float zoom_amount = zoom_factor * s_animation_progress[id];
+        float uv_x = base_uv_x * (1.0f + zoom_amount);
+
+        // UV coordinates for x-axis with centered zoom
+        const float uv_left = 0.5f - uv_x / 2.0f;
+        const float uv_right = 0.5f + uv_x / 2.0f;
+
+        // Draw each segment with varying alpha
+        for (int i = 0; i < segments; i++) {
+            float y_start = pos.y + (i * segment_height);
+            float y_end = y_start + segment_height;
+
+            // Calculate UV y coordinates with centered zoom
+            float base_uv_y_start = i * uv_segment_height;
+            float base_uv_y_end = (i + 1) * uv_segment_height;
+
+            // Apply zoom to Y coordinates
+            float uv_y_center = 0.5f;
+            float uv_y_start = uv_y_center + (base_uv_y_start - uv_y_center) * (1.0f + zoom_amount);
+            float uv_y_end = uv_y_center + (base_uv_y_end - uv_y_center) * (1.0f + zoom_amount);
+
+            // Base alpha calculation (transparent to opaque)
+            float base_alpha = (float) i / segments;
+
+            // Apply hover effect
+            float hover_boost = hover_opacity_boost * s_animation_progress[id];
+            float alpha = min(1.0f, base_alpha + hover_boost);
+
+            ImVec4 tint_color(1.0f, 1.0f, 1.0f, alpha);
+
+            draw_list->AddImage(
+                    image->GetDescriptorSet(),
+                    ImVec2(pos.x, y_start),
+                    ImVec2(pos.x + size.x, y_end),
+                    ImVec2(uv_left, uv_y_start),
+                    ImVec2(uv_right, uv_y_end),
+                    ImGui::ColorConvertFloat4ToU32(tint_color)
+                    );
+        }
+    }
 }

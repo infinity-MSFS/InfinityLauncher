@@ -84,6 +84,7 @@ namespace Infinity {
         std::string circle4;
         std::string circle5;
         MSGPACK_DEFINE(primary, secondary, circle1, circle2, circle3, circle4, circle5);
+
     };
 
     struct BetaProject {

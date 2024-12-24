@@ -12,6 +12,7 @@ namespace Infinity::Utils {
         if (!m_Instance) {
             m_Instance = std::unique_ptr<Router>(new Router(std::move(page_content)));
         }
+        std::cout << "Configuring Router" << std::endl;
     }
 
     std::optional<Router *> Router::getInstance() {

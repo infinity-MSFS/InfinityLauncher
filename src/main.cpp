@@ -10,12 +10,16 @@
 #include "Util/State/State.hpp"
 #include "imgui_internal.h"
 #include "Backend/Downloads/Downloads.hpp"
+#include "Backend/Router/Router.hpp"
+#include "Frontend/Pages/Home/Home.hpp"
 
 bool g_ApplicationRunning = true;
 
 
 std::shared_ptr<Infinity::Image> g_TestImage;
 static int downloadID = -1;
+static bool pages_registered = false;
+
 
 class PageRenderLayer final : public Infinity::Layer {
 public:
@@ -29,6 +33,7 @@ public:
                                           {180.0f / 255.f, 180.0f / 255.f, 50.0f / 255.f, 0.002f}, 1.0f);
 
         auto &state = Infinity::State::GetInstance();
+
         Infinity::GroupDataState group_state;
         state.RegisterPageState("main", std::make_shared<Infinity::MainState>(group_state));
 
@@ -44,6 +49,8 @@ public:
 
 
         }).detach();
+
+
     }
 
     void OnUIRender() override {
@@ -63,69 +70,136 @@ public:
                 ImGui::Text("Loading...");
                 return;
             }
+
             const std::shared_ptr<Infinity::MainState> &statePtr = *main_state;
-            ImGui::Begin("Main State");
-            RenderGroupDataState(statePtr->state);
-            ImGui::End();
-        }
+            if (!pages_registered) {
+                const std::unordered_map<int, std::pair<std::function<void()>, Infinity::Palette>> routes = {
+                        {
+                                0, {[] { Infinity::Home::GetInstance()->Render(); }, {"#1271FF1C", "#DD4AFF1C", "#1271FF02", "#DD4AFF02", "#64DCFF02", "#C8323202", "#B4B43202"}}
+                        },
+                        {
+                                1, {[] {
+                                        ImGui::Text("Aero dynamics");
+                                        if (ImGui::Button("Home")) {
+                                            auto router = Infinity::Utils::Router::getInstance().value()->setPage(0);
+                                        }
+                                    },
+                                    {"#050912", "#050505", "#1271FF02", "#DD4AFF02", "#64DCFF02", "#C8323202", "#B4B43202"}}
+                        },
+                        {
+                                2, {[] {
+                                        ImGui::Text("Delta Sim");
+                                        if (ImGui::Button("Home")) {
+                                            auto router = Infinity::Utils::Router::getInstance().value()->setPage(0);
+                                        }
+                                    },
+                                    {"#4f1a00", "#efaa00", "#1271FF02", "#DD4AFF02", "#64DCFF02", "#C8323202", "#B4B43202"}}
+                        },
+                        {
+                                3, {[] {
+                                        ImGui::Text("Lunar Sim");
+                                        if (ImGui::Button("Home")) {
+                                            auto router = Infinity::Utils::Router::getInstance().value()->setPage(0);
+                                        }
+                                    },
+                                    {"#080F19", "#384B5F", "#1271FF02", "#DD4AFF02", "#64DCFF02", "#C8323202", "#B4B43202"}}
+                        },
+                        {
+                                4, {[] {
+                                        ImGui::Text("Ouroboros Jets");
+                                        if (ImGui::Button("Home")) {
+                                            auto router = Infinity::Utils::Router::getInstance().value()->setPage(0);
+                                        }
+                                    },
+                                    {"#210e3a", "#2a2fff", "#1271FF02", "#DD4AFF02", "#64DCFF02", "#C8323202", "#B4B43202"}}
+                        }
 
-        if (g_TestImage) {
-            Infinity::Image::RenderImage(g_TestImage, {50.0f, 50.0f}, 0.2f);
-            Infinity::Image::RenderImage(g_TestImage, {50.0f, 20.0f}, {500.0f, 900.0f});
-        }
+                };
+                Infinity::Utils::Router::configure(routes);
 
-        auto &downloader = Infinity::Downloads::GetInstance();
-        if (ImGui::Button("Download")) {
-            downloadID = downloader.StartDownload("http://link.testfile.org/150MB", "/home/katelyn/test/test_file.zip");
-        }
-        if (downloadID != -1) {
-            auto *downloadDataPtr = downloader.GetDownloadData(downloadID);
-            ImGui::Text("Downloading...");
-            ImGui::Text("Download ID: %d", downloadDataPtr->zoe->state());
 
-            if (ImGui::Button("Pause")) {
-                downloader.PauseDownload(downloadID);
+                Infinity::Home::GetInstance()->RegisterProject("Aero Dynamics", statePtr->state.groups.at("aero_dynamics").projects[0].background, statePtr->state.groups.at("aero_dynamics").logo, 1);
+                Infinity::Home::GetInstance()->RegisterProject("Delta Sim", statePtr->state.groups.at("delta_sim").projects[0].background, statePtr->state.groups.at("delta_sim").logo, 2);
+                Infinity::Home::GetInstance()->RegisterProject("Lunar Sim", statePtr->state.groups.at("lunar_sim").projects[0].background, statePtr->state.groups.at("lunar_sim").logo, 3);
+                Infinity::Home::GetInstance()->RegisterProject("Ouroboros Jets", statePtr->state.groups.at("ouroboros").projects[0].background, statePtr->state.groups.at("ouroboros").logo, 4);
+                pages_registered = true;
+
             }
-            if (ImGui::Button("Resume")) {
-                downloader.ResumeDownload(downloadID);
-            }
+            // ImGui::Begin("Main State");
+            // RenderGroupDataState(statePtr->state);
+            // ImGui::End();
 
-            if (downloadDataPtr) {
-                ImGui::Text("Download Progress: %.2f", downloadDataPtr->progress);
-            }
+
         }
 
-        DrawLeftLogoHalf(0.5f, {50.0f, 50.0f});
-        DrawLogoRightHalf(0.5f, {50.0f, 50.0f});
-        if (ImGui::Button("Color1")) {
-            interpolator.ChangeGradientColors(ImVec4(0.3f, 0.2f, 0.0f, 0.11f), ImVec4(1.0f, 0.3f, 0.2f, 0.11f),
-                                              {18.0f / 255.0f, 113.0f / 255.f, 1.0f, 0.002f},
-                                              {221.0f / 255.f, 74.0f / 255.f, 1.0f, 0.002f},
-                                              {100.0f / 255.f, 220.0f / 255.f, 1.0f, 0.002f},
-                                              {200.0f / 255.f, 50.0f / 255.f, 50.0f / 255.f, 0.002f},
-                                              {180.0f / 255.f, 180.0f / 255.f, 50.0f / 255.f, 0.002f}, 1.01f);
+        // if (g_TestImage) {
+        //     Infinity::Image::RenderImage(g_TestImage, {50.0f, 50.0f}, 0.2f);
+        //     Infinity::Image::RenderImage(g_TestImage, {50.0f, 20.0f}, {500.0f, 900.0f});
+        // }
+
+        auto router = Infinity::Utils::Router::getInstance();
+        if (router.has_value()) {
+            router.value()->RenderCurrentPage();
         }
 
-        if (ImGui::Button("Color2")) {
-            interpolator.ChangeGradientColors(ImVec4(0.2f, 0.0f, 0.3f, 0.11f), ImVec4(0.3f, 1.0f, 0.3f, 0.11f),
-                                              {18.0f / 255.0f, 113.0f / 255.f, 1.0f, 0.002f},
-                                              {221.0f / 255.f, 74.0f / 255.f, 1.0f, 0.002f},
-                                              {100.0f / 255.f, 220.0f / 255.f, 1.0f, 0.002f},
-                                              {200.0f / 255.f, 50.0f / 255.f, 50.0f / 255.f, 0.002f},
-                                              {180.0f / 255.f, 180.0f / 255.f, 50.0f / 255.f, 0.002f}, 1.01f);
-        }
 
-        if (ImGui::Button("Default")) {
-            interpolator.ChangeGradientColors(Infinity::HomePagePrimary, Infinity::HomePageSecondary,
-                                              {18.0f / 255.0f, 113.0f / 255.f, 1.0f, 0.002f},
-                                              {221.0f / 255.f, 74.0f / 255.f, 1.0f, 0.002f},
-                                              {100.0f / 255.f, 220.0f / 255.f, 1.0f, 0.002f},
-                                              {200.0f / 255.f, 50.0f / 255.f, 50.0f / 255.f, 0.002f},
-                                              {180.0f / 255.f, 180.0f / 255.f, 50.0f / 255.f, 0.002f}, 1.0f);
-        }
+        // auto &downloader = Infinity::Downloads::GetInstance();
+        // if
+        // (ImGui::Button("Download")) {
+        //     downloadID = downloader.StartDownload("http://link.testfile.org/150MB", "/home/katelyn/test/test_file.zip");
+        // }
+        //
+        // if
+        // (downloadID != -1) {
+        //     auto *downloadDataPtr = downloader.GetDownloadData(downloadID);
+        //     ImGui::Text("Downloading...");
+        //     ImGui::Text("Download ID: %d", downloadDataPtr->zoe->state());
+        //
+        //     if (ImGui::Button("Pause")) {
+        //         downloader.PauseDownload(downloadID);
+        //     }
+        //     if (ImGui::Button("Resume")) {
+        //         downloader.ResumeDownload(downloadID);
+        //     }
+        //
+        //     if (downloadDataPtr) {
+        //         ImGui::Text("Download Progress: %.2f", downloadDataPtr->progress);
+        //     }
+        // }
 
-        ImGui::Text("The Monkeys will win the war");
+
+        // DrawLeftLogoHalf(0.5f, {50.0f, 50.0f});
+        // DrawLogoRightHalf(0.5f, {50.0f, 50.0f});
+        // if (ImGui::Button("Color1")) {
+        //     interpolator.ChangeGradientColors(ImVec4(0.3f, 0.2f, 0.0f, 0.11f), ImVec4(1.0f, 0.3f, 0.2f, 0.11f),
+        //                                       {18.0f / 255.0f, 113.0f / 255.f, 1.0f, 0.002f},
+        //                                       {221.0f / 255.f, 74.0f / 255.f, 1.0f, 0.002f},
+        //                                       {100.0f / 255.f, 220.0f / 255.f, 1.0f, 0.002f},
+        //                                       {200.0f / 255.f, 50.0f / 255.f, 50.0f / 255.f, 0.002f},
+        //                                       {180.0f / 255.f, 180.0f / 255.f, 50.0f / 255.f, 0.002f}, 1.01f);
+        // }
+        //
+        // if (ImGui::Button("Color2")) {
+        //     interpolator.ChangeGradientColors(ImVec4(0.2f, 0.0f, 0.3f, 0.11f), ImVec4(0.3f, 1.0f, 0.3f, 0.11f),
+        //                                       {18.0f / 255.0f, 113.0f / 255.f, 1.0f, 0.002f},
+        //                                       {221.0f / 255.f, 74.0f / 255.f, 1.0f, 0.002f},
+        //                                       {100.0f / 255.f, 220.0f / 255.f, 1.0f, 0.002f},
+        //                                       {200.0f / 255.f, 50.0f / 255.f, 50.0f / 255.f, 0.002f},
+        //                                       {180.0f / 255.f, 180.0f / 255.f, 50.0f / 255.f, 0.002f}, 1.01f);
+        // }
+        //
+        // if (ImGui::Button("Default")) {
+        //     interpolator.ChangeGradientColors(Infinity::HomePagePrimary, Infinity::HomePageSecondary,
+        //                                       {18.0f / 255.0f, 113.0f / 255.f, 1.0f, 0.002f},
+        //                                       {221.0f / 255.f, 74.0f / 255.f, 1.0f, 0.002f},
+        //                                       {100.0f / 255.f, 220.0f / 255.f, 1.0f, 0.002f},
+        //                                       {200.0f / 255.f, 50.0f / 255.f, 50.0f / 255.f, 0.002f},
+        //                                       {180.0f / 255.f, 180.0f / 255.f, 50.0f / 255.f, 0.002f}, 1.0f);
+        // }
+        //
+        // ImGui::Text("The Monkeys will win the war");
     }
+
 };
 
 Infinity::Application *Infinity::CreateApplication(int argc, char **argv) {
@@ -148,7 +222,8 @@ Infinity::Application *Infinity::CreateApplication(int argc, char **argv) {
     return app;
 }
 
-namespace Infinity {
+namespace
+Infinity {
     int Main(const int argc, char **argv) {
         while (g_ApplicationRunning) {
             const auto app = CreateApplication(argc, argv);
@@ -169,6 +244,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLin
 
 #else
 
-int main(const int argc, char **argv) { Infinity::Main(argc, argv); }
+int main(const int argc, char **argv) {
+    Infinity::Main(argc, argv);
+}
 
 #endif

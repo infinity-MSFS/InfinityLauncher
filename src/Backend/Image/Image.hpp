@@ -4,6 +4,7 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include <map>
 
 #include "imgui.h"
 #include "vulkan/vulkan.h"
@@ -55,6 +56,8 @@ namespace Infinity {
         /// <param name="size">Size of the image (Width, Height)</param>
         static void RenderImage(const std::shared_ptr<Image> &image, ImVec2 pos, ImVec2 size);
 
+        static void RenderHomeImage(const std::shared_ptr<Image> &image, ImVec2 pos, ImVec2 size, bool is_hovered);
+
         // TODO: overflow for scaling an image inside of a specified frame (hover action for the cards zooms in)
 
     private:
@@ -80,5 +83,7 @@ namespace Infinity {
         VkDescriptorSet m_DescriptorSet = nullptr;
 
         std::string m_Filepath;
+
+        static std::map<ImGuiID, float> s_animation_progress;
     };
 }
