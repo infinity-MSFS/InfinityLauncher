@@ -21,7 +21,7 @@ namespace Infinity::Utils {
 
         std::expected<bool, Errors::Error> setPage(int pageId);
 
-        [[nodiscard]] std::optional<int> getPage() const;
+        [[nodiscard]] int getPage() const;
 
         void RenderCurrentPage();
 

@@ -38,11 +38,8 @@ namespace Infinity::Utils {
         }
     }
 
-    std::optional<int> Router::getPage() const {
-        if (m_CurrentPageID) {
-            return m_CurrentPageID;
-        }
-        return std::nullopt;
+    int Router::getPage() const {
+        return m_CurrentPageID;
     }
 
     void Router::RenderCurrentPage() {

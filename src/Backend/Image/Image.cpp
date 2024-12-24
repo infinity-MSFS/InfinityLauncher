@@ -343,11 +343,11 @@ namespace Infinity {
         return nullptr;
     }
 
-    void Image::RenderImage(const std::shared_ptr<Image> &image, const ImVec2 pos, const float scale) {
+    void Image::RenderImage(const std::unique_ptr<Image> &image, const ImVec2 pos, const float scale) {
         ImGui::GetWindowDrawList()->AddImage(image->GetDescriptorSet(), pos, {pos.x + image->GetWidth() * scale, pos.y + image->GetHeight() * scale});
     }
 
-    void Image::RenderImage(const std::shared_ptr<Image> &image, const ImVec2 pos, const ImVec2 size) {
+    void Image::RenderImage(const std::unique_ptr<Image> &image, const ImVec2 pos, const ImVec2 size) {
         if (!image)
             return;
 
@@ -371,7 +371,7 @@ namespace Infinity {
     }
 
 
-    void Image::RenderHomeImage(const std::shared_ptr<Image> &image, const ImVec2 pos, const ImVec2 size, bool is_hovered) {
+    void Image::RenderHomeImage(const std::unique_ptr<Image> &image, const ImVec2 pos, const ImVec2 size, bool is_hovered) {
         if (!image)
             return;
 

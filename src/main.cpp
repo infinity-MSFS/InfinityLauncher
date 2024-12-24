@@ -15,10 +15,12 @@
 
 bool g_ApplicationRunning = true;
 
+// #define TEST_LOADING_SCREEN
 
-std::shared_ptr<Infinity::Image> g_TestImage;
+
 static int downloadID = -1;
 static bool pages_registered = false;
+static std::vector<unsigned int> active_index = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13};
 
 
 class PageRenderLayer final : public Infinity::Layer {
@@ -43,11 +45,15 @@ public:
             auto thread_state = Infinity::State::GetInstance().GetPageState<Infinity::MainState>("main");
             std::shared_ptr<Infinity::MainState> &thread_state_ptr = *thread_state;
 
-            Infinity::fetch_and_decode_groups(thread_state_ptr);
+            fetch_and_decode_groups(thread_state_ptr);
 
-            g_TestImage = Infinity::Image::LoadFromURL(thread_state_ptr->state.groups["aero_dynamics"].projects[0].background);
-
-
+            Infinity::Home::GetInstance()->RegisterProject("Aero Dynamics", thread_state_ptr->state.groups.at("aero_dynamics").projects[0].background,
+                                                           thread_state_ptr->state.groups.at("aero_dynamics").logo, 3);
+            Infinity::Home::GetInstance()->RegisterProject("Delta Sim", thread_state_ptr->state.groups.at("delta_sim").projects[0].background, thread_state_ptr->state.groups.at("delta_sim").logo, 4);
+            Infinity::Home::GetInstance()->RegisterProject("Lunar Sim", thread_state_ptr->state.groups.at("lunar_sim").projects[0].background, thread_state_ptr->state.groups.at("lunar_sim").logo, 5);
+            Infinity::Home::GetInstance()->RegisterProject("Ouroboros Jets", thread_state_ptr->state.groups.at("ouroboros").projects[0].background, thread_state_ptr->state.groups.at("ouroboros").logo,
+                                                           6);
+            Infinity::Home::SetLoaded(true);
         }).detach();
 
 
@@ -58,27 +64,47 @@ public:
         bg.RenderBackground();
         auto &interpolator = ColorInterpolation::GetInstance();
 
+        auto loading_screen = [] {
+            {
+                for (auto &index: active_index) {
+                    if (++index > 241) {
+                        index = 0;
+                    }
+                }
+            }
+            ImGui::Text("Loading...");
+            DrawInfinityLogoAnimated(0.8f, {ImGui::GetWindowWidth() / 2, ImGui::GetWindowHeight() / 2 - 200.0f}, active_index);
+        };
 
         Infinity::Background::UpdateColorScheme();
 
         auto &state = Infinity::State::GetInstance();
         auto main_state = state.GetPageState<Infinity::MainState>("main");
 
-
-        if (main_state.has_value()) {
+        if (main_state.has_value() && !Infinity::Home::DoneLoading()) {
             if (const std::shared_ptr<Infinity::MainState> &statePtr = *main_state; statePtr->state.groups.empty()) {
-                ImGui::Text("Loading...");
+                loading_screen();
                 return;
             }
 
+
+        } else if (main_state.has_value()) {
             const std::shared_ptr<Infinity::MainState> &statePtr = *main_state;
             if (!pages_registered) {
+
+                // Pages 0, 1, and 2 are reserved for home, settings and downloads
                 const std::unordered_map<int, std::pair<std::function<void()>, Infinity::Palette>> routes = {
                         {
                                 0, {[] { Infinity::Home::GetInstance()->Render(); }, {"#1271FF1C", "#DD4AFF1C", "#1271FF02", "#DD4AFF02", "#64DCFF02", "#C8323202", "#B4B43202"}}
                         },
                         {
-                                1, {[] {
+                                1, {[] { ImGui::Text("Settings"); }, {"#1271FF1C", "#DD4AFF1C", "#1271FF02", "#DD4AFF02", "#64DCFF02", "#C8323202", "#B4B43202"}}
+                        },
+                        {
+                                2, {[] { ImGui::Text("Downloads"); }, {"#1271FF1C", "#DD4AFF1C", "#1271FF02", "#DD4AFF02", "#64DCFF02", "#C8323202", "#B4B43202"}}
+                        },
+                        {
+                                3, {[] {
                                         ImGui::Text("Aero dynamics");
                                         if (ImGui::Button("Home")) {
                                             auto router = Infinity::Utils::Router::getInstance().value()->setPage(0);
@@ -87,7 +113,7 @@ public:
                                     {"#050912", "#050505", "#1271FF02", "#DD4AFF02", "#64DCFF02", "#C8323202", "#B4B43202"}}
                         },
                         {
-                                2, {[] {
+                                4, {[] {
                                         ImGui::Text("Delta Sim");
                                         if (ImGui::Button("Home")) {
                                             auto router = Infinity::Utils::Router::getInstance().value()->setPage(0);
@@ -96,7 +122,7 @@ public:
                                     {"#4f1a00", "#efaa00", "#1271FF02", "#DD4AFF02", "#64DCFF02", "#C8323202", "#B4B43202"}}
                         },
                         {
-                                3, {[] {
+                                5, {[] {
                                         ImGui::Text("Lunar Sim");
                                         if (ImGui::Button("Home")) {
                                             auto router = Infinity::Utils::Router::getInstance().value()->setPage(0);
@@ -105,7 +131,7 @@ public:
                                     {"#080F19", "#384B5F", "#1271FF02", "#DD4AFF02", "#64DCFF02", "#C8323202", "#B4B43202"}}
                         },
                         {
-                                4, {[] {
+                                6, {[] {
                                         ImGui::Text("Ouroboros Jets");
                                         if (ImGui::Button("Home")) {
                                             auto router = Infinity::Utils::Router::getInstance().value()->setPage(0);
@@ -116,90 +142,38 @@ public:
 
                 };
                 Infinity::Utils::Router::configure(routes);
+                Infinity::Utils::Router::getInstance().value()->setPage(0);
 
-
-                Infinity::Home::GetInstance()->RegisterProject("Aero Dynamics", statePtr->state.groups.at("aero_dynamics").projects[0].background, statePtr->state.groups.at("aero_dynamics").logo, 1);
-                Infinity::Home::GetInstance()->RegisterProject("Delta Sim", statePtr->state.groups.at("delta_sim").projects[0].background, statePtr->state.groups.at("delta_sim").logo, 2);
-                Infinity::Home::GetInstance()->RegisterProject("Lunar Sim", statePtr->state.groups.at("lunar_sim").projects[0].background, statePtr->state.groups.at("lunar_sim").logo, 3);
-                Infinity::Home::GetInstance()->RegisterProject("Ouroboros Jets", statePtr->state.groups.at("ouroboros").projects[0].background, statePtr->state.groups.at("ouroboros").logo, 4);
                 pages_registered = true;
-
+                // ImGui::Begin("Main State");
+                // RenderGroupDataState(statePtr->state);
+                // ImGui::End();
             }
-            // ImGui::Begin("Main State");
-            // RenderGroupDataState(statePtr->state);
-            // ImGui::End();
-
-
         }
 
-        // if (g_TestImage) {
-        //     Infinity::Image::RenderImage(g_TestImage, {50.0f, 50.0f}, 0.2f);
-        //     Infinity::Image::RenderImage(g_TestImage, {50.0f, 20.0f}, {500.0f, 900.0f});
-        // }
-
+        if (!Infinity::Home::DoneLoading()) {
+            loading_screen();
+            return;
+        }
+#ifdef TEST_LOADING_SCREEN
+        loading_screen();
+#else
         auto router = Infinity::Utils::Router::getInstance();
         if (router.has_value()) {
+            std::string button_text;
+            int page = (*router)->getPage();
+            ImGui::Text("Page %i", page);
+            page != 0 ? button_text = "Home" : button_text = "Settings";
+            if (ImGui::Button(button_text.c_str())) {
+                router.value()->setPage(page != 0 ? 0 : 1);
+            }
+            if (ImGui::Button("Downloads")) {
+                router.value()->setPage(2);
+            }
             router.value()->RenderCurrentPage();
-        }
-
-
-        // auto &downloader = Infinity::Downloads::GetInstance();
-        // if
-        // (ImGui::Button("Download")) {
-        //     downloadID = downloader.StartDownload("http://link.testfile.org/150MB", "/home/katelyn/test/test_file.zip");
-        // }
-        //
-        // if
-        // (downloadID != -1) {
-        //     auto *downloadDataPtr = downloader.GetDownloadData(downloadID);
-        //     ImGui::Text("Downloading...");
-        //     ImGui::Text("Download ID: %d", downloadDataPtr->zoe->state());
-        //
-        //     if (ImGui::Button("Pause")) {
-        //         downloader.PauseDownload(downloadID);
-        //     }
-        //     if (ImGui::Button("Resume")) {
-        //         downloader.ResumeDownload(downloadID);
-        //     }
-        //
-        //     if (downloadDataPtr) {
-        //         ImGui::Text("Download Progress: %.2f", downloadDataPtr->progress);
-        //     }
-        // }
-
-
-        // DrawLeftLogoHalf(0.5f, {50.0f, 50.0f});
-        // DrawLogoRightHalf(0.5f, {50.0f, 50.0f});
-        // if (ImGui::Button("Color1")) {
-        //     interpolator.ChangeGradientColors(ImVec4(0.3f, 0.2f, 0.0f, 0.11f), ImVec4(1.0f, 0.3f, 0.2f, 0.11f),
-        //                                       {18.0f / 255.0f, 113.0f / 255.f, 1.0f, 0.002f},
-        //                                       {221.0f / 255.f, 74.0f / 255.f, 1.0f, 0.002f},
-        //                                       {100.0f / 255.f, 220.0f / 255.f, 1.0f, 0.002f},
-        //                                       {200.0f / 255.f, 50.0f / 255.f, 50.0f / 255.f, 0.002f},
-        //                                       {180.0f / 255.f, 180.0f / 255.f, 50.0f / 255.f, 0.002f}, 1.01f);
-        // }
-        //
-        // if (ImGui::Button("Color2")) {
-        //     interpolator.ChangeGradientColors(ImVec4(0.2f, 0.0f, 0.3f, 0.11f), ImVec4(0.3f, 1.0f, 0.3f, 0.11f),
-        //                                       {18.0f / 255.0f, 113.0f / 255.f, 1.0f, 0.002f},
-        //                                       {221.0f / 255.f, 74.0f / 255.f, 1.0f, 0.002f},
-        //                                       {100.0f / 255.f, 220.0f / 255.f, 1.0f, 0.002f},
-        //                                       {200.0f / 255.f, 50.0f / 255.f, 50.0f / 255.f, 0.002f},
-        //                                       {180.0f / 255.f, 180.0f / 255.f, 50.0f / 255.f, 0.002f}, 1.01f);
-        // }
-        //
-        // if (ImGui::Button("Default")) {
-        //     interpolator.ChangeGradientColors(Infinity::HomePagePrimary, Infinity::HomePageSecondary,
-        //                                       {18.0f / 255.0f, 113.0f / 255.f, 1.0f, 0.002f},
-        //                                       {221.0f / 255.f, 74.0f / 255.f, 1.0f, 0.002f},
-        //                                       {100.0f / 255.f, 220.0f / 255.f, 1.0f, 0.002f},
-        //                                       {200.0f / 255.f, 50.0f / 255.f, 50.0f / 255.f, 0.002f},
-        //                                       {180.0f / 255.f, 180.0f / 255.f, 50.0f / 255.f, 0.002f}, 1.0f);
-        // }
-        //
-        // ImGui::Text("The Monkeys will win the war");
+        };
+#endif
     }
-
 };
 
 Infinity::Application *Infinity::CreateApplication(int argc, char **argv) {
@@ -216,7 +190,7 @@ Infinity::Application *Infinity::CreateApplication(int argc, char **argv) {
                                                                                false,
 #endif
                                                                                true};
-    const auto app = new Application{specifications};
+    const auto app = new Infinity::Application{specifications};
     app->PushLayer<PageRenderLayer>();
 
     return app;
