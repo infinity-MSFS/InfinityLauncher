@@ -302,16 +302,21 @@ namespace Infinity {
             const ImVec2 logoOffset(16.0f + windowPadding.x, 5.0f + windowPadding.y + title_bar_vertical_offset);
             const ImVec2 logoRectStart = {ImGui::GetItemRectMin().x + logoOffset.x, ImGui::GetItemRectMin().y + logoOffset.y};
             const ImVec2 logoRectMax = {logoRectStart.x + logoWidth, logoRectStart.y + logoHeight};
-            fgDrawList->AddImage(m_AppHeaderIcon->GetDescriptorSet(), logoRectStart, logoRectMax);
+            // fgDrawList->AddImage(m_AppHeaderIcon->GetDescriptorSet(), logoRectStart, logoRectMax);
+        }
+        {
+            auto text_size = ImGui::CalcTextSize(m_Specification.name.c_str());
+            fgDrawList->AddText(ImVec2(ImGui::GetWindowWidth() / 2 - text_size.x / 2, title_bar_height / 2 - text_size.y / 2), UI::Colors::Theme::text_darker, m_Specification.name.c_str());
         }
 
         ImGui::BeginHorizontal("Titlebar", {ImGui::GetWindowWidth() - windowPadding.y * 2.0f, ImGui::GetFrameHeightWithSpacing()});
 
         const float w = ImGui::GetContentRegionAvail().x;
-        constexpr float buttonsAreaWidth = 94;
+        constexpr float buttonsAreaWidth = 94.0f;
+        constexpr float leftButtonAreaWidth = 68.0f;
 
-        ImGui::SetCursorPos(ImVec2(windowPadding.x, windowPadding.y + title_bar_vertical_offset));
-        ImGui::InvisibleButton("##titleBarDragZone", ImVec2(w - buttonsAreaWidth, title_bar_height));
+        ImGui::SetCursorPos(ImVec2(windowPadding.x + leftButtonAreaWidth, windowPadding.y + title_bar_vertical_offset));
+        ImGui::InvisibleButton("##titleBarDragZone", ImVec2(w - buttonsAreaWidth - leftButtonAreaWidth, title_bar_height));
 
         m_TitleBarHovered = ImGui::IsItemHovered();
 
@@ -335,8 +340,8 @@ namespace Infinity {
             ImGui::ResumeLayout();
         }
 
-        const ImU32 buttonColN = UI::Colors::Theme::accent;
-        const ImU32 buttonColH = UI::Colors::Theme::accent;
+        const ImU32 buttonColN = UI::Colors::Theme::text;
+        const ImU32 buttonColH = UI::Colors::Theme::text_darker;
         constexpr ImU32 buttonColP = UI::Colors::Theme::text_darker;
         constexpr float buttonWidth = 14.0f;
         constexpr float buttonHeight = 14.0f;
@@ -388,7 +393,7 @@ namespace Infinity {
                 }
             }
 
-            DrawButtonImage(m_IconClose, UI::Colors::Theme::text, UI::Colors::Theme::compliment, buttonColP);
+            DrawButtonImage(m_IconClose, UI::Colors::Theme::text, UI::Colors::Theme::text_error, buttonColP);
         }
 
         ImGui::Spring(-1.0f, 18.0f);

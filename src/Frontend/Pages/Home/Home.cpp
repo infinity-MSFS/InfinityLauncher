@@ -3,6 +3,9 @@
 
 #include "imgui.h"
 #include "Backend/Router/Router.hpp"
+#include "Frontend/SVG/SVGDrawing.hpp"
+
+#include <numeric>
 
 namespace Infinity {
 
@@ -10,6 +13,15 @@ namespace Infinity {
     bool Home::m_DoneLoading = false;
 
     void Home::Render() const {
+        ImGui::PushFont(Infinity::Application::GetFont("DefaultLarge"));
+        auto text_size = ImGui::CalcTextSize("Infinity");
+        std::vector<unsigned int> active_index(242 - 1);
+        std::iota(active_index.begin(), active_index.end(), 1);
+        // TODO: Replace with a png resource
+        DrawInfinityLogoHome(0.09f, ImVec2(ImGui::GetWindowWidth() / 2 - 50.0f, 70.0f), active_index, 2.0f);
+        ImGui::SetCursorPos(ImVec2(ImGui::GetWindowWidth() / 2 - text_size.x / 2 + 50, 80.0f));
+        ImGui::Text("Infinity");
+        ImGui::PopFont();
         size_t index = 3; // skip reserved pages
         for (const auto &project: m_HomeProjectButtons) {
             RenderProject(project, index);
@@ -46,11 +58,11 @@ namespace Infinity {
     void Home::RenderProject(const HomeProjectButtonStruct &project, const int page_index) {
         const float base_x = ImGui::GetWindowWidth() / 4;
         const float x_pos = base_x - base_x + 30.0f + static_cast<float>(page_index - 3) * base_x;
-        constexpr float y_pos = 50.0f;
+        constexpr float y_pos = 150.0f;
         const ImVec2 position(x_pos, y_pos);
-        const ImVec2 size(ImGui::GetWindowWidth() / 4 - 50.0f, ImGui::GetWindowHeight() - 150.0f);
+        const ImVec2 size(ImGui::GetWindowWidth() / 4 - 50.0f, ImGui::GetWindowHeight() - 250.0f);
 
-
+        //TODO: Max logo size
         const ImVec2 logo_size(ImGui::GetWindowWidth() / 4 - 150.0f, ImGui::GetWindowWidth() / 4 - 150.0f);
         const auto logo_position = ImVec2(x_pos + size.x / 2 - logo_size.x / 2, ImGui::GetWindowHeight() - logo_size.y - 150.0f);
 

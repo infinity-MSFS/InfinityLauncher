@@ -12,6 +12,14 @@
 #include "Backend/Downloads/Downloads.hpp"
 #include "Backend/Router/Router.hpp"
 #include "Frontend/Pages/Home/Home.hpp"
+#include "Frontend/Theme/Theme.hpp"
+#include "Backend/UIHelpers/UiHelpers.hpp"
+
+#include "Assets/Images/settingsIcon.h"
+#include "Assets/Images/downloadIcon.h"
+#include "Assets/Images/backArrow.h"
+#include "Assets/Images/backIcon.h"
+
 
 bool g_ApplicationRunning = true;
 
@@ -21,6 +29,9 @@ bool g_ApplicationRunning = true;
 static int downloadID = -1;
 static bool pages_registered = false;
 static std::vector<unsigned int> active_index = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13};
+static std::shared_ptr<Infinity::Image> settingsIcon = nullptr;
+static std::shared_ptr<Infinity::Image> backIcon = nullptr;
+static std::shared_ptr<Infinity::Image> downloadsIcon = nullptr;
 
 
 class PageRenderLayer final : public Infinity::Layer {
@@ -40,6 +51,24 @@ public:
         state.RegisterPageState("main", std::make_shared<Infinity::MainState>(group_state));
 
         std::thread([] {
+            {
+                uint32_t w1, h1;
+                void *data = Infinity::Image::Decode(g_SettingIcon, sizeof(g_SettingIcon), w1, h1);
+                settingsIcon = std::make_shared<Infinity::Image>(w1, h1, Infinity::ImageFormat::RGBA, data);
+                free(data);
+            }
+            {
+                uint32_t w2, h2;
+                void *data = Infinity::Image::Decode(g_BackIcon, sizeof(g_BackIcon), w2, h2);
+                backIcon = std::make_shared<Infinity::Image>(w2, h2, Infinity::ImageFormat::RGBA, data);
+                free(data);
+            }
+            {
+                uint32_t w3, h3;
+                void *data = Infinity::Image::Decode(g_DownloadIcon, sizeof(g_DownloadIcon), w3, h3);
+                downloadsIcon = std::make_shared<Infinity::Image>(w3, h3, Infinity::ImageFormat::RGBA, data);
+                free(data);
+            }
 
 
             auto thread_state = Infinity::State::GetInstance().GetPageState<Infinity::MainState>("main");
@@ -62,7 +91,6 @@ public:
     void OnUIRender() override {
         const auto bg = Infinity::Background::GetInstance();
         bg.RenderBackground();
-        auto &interpolator = ColorInterpolation::GetInstance();
 
         auto loading_screen = [] {
             {
@@ -72,16 +100,14 @@ public:
                     }
                 }
             }
-            ImGui::Text("Loading...");
             DrawInfinityLogoAnimated(0.8f, {ImGui::GetWindowWidth() / 2, ImGui::GetWindowHeight() / 2 - 200.0f}, active_index);
         };
 
         Infinity::Background::UpdateColorScheme();
 
         auto &state = Infinity::State::GetInstance();
-        auto main_state = state.GetPageState<Infinity::MainState>("main");
 
-        if (main_state.has_value() && !Infinity::Home::DoneLoading()) {
+        if (const auto main_state = state.GetPageState<Infinity::MainState>("main"); main_state.has_value() && !Infinity::Home::DoneLoading()) {
             if (const std::shared_ptr<Infinity::MainState> &statePtr = *main_state; statePtr->state.groups.empty()) {
                 loading_screen();
                 return;
@@ -158,18 +184,30 @@ public:
 #ifdef TEST_LOADING_SCREEN
         loading_screen();
 #else
-        auto router = Infinity::Utils::Router::getInstance();
+        const auto router = Infinity::Utils::Router::getInstance();
+        const int page = (*router)->getPage();
         if (router.has_value()) {
-            std::string button_text;
-            int page = (*router)->getPage();
-            ImGui::Text("Page %i", page);
-            page != 0 ? button_text = "Home" : button_text = "Settings";
-            if (ImGui::Button(button_text.c_str())) {
-                router.value()->setPage(page != 0 ? 0 : 1);
+            {
+                constexpr int buttonWidth = 24;
+                constexpr int buttonHeight = 24;
+                ImGui::SetCursorPos(ImVec2(10.0f, 8.0f));
+                if (ImGui::InvisibleButton("Home", ImVec2(buttonWidth, buttonHeight))) {
+                    router.value()->setPage(page != 0 ? 0 : 1);
+                }
+                DrawButtonImage(page != 0 ? backIcon : settingsIcon, Infinity::UI::Colors::Theme::text, Infinity::UI::Colors::Theme::text_darker, Infinity::UI::Colors::Theme::text_darker,
+                                Infinity::RectExpanded(Infinity::GetItemRect(), 0.0f, 0.0f));
             }
-            if (ImGui::Button("Downloads")) {
-                router.value()->setPage(2);
+            {
+                constexpr int buttonWidth2 = 24;
+                constexpr int buttonHeight2 = 24;
+                ImGui::SetCursorPos(ImVec2(44.0f, 8.0f));
+                if (ImGui::InvisibleButton("downloads", ImVec2(buttonWidth2, buttonHeight2))) {
+                    router.value()->setPage(2);
+                }
+                DrawButtonImage(downloadsIcon, Infinity::UI::Colors::Theme::text, Infinity::UI::Colors::Theme::text_darker, Infinity::UI::Colors::Theme::text_darker,
+                                Infinity::GetItemRect());
             }
+
             router.value()->RenderCurrentPage();
         };
 #endif
