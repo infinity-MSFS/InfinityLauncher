@@ -44,7 +44,6 @@
 //     std::system(command.c_str());
 // }
 
-
 bool IsProcessRunning(const int pid) {
 #ifdef WIN32
     if (const HANDLE h_process = OpenProcess(SYNCHRONIZE, FALSE, pid)) {
