@@ -96,6 +96,7 @@ endif ()
 message(STATUS "${BoldMagenta}Environment configuration complete")
 message("${Cyan}")
 
+
 message("${Blue}Gathering Infinity Launcher Source Files")
 add_executable(InfinityLauncher
         # -- Main Source File --
@@ -147,6 +148,10 @@ add_executable(InfinityLauncher
         src/Backend/Installer/Installer.hpp
         src/Util/GroupUtil/GroupUtil.hpp
 )
+
+
+message("${Blue}Gathering Updater Source Files")
+add_executable(Updater src-updater/main.cpp)
 
 message("${Blue}Gathering ImGui Source Files")
 file(GLOB IMGUI_SOURCES
@@ -210,3 +215,9 @@ if (WIN32)
 endif ()
 message("${Blue}Configuring Linker")
 target_link_libraries(InfinityLauncher PRIVATE WebP::webp WebP::webpdecoder zoe::zoe WebP::webpdemux Vulkan::Vulkan glfw Boxer CURL::libcurl OpenSSL::SSL OpenSSL::Crypto unofficial::minizip::minizip ZLIB::ZLIB msgpack-cxx ${TOAST_LIB})
+
+add_custom_target(InfinityLauncherDist)
+add_dependencies(InfinityLauncherDist
+        InfinityLauncher
+        Updater
+)

@@ -30,20 +30,17 @@ $sourceDir = $PSScriptRoot
 $buildDirDebug = Join-Path $sourceDir "cmake-build-debug"
 $buildDirRelease = Join-Path $sourceDir "cmake-build-release"
 
-$cmakePath = "cmake"
-# $cmakePath = "C:\Users\Taco\AppData\Local\Programs\CLion\bin\cmake\win\x64\bin\cmake.exe"
-
 if ($BuildType -eq "Debug") {
     if (!(Test-Path $buildDirDebug)) {
         New-Item -ItemType Directory -Path $buildDirDebug
     }
-    $cmakeCmd = "$cmakePath -DCMAKE_BUILD_TYPE=Debug -G `"NMake Makefiles`" -S `"$sourceDir`" -B `"$buildDirDebug`""
+    $cmakeCmd = "cmake -DCMAKE_BUILD_TYPE=Debug -G `"NMake Makefiles`" -S `"$sourceDir`" -B `"$buildDirDebug`""
 }
 elseif ($BuildType -eq "Release") {
     if (!(Test-Path $buildDirRelease)) {
         New-Item -ItemType Directory -Path $buildDirRelease
     }
-    $cmakeCmd = "$cmakePath -DCMAKE_BUILD_TYPE=Release -G `"NMake Makefiles`" -S `"$sourceDir`" -B `"$buildDirRelease`""
+    $cmakeCmd = "cmake -DCMAKE_BUILD_TYPE=Release -G `"NMake Makefiles`" -S `"$sourceDir`" -B `"$buildDirRelease`""
 }
 
 Write-Host "Executing command: $cmakeCmd"
@@ -54,7 +51,7 @@ Invoke-Expression $cmakeCmd
 if ($LASTEXITCODE -eq 0) {
     Write-Host "Building project..."
     $buildDir = if ($BuildType -eq "Debug") { $buildDirDebug } else { $buildDirRelease }
-    cmake --build $buildDir --target InfinityLauncher
+    cmake --build $buildDir --target InfinityLauncherDist
 
     if ($LASTEXITCODE -eq 0) {
         Write-Host "Build completed successfully!"
