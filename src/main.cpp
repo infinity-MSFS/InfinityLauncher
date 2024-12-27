@@ -1,5 +1,6 @@
 #include <filesystem>
 #include <iostream>
+#include <Backend/Updater/Updater.hpp>
 
 #include "Backend/Application/Application.hpp"
 #include "Frontend/Background/Background.hpp"
@@ -124,7 +125,23 @@ public:
                                 0, {[] { Infinity::Home::GetInstance()->Render(); }, {"#1271FF1C", "#DD4AFF1C", "#1271FF02", "#DD4AFF02", "#64DCFF02", "#C8323202", "#B4B43202"}}
                         },
                         {
-                                1, {[] { ImGui::Text("Settings"); }, {"#1271FF1C", "#DD4AFF1C", "#1271FF02", "#DD4AFF02", "#64DCFF02", "#C8323202", "#B4B43202"}}
+                                1, {[] {
+                                        ImGui::Text("Settings");
+                                        if (ImGui::Button("Update")) {
+                                            auto pid_dir = Infinity::Updater::GetConfigDir() + "/pid.infinitypid";
+                                            Infinity::Updater::WritePidToFile(pid_dir);
+
+                                            auto exe_folder = Infinity::Updater::GetCurrentExecutablePath();
+                                            std::string updater_path = exe_folder + "/Updater.exe";
+                                            std::string current_exe = exe_folder + "/InfinityLauncher.exe";
+                                            std::string new_exe = exe_folder + "/UPDATE_Infinity";
+                                            Infinity::Updater::LaunchUpdater(updater_path, new_exe, current_exe, pid_dir);
+
+
+                                        }
+                                        ImGui::Text("Updated InfinityLauncher :)");
+                                    },
+                                    {"#1271FF1C", "#DD4AFF1C", "#1271FF02", "#DD4AFF02", "#64DCFF02", "#C8323202", "#B4B43202"}}
                         },
                         {
                                 2, {[] { ImGui::Text("Downloads"); }, {"#1271FF1C", "#DD4AFF1C", "#1271FF02", "#DD4AFF02", "#64DCFF02", "#C8323202", "#B4B43202"}}

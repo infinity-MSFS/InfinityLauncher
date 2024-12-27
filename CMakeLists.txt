@@ -147,6 +147,8 @@ add_executable(InfinityLauncher
         src/Backend/Installer/Installer.cpp
         src/Backend/Installer/Installer.hpp
         src/Util/GroupUtil/GroupUtil.hpp
+        src/Backend/Updater/Updater.cpp
+        src/Backend/Updater/Updater.hpp
 )
 
 
@@ -196,6 +198,27 @@ endif ()
 target_compile_definitions(InfinityLauncher PRIVATE
         $<$<CONFIG:Release>:RELEASE_DIST>
 )
+
+if (WIN32)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /MANIFEST:NO")
+
+    configure_file(
+            "resources.rc.in"
+            "${CMAKE_CURRENT_BINARY_DIR}/resources.rc"
+    )
+
+    target_sources(Updater PRIVATE
+            "${CMAKE_CURRENT_BINARY_DIR}/resources.rc"
+    )
+
+    if (MSVC)
+        set_target_properties(Updater PROPERTIES
+                LINK_FLAGS "/MANIFEST:NO"
+                VS_GLOBAL_AppLocal "false"
+        )
+    endif ()
+endif ()
+
 
 if (WIN32)
     message("${Blue}Setting Up Windows Console Configuration")
