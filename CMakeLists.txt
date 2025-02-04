@@ -237,7 +237,7 @@ if (WIN32)
     )
 endif ()
 message("${Blue}Configuring Linker")
-target_link_libraries(InfinityLauncher PRIVATE WebP::webp WebP::webpdecoder zoe::zoe WebP::webpdemux Vulkan::Vulkan glfw Boxer CURL::libcurl OpenSSL::SSL OpenSSL::Crypto unofficial::minizip::minizip ZLIB::ZLIB msgpack-cxx ${TOAST_LIB})
+target_link_libraries(InfinityLauncher PRIVATE WebP::webp WebP::webpdecoder zoe::zoe-static WebP::webpdemux Vulkan::Vulkan glfw Boxer CURL::libcurl OpenSSL::SSL OpenSSL::Crypto unofficial::minizip::minizip ZLIB::ZLIB msgpack-cxx ${TOAST_LIB})
 
 add_custom_target(InfinityLauncherDist)
 add_dependencies(InfinityLauncherDist

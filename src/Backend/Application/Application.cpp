@@ -8,18 +8,19 @@
 #define GLFW_EXPOSE_NATIVE_X11
 #endif
 #include "Application.hpp"
-#include "Frontend/Theme/Theme.hpp"
+#include "Backend/UIHelpers/UiHelpers.hpp"
 #include "Backend/VulkanManager/VulkanManager.hpp"
+#include "Frontend/Theme/Theme.hpp"
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_vulkan.h"
 #include "imgui_internal.h"
-#include "Backend/UIHelpers/UiHelpers.hpp"
 
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
 #include <thread>
+#include <unordered_map>
 #include <utility>
 
 #include <vulkan/vulkan.h>
@@ -59,8 +60,7 @@ GLFWwindow *Infinity::Application::s_WindowHandle = nullptr;
 #include "Assets/Images/windowIcons.h"
 
 namespace Infinity {
-    Application::Application(ApplicationSpecifications applicationSpecification) :
-        m_Specification(std::move(applicationSpecification)) {
+    Application::Application(ApplicationSpecifications applicationSpecification) : m_Specification(std::move(applicationSpecification)) {
         s_Instance = this;
         Init();
     }
@@ -648,4 +648,4 @@ namespace Infinity {
             glfwSetWindowTitle(s_WindowHandle, title.c_str());
         }
     }
-} // namespace InfinityRenderer
+} // namespace Infinity

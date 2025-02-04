@@ -1,8 +1,8 @@
 
 #include "Image.hpp"
+#include "Backend/Application/Application.hpp"
 #include "backends/imgui_impl_vulkan.h"
 #include "imgui.h"
-#include "Backend/Application/Application.hpp"
 
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -55,8 +55,7 @@ namespace Infinity {
             return (VkFormat) 0;
         }
     } // namespace Utils
-    Image::Image(const uint32_t width, const uint32_t height, const ImageFormat format, const void *data) :
-        m_Width(width), m_Height(height), m_Format(format) {
+    Image::Image(const uint32_t width, const uint32_t height, const ImageFormat format, const void *data) : m_Width(width), m_Height(height), m_Format(format) {
         AllocateMemory(m_Width * m_Height * Utils::BytesPerPixel(m_Format));
         if (data)
             SetData(data);
@@ -65,15 +64,13 @@ namespace Infinity {
     static size_t WriteImageCallback(void *contents, size_t size, size_t nmemb, void *userp) {
         auto *buffer = static_cast<std::vector<uint8_t> *>(userp);
         size_t realSize = size * nmemb;
-        buffer->insert(buffer->end(), static_cast<uint8_t *>(contents),
-                       static_cast<uint8_t *>(contents) + realSize);
+        buffer->insert(buffer->end(), static_cast<uint8_t *>(contents), static_cast<uint8_t *>(contents) + realSize);
         return realSize;
     }
 
     std::map<ImGuiID, float> Image::s_animation_progress;
 
-    Image::Image(const std::string &url) :
-        m_Format(ImageFormat::RGBA) {
+    Image::Image(const std::string &url) : m_Format(ImageFormat::RGBA) {
         CURL *curl = curl_easy_init();
         if (!curl) {
             std::cerr << "curl_easy_init failed" << std::endl;
@@ -92,8 +89,7 @@ namespace Infinity {
         curl_easy_cleanup(curl);
 
         if (res != CURLE_OK) {
-            throw std::runtime_error("Failed to download image: " +
-                                     std::string(curl_easy_strerror(res)));
+            throw std::runtime_error("Failed to download image: " + std::string(curl_easy_strerror(res)));
         }
 
 
@@ -407,9 +403,9 @@ namespace Infinity {
 
         // Update animation progress using the map
         if (is_hovered) {
-            s_animation_progress[id] = min(1.0f, s_animation_progress[id] + ImGui::GetIO().DeltaTime * animation_speed);
+            s_animation_progress[id] = std::min(1.0f, s_animation_progress[id] + ImGui::GetIO().DeltaTime * animation_speed);
         } else {
-            s_animation_progress[id] = max(0.0f, s_animation_progress[id] - ImGui::GetIO().DeltaTime * animation_speed);
+            s_animation_progress[id] = std::max(0.0f, s_animation_progress[id] - ImGui::GetIO().DeltaTime * animation_speed);
         }
 
         // Number of gradient segments
@@ -446,18 +442,12 @@ namespace Infinity {
 
             // Apply hover effect
             float hover_boost = hover_opacity_boost * s_animation_progress[id];
-            float alpha = min(1.0f, base_alpha + hover_boost);
+            float alpha = std::min(1.0f, base_alpha + hover_boost);
 
             ImVec4 tint_color(1.0f, 1.0f, 1.0f, alpha);
 
-            draw_list->AddImage(
-                    image->GetDescriptorSet(),
-                    ImVec2(pos.x, y_start),
-                    ImVec2(pos.x + size.x, y_end),
-                    ImVec2(uv_left, uv_y_start),
-                    ImVec2(uv_right, uv_y_end),
-                    ImGui::ColorConvertFloat4ToU32(tint_color)
-                    );
+            draw_list->AddImage(image->GetDescriptorSet(), ImVec2(pos.x, y_start), ImVec2(pos.x + size.x, y_end), ImVec2(uv_left, uv_y_start), ImVec2(uv_right, uv_y_end),
+                                ImGui::ColorConvertFloat4ToU32(tint_color));
         }
     }
-}
+} // namespace Infinity

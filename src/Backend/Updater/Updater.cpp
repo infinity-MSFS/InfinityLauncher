@@ -1,7 +1,7 @@
 
 #include "Updater.hpp"
-#include <iostream>
 #include <filesystem>
+#include <iostream>
 
 namespace Infinity {
     void Updater::WritePidToFile(const std::string &path) {
@@ -16,8 +16,7 @@ namespace Infinity {
         }
     }
 
-    void Updater::LaunchUpdater(const std::string &updater_path, const std::string &temp_exe_path,
-                                const std::string &current_exe_path, const std::string &pid_file_path) {
+    void Updater::LaunchUpdater(const std::string &updater_path, const std::string &temp_exe_path, const std::string &current_exe_path, const std::string &pid_file_path) {
         std::string command;
 #ifdef WIN32
         auto convert_path = [](std::string path) {
@@ -30,13 +29,9 @@ namespace Infinity {
         std::string win_current_exe_path = convert_path(current_exe_path);
         std::string win_pid_file_path = convert_path(pid_file_path);
 
-        command = "start \"\" \"" + win_updater_path + "\" \"" +
-                  win_temp_exe_path + "\" \"" +
-                  win_current_exe_path + "\" \"" +
-                  win_pid_file_path + "\"";
+        command = "start \"\" \"" + win_updater_path + "\" \"" + win_temp_exe_path + "\" \"" + win_current_exe_path + "\" \"" + win_pid_file_path + "\"";
 #else
-        command = "\"" + updater_path + "\" \"" + temp_exe_path + "\" \"" + current_exe_path +
-                  "\" \"" + pid_file_path + "\"; read -p 'Press Enter to continue...'";
+        command = "\"" + updater_path + "\" \"" + temp_exe_path + "\" \"" + current_exe_path + "\" \"" + pid_file_path + "\"; read -p 'Press Enter to continue...'";
 #endif
 
         std::cout << command << std::endl;
@@ -58,19 +53,16 @@ namespace Infinity {
             free(appdata_path);
         }
 #elif __linux__
-            char *home_dir = nullptr;
-            size_t len = 0;
-            if (_dupenv_s(&home_dir, &len, "HOME") != 0 || home_dir == nullptr) {
-                std::cerr << "Error: Unable to determine home directory (HOME environment variable is not set)." << std::endl;
-            } else {
-                output_path = std::filesystem::path(home_dir) / ".config/infinity-launcher";
-                free(home_dir);
-            }
+        char *home_dir = std::getenv("HOME");
+        if (home_dir == nullptr) {
+            std::cerr << "Error: Unable to determine home directory (HOME environment variable is not set)." << std::endl;
+        } else {
+            output_path = std::filesystem::path(home_dir) / ".config/infinity-launcher";
+        }
 #else
-            std::cerr << "Error: Unsupported platform." << std::endl;
+        std::cerr << "Error: Unsupported platform." << std::endl;
 #endif
         return output_path.string();
-
     }
 
     std::string Updater::GetCurrentExecutablePath() {
@@ -82,7 +74,7 @@ namespace Infinity {
         executable_path = std::string(buffer);
 #else
         char buffer[PATH_MAX];
-        ssize_t len = readlink("/proc/self/exe", buffer, sizeof(buffer)-1);
+        ssize_t len = readlink("/proc/self/exe", buffer, sizeof(buffer) - 1);
         if (len != -1) {
             buffer[len] = '\0';
             executable_path = std::string(buffer);
@@ -95,4 +87,4 @@ namespace Infinity {
 
         return executable_path;
     }
-}
+} // namespace Infinity
