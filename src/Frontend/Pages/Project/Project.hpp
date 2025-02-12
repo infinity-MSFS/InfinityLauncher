@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include "Backend/Image/Image.hpp"
 #include "Util/State/GroupStateManager.hpp"
 #include "Frontend/ColorInterpolation/ColorInterpolation.hpp"
 
@@ -16,5 +17,6 @@ namespace Infinity {
 
     private:
         GroupData m_GroupData;
+        std::unique_ptr<Image> m_Image;
     };
 }

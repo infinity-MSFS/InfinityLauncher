@@ -5,8 +5,5 @@
     <mapping directory="$PROJECT_DIR$/cmake-build-debug/_deps/boxer-src" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/cmake-build-debug/_deps/glfw-src" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/cmake-build-debug/_deps/infinity-src" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/cmake-build-release/_deps/boxer-src" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/cmake-build-release/_deps/glfw-src" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/cmake-build-release/_deps/infinity-src" vcs="Git" />
   </component>
 </project>

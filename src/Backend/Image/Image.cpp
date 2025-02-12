@@ -15,8 +15,6 @@
 
 namespace Infinity {
     namespace Utils {
-
-
         static uint32_t GetVulkanMemoryType(const VkMemoryPropertyFlags properties, const uint32_t type_bits) {
             VkPhysicalDeviceMemoryProperties prop;
             if (const auto device = Application::GetPhysicalDevice(); device.has_value()) {
@@ -55,7 +53,8 @@ namespace Infinity {
             return (VkFormat) 0;
         }
     } // namespace Utils
-    Image::Image(const uint32_t width, const uint32_t height, const ImageFormat format, const void *data) : m_Width(width), m_Height(height), m_Format(format) {
+    Image::Image(const uint32_t width, const uint32_t height, const ImageFormat format,
+                 const void *data) : m_Width(width), m_Height(height), m_Format(format) {
         AllocateMemory(m_Width * m_Height * Utils::BytesPerPixel(m_Format));
         if (data)
             SetData(data);
@@ -117,6 +116,21 @@ namespace Infinity {
         }
     }
 
+    std::shared_ptr<Image> Image::LoadFromURLShared(const std::string &url) {
+        try {
+            if (url.contains("discordapp.")) {
+                std::cerr << "found an image with a disordapp link, skipping and replacing with dummy image\n";
+                return std::make_shared<Image>(
+                    std::string(
+                        "https://1000logos.net/wp-content/uploads/2021/06/Discord-logo.png"));
+            }
+            return std::make_shared<Image>(url);
+        } catch (const std::exception &e) {
+            std::cerr << "Failed to load image: " << url << " : " << e.what() << std::endl;
+            return nullptr;
+        }
+    }
+
     Image::~Image() { Release(); }
 
     void Image::AllocateMemory(uint64_t size) {
@@ -150,7 +164,8 @@ namespace Infinity {
                 VkMemoryAllocateInfo alloc_info = {};
                 alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
                 alloc_info.allocationSize = req.size;
-                alloc_info.memoryTypeIndex = Utils::GetVulkanMemoryType(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, req.memoryTypeBits);
+                alloc_info.memoryTypeIndex = Utils::GetVulkanMemoryType(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                                                        req.memoryTypeBits);
                 err = vkAllocateMemory(device, &alloc_info, nullptr, &m_Memory);
                 Vulkan::inf_check_vk_result(err);
                 err = vkBindImageMemory(device, m_Image, m_Memory, 0);
@@ -189,22 +204,24 @@ namespace Infinity {
             }
 
             // Create the Descriptor Set:
-            m_DescriptorSet = (VkDescriptorSet) ImGui_ImplVulkan_AddTexture(m_Sampler, m_ImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            m_DescriptorSet = (VkDescriptorSet) ImGui_ImplVulkan_AddTexture(
+                m_Sampler, m_ImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         }
     }
 
     void Image::Release() {
         Application::SubmitResourceFree(
-                [sampler = m_Sampler, imageView = m_ImageView, image = m_Image, memory = m_Memory, stagingBuffer = m_StagingBuffer, stagingBufferMemory = m_StagingBufferMemory]() {
-                    if (const auto device = Application::GetDevice(); device.has_value()) {
-                        vkDestroySampler(*device, sampler, nullptr);
-                        vkDestroyImageView(*device, imageView, nullptr);
-                        vkDestroyImage(*device, image, nullptr);
-                        vkFreeMemory(*device, memory, nullptr);
-                        vkDestroyBuffer(*device, stagingBuffer, nullptr);
-                        vkFreeMemory(*device, stagingBufferMemory, nullptr);
-                    };
-                });
+            [sampler = m_Sampler, imageView = m_ImageView, image = m_Image, memory = m_Memory, stagingBuffer =
+                m_StagingBuffer, stagingBufferMemory = m_StagingBufferMemory]() {
+                if (const auto device = Application::GetDevice(); device.has_value()) {
+                    vkDestroySampler(*device, sampler, nullptr);
+                    vkDestroyImageView(*device, imageView, nullptr);
+                    vkDestroyImage(*device, image, nullptr);
+                    vkFreeMemory(*device, memory, nullptr);
+                    vkDestroyBuffer(*device, stagingBuffer, nullptr);
+                    vkFreeMemory(*device, stagingBufferMemory, nullptr);
+                };
+            });
 
         m_Sampler = nullptr;
         m_ImageView = nullptr;
@@ -216,7 +233,6 @@ namespace Infinity {
 
     void Image::SetData(const void *data) {
         if (const auto device_opt = Application::GetDevice(); device_opt.has_value()) {
-
             VkDevice device = *device_opt;
 
             size_t upload_size = m_Width * m_Height * Utils::BytesPerPixel(m_Format);
@@ -239,7 +255,8 @@ namespace Infinity {
                     VkMemoryAllocateInfo alloc_info = {};
                     alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
                     alloc_info.allocationSize = req.size;
-                    alloc_info.memoryTypeIndex = Utils::GetVulkanMemoryType(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, req.memoryTypeBits);
+                    alloc_info.memoryTypeIndex = Utils::GetVulkanMemoryType(
+                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, req.memoryTypeBits);
                     err = vkAllocateMemory(device, &alloc_info, nullptr, &m_StagingBufferMemory);
                     Vulkan::inf_check_vk_result(err);
                     err = vkBindBufferMemory(device, m_StagingBuffer, m_StagingBufferMemory, 0);
@@ -277,7 +294,8 @@ namespace Infinity {
                 copy_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
                 copy_barrier.subresourceRange.levelCount = 1;
                 copy_barrier.subresourceRange.layerCount = 1;
-                vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &copy_barrier);
+                vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0,
+                                     nullptr, 0, nullptr, 1, &copy_barrier);
 
                 VkBufferImageCopy region = {};
                 region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -285,7 +303,8 @@ namespace Infinity {
                 region.imageExtent.width = m_Width;
                 region.imageExtent.height = m_Height;
                 region.imageExtent.depth = 1;
-                vkCmdCopyBufferToImage(command_buffer, m_StagingBuffer, m_Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+                vkCmdCopyBufferToImage(command_buffer, m_StagingBuffer, m_Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                       1, &region);
 
                 VkImageMemoryBarrier use_barrier = {};
                 use_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -299,7 +318,8 @@ namespace Infinity {
                 use_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
                 use_barrier.subresourceRange.levelCount = 1;
                 use_barrier.subresourceRange.layerCount = 1;
-                vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &use_barrier);
+                vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                     VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &use_barrier);
 
                 Application::FlushCommandBuffer(command_buffer);
             }
@@ -340,7 +360,9 @@ namespace Infinity {
     }
 
     void Image::RenderImage(const std::unique_ptr<Image> &image, const ImVec2 pos, const float scale) {
-        ImGui::GetWindowDrawList()->AddImage(image->GetDescriptorSet(), pos, {pos.x + image->GetWidth() * scale, pos.y + image->GetHeight() * scale});
+        ImGui::GetWindowDrawList()->AddImage(image->GetDescriptorSet(), pos, {
+                                                 pos.x + image->GetWidth() * scale, pos.y + image->GetHeight() * scale
+                                             });
     }
 
     void Image::RenderImage(const std::unique_ptr<Image> &image, const ImVec2 pos, const ImVec2 size) {
@@ -363,11 +385,13 @@ namespace Infinity {
 
         const float uv_x = 1.0f / aspect_shown;
 
-        ImGui::GetWindowDrawList()->AddImage(image->GetDescriptorSet(), pos, {pos.x + size.x, pos.y + size.y}, {0.5f - uv_x / 2.0f, 0.0f}, {0.5f + uv_x / 2.0f, 1.0f});
+        ImGui::GetWindowDrawList()->AddImage(image->GetDescriptorSet(), pos, {pos.x + size.x, pos.y + size.y},
+                                             {0.5f - uv_x / 2.0f, 0.0f}, {0.5f + uv_x / 2.0f, 1.0f});
     }
 
 
-    void Image::RenderHomeImage(const std::unique_ptr<Image> &image, const ImVec2 pos, const ImVec2 size, bool is_hovered) {
+    void Image::RenderHomeImage(const std::unique_ptr<Image> &image, const ImVec2 pos, const ImVec2 size,
+                                bool is_hovered) {
         if (!image)
             return;
 
@@ -403,9 +427,11 @@ namespace Infinity {
 
         // Update animation progress using the map
         if (is_hovered) {
-            s_animation_progress[id] = std::min(1.0f, s_animation_progress[id] + ImGui::GetIO().DeltaTime * animation_speed);
+            s_animation_progress[id] = std::min(
+                1.0f, s_animation_progress[id] + ImGui::GetIO().DeltaTime * animation_speed);
         } else {
-            s_animation_progress[id] = std::max(0.0f, s_animation_progress[id] - ImGui::GetIO().DeltaTime * animation_speed);
+            s_animation_progress[id] = std::max(
+                0.0f, s_animation_progress[id] - ImGui::GetIO().DeltaTime * animation_speed);
         }
 
         // Number of gradient segments
@@ -446,7 +472,8 @@ namespace Infinity {
 
             ImVec4 tint_color(1.0f, 1.0f, 1.0f, alpha);
 
-            draw_list->AddImage(image->GetDescriptorSet(), ImVec2(pos.x, y_start), ImVec2(pos.x + size.x, y_end), ImVec2(uv_left, uv_y_start), ImVec2(uv_right, uv_y_end),
+            draw_list->AddImage(image->GetDescriptorSet(), ImVec2(pos.x, y_start), ImVec2(pos.x + size.x, y_end),
+                                ImVec2(uv_left, uv_y_start), ImVec2(uv_right, uv_y_end),
                                 ImGui::ColorConvertFloat4ToU32(tint_color));
         }
     }

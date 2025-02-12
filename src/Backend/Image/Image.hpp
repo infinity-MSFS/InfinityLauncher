@@ -20,6 +20,7 @@ namespace Infinity {
     class Image {
     public:
         explicit Image(const std::string &url);
+
         explicit Image(std::string_view path);
 
         Image(uint32_t width, uint32_t height, ImageFormat format, const void *data = nullptr);
@@ -27,6 +28,8 @@ namespace Infinity {
         ~Image();
 
         static std::unique_ptr<Image> LoadFromURL(const std::string &url);
+
+        static std::shared_ptr<Image> LoadFromURLShared(const std::string &url);
 
         void SetData(const void *data);
 
