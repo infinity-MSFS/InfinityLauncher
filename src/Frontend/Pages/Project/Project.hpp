@@ -11,12 +11,12 @@
 namespace Infinity {
     class ProjectPage {
     public:
-        explicit ProjectPage(GroupData group_data);
+        explicit ProjectPage(GroupData group_data, GroupDataImages state_images);
 
         void Render();
 
     private:
         GroupData m_GroupData;
-        std::unique_ptr<Image> m_Image;
+        GroupDataImages m_StateImages;
     };
 }

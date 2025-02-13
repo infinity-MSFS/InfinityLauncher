@@ -23,6 +23,8 @@ namespace Infinity {
 
         explicit Image(std::string_view path);
 
+        explicit Image(const std::vector<uint8_t> &bin);
+
         Image(uint32_t width, uint32_t height, ImageFormat format, const void *data = nullptr);
 
         ~Image();
@@ -30,6 +32,10 @@ namespace Infinity {
         static std::unique_ptr<Image> LoadFromURL(const std::string &url);
 
         static std::shared_ptr<Image> LoadFromURLShared(const std::string &url);
+
+        static std::vector<uint8_t> FetchFromURL(const std::string &url);
+
+        static std::shared_ptr<Image> ConstructFromBin(const std::vector<uint8_t> &bin);
 
         void SetData(const void *data);
 
@@ -51,6 +57,8 @@ namespace Infinity {
         /// <param name="scale">Scale of the image 1.0f - 0.0f</param>
         static void RenderImage(const std::unique_ptr<Image> &image, ImVec2 pos, float scale);
 
+        static void RenderImage(const std::shared_ptr<Image> &image, ImVec2 pos, float scale);
+
         /// <summary>
         /// Renders a pre-constructed image with a specified width and height. The image will always fill the height requirement (if the image width > specified width, the image will be clipped evenly left and right)
         /// </summary>
@@ -59,7 +67,11 @@ namespace Infinity {
         /// <param name="size">Size of the image (Width, Height)</param>
         static void RenderImage(const std::unique_ptr<Image> &image, ImVec2 pos, ImVec2 size);
 
+        static void RenderImage(const std::shared_ptr<Image> &image, ImVec2 pos, ImVec2 size);
+
         static void RenderHomeImage(const std::unique_ptr<Image> &image, ImVec2 pos, ImVec2 size, bool is_hovered);
+
+        static void RenderHomeImage(const std::shared_ptr<Image> &image, ImVec2 pos, ImVec2 size, bool is_hovered);
 
         // TODO: overflow for scaling an image inside of a specified frame (hover action for the cards zooms in)
 

@@ -156,6 +156,28 @@ namespace Infinity {
         }
     }
 
+    // temporary struct for queueing images to be loaded into vulkan textures
+    struct ProjectImagesBin {
+        std::vector<uint8_t> backgroundImage;
+        std::optional<std::vector<uint8_t> > pageBackgroundImage;
+    };
+
+    struct BetaProjectImagesBin {
+        std::vector<uint8_t> background;
+    };
+
+    struct GroupDataImagesBin {
+        std::vector<uint8_t> logo;
+        std::vector<ProjectImagesBin> projectImages;
+        BetaProjectImagesBin beta;
+    };
+
+    struct StateImagesBin {
+        std::map<std::string, GroupDataImagesBin> groupImages;
+    };
+
+    //////////////////////////
+
     struct ProjectImages {
         std::shared_ptr<Image> backgroundImage;
         std::optional<std::shared_ptr<Image> > pageBackgroundImage;
@@ -186,99 +208,71 @@ namespace Infinity {
         void PrintState() const override { std::cout << "MainState::PrintState()" << std::endl; }
     };
 
-    // inline void HandleImages(const GroupDataState &state, StateImages &images) {
-    //     std::vector<std::future<void> > futures;
-    //     std::mutex images_mutex; {
-    //         std::lock_guard lock(images_mutex);
-    //         images.groupImages.clear();
-    //     }
-    //
-    //     for (const auto &[group_key, group_data]: state.groups) {
-    //         futures.push_back(std::async(std::launch::async, [&, group_key, group_data] {
-    //             GroupDataImages group_images;
-    //             std::vector<std::future<Image> > image_futures;
-    //
-    //             auto logo_future = std::async(std::launch::async, &Image::LoadFromURLShared, group_data.logo);
-    //
-    //             group_images.projectImages.reserve(group_data.projects.size());
-    //             for (const auto &project: group_data.projects) {
-    //                 ProjectImages project_images;
-    //
-    //                 auto background_futures = std::async(std::launch::async, &Image::LoadFromURLShared,
-    //                                                      project.background);
-    //
-    //                 std::optional<std::future<std::shared_ptr<Image> > > page_background_future;
-    //                 if (project.pageBackground.has_value()) {
-    //                     page_background_future = std::async(std::launch::async, &Image::LoadFromURLShared,
-    //                                                         *project.pageBackground);
-    //                 }
-    //
-    //                 try {
-    //                     project_images.backgroundImage = background_futures.get();
-    //                 } catch (const std::exception &e) {
-    //                     std::cerr << "Failed to load background image: " << e.what() << std::endl;
-    //                 }
-    //
-    //                 if (page_background_future.has_value()) {
-    //                     try {
-    //                         project_images.pageBackgroundImage = page_background_future->get();
-    //                     } catch (const std::exception &e) {
-    //                         std::cerr << "Failed to load page background image: " << e.what() << std::endl;
-    //                     }
-    //                 }
-    //                 group_images.projectImages.push_back(std::move(project_images));
-    //             }
-    //
-    //             auto beta_background_future = std::async(std::launch::async, &Image::LoadFromURLShared,
-    //                                                      group_data.beta.background);
-    //
-    //             try {
-    //                 group_images.logo = logo_future.get();
-    //             } catch (const std::exception &e) {
-    //                 std::cerr << "Failed to load logo image: " << e.what() << std::endl;
-    //             }
-    //
-    //             try {
-    //                 group_images.beta.background = beta_background_future.get();
-    //             } catch (const std::exception &e) {
-    //                 std::cerr << "Failed to load beta background image: " << e.what() << std::endl;
-    //             } {
-    //                 std::lock_guard lock(images_mutex);
-    //                 images.groupImages[group_key] = std::move(group_images);
-    //             }
-    //         }));
-    //     }
-    //     for (auto &future: futures) {
-    //         future.get();
-    //     }
-    // }
-    // FIXME: @Taco
-
-
-    inline void HandleImages(const GroupDataState &state, StateImages &images) {
-        images.groupImages.clear();
+    inline StateImagesBin FetchAllImages(const GroupDataState &state) {
+        StateImagesBin bin;
+        std::vector<std::future<void> > futures;
+        std::mutex bin_mutex;
 
         for (const auto &[group_key, group_data]: state.groups) {
-            GroupDataImages group_images;
-            group_images.logo = Image::LoadFromURLShared(group_data.logo);
+            futures.push_back(std::async(std::launch::async, [&,group_key, group_data ] {
+                GroupDataImagesBin group_bin;
 
-            group_images.projectImages.reserve(group_data.projects.size());
-            for (const auto &project: group_data.projects) {
-                ProjectImages project_images;
-                project_images.backgroundImage = Image::LoadFromURLShared(project.background);
+                group_bin.logo = Image::FetchFromURL(group_data.logo);
 
-                if (project.pageBackground.has_value()) {
-                    project_images.pageBackgroundImage = Image::LoadFromURLShared(*project.pageBackground);
+                group_bin.projectImages.reserve(group_data.projects.size());
+                for (const auto &project: group_data.projects) {
+                    ProjectImagesBin project_bin;
+                    project_bin.backgroundImage = Image::FetchFromURL(project.background);
+
+                    if (project.pageBackground) {
+                        project_bin.pageBackgroundImage = Image::FetchFromURL(*project.pageBackground);
+                    }
+
+                    group_bin.projectImages.push_back(std::move(project_bin));
                 }
-
-                group_images.projectImages.push_back(project_images);
-            }
-            group_images.beta.background = Image::LoadFromURLShared(group_data.beta.background);
-
-            images.groupImages[group_key] = group_images;
+                group_bin.beta.background = Image::FetchFromURL(group_data.beta.background); {
+                    std::lock_guard lock(bin_mutex);
+                    bin.groupImages[group_key] = std::move(group_bin);
+                }
+            }));
         }
+        for (auto &future: futures) {
+            future.get();
+        }
+        return bin;
     }
 
+    inline StateImages CreateVulkanImages(const StateImagesBin &bin) {
+        StateImages images;
+
+        for (const auto &[group_key, group_bin]: bin.groupImages) {
+            GroupDataImages group_images;
+
+            group_images.logo = Image::ConstructFromBin(group_bin.logo);
+
+            group_images.projectImages.reserve(group_bin.projectImages.size());
+            for (const auto &project_bin: group_bin.projectImages) {
+                ProjectImages project_images;
+                project_images.backgroundImage = Image::ConstructFromBin(project_bin.backgroundImage);
+
+                if (project_bin.pageBackgroundImage) {
+                    project_images.pageBackgroundImage = Image::ConstructFromBin(*project_bin.pageBackgroundImage);
+                }
+
+                group_images.projectImages.push_back(std::move(project_images));
+            }
+
+            group_images.beta.background = Image::ConstructFromBin(group_bin.beta.background);
+
+            images.groupImages[group_key] = std::move(group_images);
+        }
+        return images;
+    }
+
+    inline void HandleImages(const GroupDataState &state, StateImages &images) {
+        StateImagesBin bin = FetchAllImages(state);
+        images = CreateVulkanImages(bin);
+    }
 
     inline void fetch_and_decode_groups(std::shared_ptr<MainState> &thread_state_ptr) {
         const auto url = "https://github.com/infinity-MSFS/groups/raw/refs/heads/main/groups.bin";
@@ -317,6 +311,7 @@ namespace Infinity {
         StateImages images;
         HandleImages(thread_state_ptr->state, images);
         std::cout << "Decoded all images\n";
+        thread_state_ptr->images = images;
     }
 
 

@@ -164,7 +164,8 @@ public:
                     {
                         3, {
                             [&statePtr] {
-                                Infinity::ProjectPage project_page(statePtr->state.groups["aero_dynamics"]);
+                                Infinity::ProjectPage project_page(statePtr->state.groups["aero_dynamics"],
+                                                                   statePtr->images.groupImages["aero_dynamics"]);
                                 project_page.Render();
                             },
                             {"#050912", "#050505", "#1271FF02", "#DD4AFF02", "#64DCFF02", "#C8323202", "#B4B43202"}
@@ -173,7 +174,8 @@ public:
                     {
                         4, {
                             [&statePtr] {
-                                Infinity::ProjectPage project_page(statePtr->state.groups["delta_sim"]);
+                                Infinity::ProjectPage project_page(statePtr->state.groups["delta_sim"],
+                                                                   statePtr->images.groupImages["delta_sim"]);
                                 project_page.Render();
                             },
                             {"#4f1a00", "#efaa00", "#1271FF02", "#DD4AFF02", "#64DCFF02", "#C8323202", "#B4B43202"}
@@ -182,7 +184,8 @@ public:
                     {
                         5, {
                             [&statePtr] {
-                                Infinity::ProjectPage project_page(statePtr->state.groups["lunar_sim"]);
+                                Infinity::ProjectPage project_page(statePtr->state.groups["lunar_sim"],
+                                                                   statePtr->images.groupImages["lunar_sim"]);
                                 project_page.Render();
                             },
                             {"#080F19", "#384B5F", "#1271FF02", "#DD4AFF02", "#64DCFF02", "#C8323202", "#B4B43202"}
@@ -191,7 +194,8 @@ public:
                     {
                         6, {
                             [&statePtr] {
-                                Infinity::ProjectPage project_page(statePtr->state.groups["ouroboros"]);
+                                Infinity::ProjectPage project_page(statePtr->state.groups["ouroboros"],
+                                                                   statePtr->images.groupImages["ouroboros"]);
                                 project_page.Render();
                             },
                             {"#210e3a", "#2a2fff", "#1271FF02", "#DD4AFF02", "#64DCFF02", "#C8323202", "#B4B43202"}
@@ -257,7 +261,7 @@ Infinity::Application *Infinity::CreateApplication(int argc, char **argv) {
         path,
         true,
 #ifdef WIN32
-                                                                               true,
+        true,
 #else
         false,
 #endif
@@ -287,7 +291,9 @@ Infinity {
 
 #include <Windows.h>
 
-int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nShowCmd) { Infinity::Main(__argc, __argv); }
+int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nShowCmd) {
+    Infinity::Main(__argc, __argv);
+}
 
 #else
 

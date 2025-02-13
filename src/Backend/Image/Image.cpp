@@ -4,6 +4,8 @@
 #include "backends/imgui_impl_vulkan.h"
 #include "imgui.h"
 
+#include <algorithm>
+
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <iostream>
@@ -107,6 +109,63 @@ namespace Infinity {
         stbi_image_free(decodedData);
     }
 
+    Image::Image(const std::vector<uint8_t> &bin): m_Format(ImageFormat::RGBA) {
+        uint32_t width, height;
+        void *decodedData = Decode(bin.data(), bin.size(), width, height);
+
+        if (!decodedData) {
+            throw std::runtime_error("Failed to decode image data");
+        }
+
+        m_Width = width;
+        m_Height = height;
+
+        AllocateMemory(m_Width * m_Height * 4);
+        SetData(decodedData);
+        stbi_image_free(decodedData);
+    }
+
+
+    std::shared_ptr<Image> Image::ConstructFromBin(const std::vector<uint8_t> &bin) {
+        if (!bin.empty()) {
+            return std::make_shared<Image>(bin);
+        }
+        return nullptr;
+    }
+
+
+    std::vector<uint8_t> Image::FetchFromURL(const std::string &url) {
+        static const std::string fallback_url = "https://1000logos.net/wp-content/uploads/2021/06/Discord-logo.png";
+
+        if (url.contains("discordapp.") && url != fallback_url) {
+            std::cerr << "Found an image with a Discord link, replacing with dummy image\n";
+            return FetchFromURL(fallback_url);
+        }
+
+        CURL *curl = curl_easy_init();
+        if (!curl) {
+            std::cerr << "curl_easy_init failed" << std::endl;
+            return {};
+        }
+
+        std::vector<uint8_t> buffer;
+        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteImageCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &buffer);
+        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+
+        CURLcode res = curl_easy_perform(curl);
+        curl_easy_cleanup(curl);
+
+        if (res != CURLE_OK) {
+            throw std::runtime_error("Failed to download image: " + std::string(curl_easy_strerror(res)));
+        }
+
+        return buffer;
+    }
+
+
     std::unique_ptr<Image> Image::LoadFromURL(const std::string &url) {
         try {
             return std::make_unique<Image>(url);
@@ -130,6 +189,7 @@ namespace Infinity {
             return nullptr;
         }
     }
+
 
     Image::~Image() { Release(); }
 
@@ -365,6 +425,13 @@ namespace Infinity {
                                              });
     }
 
+    void Image::RenderImage(const std::shared_ptr<Image> &image, const ImVec2 pos, const float scale) {
+        ImGui::GetWindowDrawList()->AddImage(image->GetDescriptorSet(), pos, {
+                                                 pos.x + image->GetWidth() * scale, pos.y + image->GetHeight() * scale
+                                             });
+    }
+
+
     void Image::RenderImage(const std::unique_ptr<Image> &image, const ImVec2 pos, const ImVec2 size) {
         if (!image)
             return;
@@ -389,6 +456,29 @@ namespace Infinity {
                                              {0.5f - uv_x / 2.0f, 0.0f}, {0.5f + uv_x / 2.0f, 1.0f});
     }
 
+    void Image::RenderImage(const std::shared_ptr<Image> &image, const ImVec2 pos, const ImVec2 size) {
+        if (!image)
+            return;
+
+        const float imgWidth = image->GetWidth();
+        const float imgHeight = image->GetHeight();
+
+        auto getProperWidth = [](const ImVec2 &original_size, ImVec2 &new_size) {
+            const float aspect_ratio = original_size.x / original_size.y;
+            new_size.x = new_size.y * aspect_ratio;
+        };
+
+        const ImVec2 image_size(imgWidth, imgHeight);
+        ImVec2 rescaled_image_size(0.0f, size.y);
+        getProperWidth(image_size, rescaled_image_size);
+
+        const float aspect_shown = rescaled_image_size.x / size.x;
+
+        const float uv_x = 1.0f / aspect_shown;
+
+        ImGui::GetWindowDrawList()->AddImage(image->GetDescriptorSet(), pos, {pos.x + size.x, pos.y + size.y},
+                                             {0.5f - uv_x / 2.0f, 0.0f}, {0.5f + uv_x / 2.0f, 1.0f});
+    }
 
     void Image::RenderHomeImage(const std::unique_ptr<Image> &image, const ImVec2 pos, const ImVec2 size,
                                 bool is_hovered) {
@@ -426,6 +516,7 @@ namespace Infinity {
         const float zoom_factor = -0.01f;
 
         // Update animation progress using the map
+#ifdef __linux__
         if (is_hovered) {
             s_animation_progress[id] = std::min(
                 1.0f, s_animation_progress[id] + ImGui::GetIO().DeltaTime * animation_speed);
@@ -433,7 +524,15 @@ namespace Infinity {
             s_animation_progress[id] = std::max(
                 0.0f, s_animation_progress[id] - ImGui::GetIO().DeltaTime * animation_speed);
         }
-
+#else
+        if (is_hovered) {
+            s_animation_progress[id] = min(
+                1.0f, s_animation_progress[id] + ImGui::GetIO().DeltaTime * animation_speed);
+        } else {
+            s_animation_progress[id] = max(
+                0.0f, s_animation_progress[id] - ImGui::GetIO().DeltaTime * animation_speed);
+        }
+#endif
         // Number of gradient segments
         const int segments = 60;
 
@@ -468,7 +567,112 @@ namespace Infinity {
 
             // Apply hover effect
             float hover_boost = hover_opacity_boost * s_animation_progress[id];
+#ifdef __linux__
             float alpha = std::min(1.0f, base_alpha + hover_boost);
+#else
+            float alpha = min(1.0f, base_alpha + hover_boost);
+#endif
+
+            ImVec4 tint_color(1.0f, 1.0f, 1.0f, alpha);
+
+            draw_list->AddImage(image->GetDescriptorSet(), ImVec2(pos.x, y_start), ImVec2(pos.x + size.x, y_end),
+                                ImVec2(uv_left, uv_y_start), ImVec2(uv_right, uv_y_end),
+                                ImGui::ColorConvertFloat4ToU32(tint_color));
+        }
+    }
+
+    void Image::RenderHomeImage(const std::shared_ptr<Image> &image, const ImVec2 pos, const ImVec2 size,
+                                bool is_hovered) {
+        if (!image)
+            return;
+
+        // Generate a unique ID for this image instance based on its position
+        ImGuiID id = ImGui::GetID(std::to_string(pos.x + pos.y).c_str());
+
+        // Initialize animation progress for this instance if it doesn't exist
+        if (s_animation_progress.find(id) == s_animation_progress.end()) {
+            s_animation_progress[id] = 0.0f;
+        }
+
+        const float imgWidth = image->GetWidth();
+        const float imgHeight = image->GetHeight();
+
+        auto getProperWidth = [](const ImVec2 &original_size, ImVec2 &new_size) {
+            const float aspect_ratio = original_size.x / original_size.y;
+            new_size.x = new_size.y * aspect_ratio;
+        };
+
+        const ImVec2 image_size(imgWidth, imgHeight);
+        ImVec2 rescaled_image_size(0.0f, size.y);
+        getProperWidth(image_size, rescaled_image_size);
+
+        const float aspect_shown = rescaled_image_size.x / size.x;
+        const float base_uv_x = 1.0f / aspect_shown;
+
+        ImDrawList *draw_list = ImGui::GetWindowDrawList();
+
+        // Animation parameters
+        const float animation_speed = 3.1f;
+        const float hover_opacity_boost = 0.3f;
+        const float zoom_factor = -0.01f;
+
+        // Update animation progress using the map
+#ifdef __linux__
+        if (is_hovered) {
+            s_animation_progress[id] = std::min(
+                1.0f, s_animation_progress[id] + ImGui::GetIO().DeltaTime * animation_speed);
+        } else {
+            s_animation_progress[id] = std::max(
+                0.0f, s_animation_progress[id] - ImGui::GetIO().DeltaTime * animation_speed);
+        }
+#else
+        if (is_hovered) {
+            s_animation_progress[id] = min(
+                1.0f, s_animation_progress[id] + ImGui::GetIO().DeltaTime * animation_speed);
+        } else {
+            s_animation_progress[id] = max(
+                0.0f, s_animation_progress[id] - ImGui::GetIO().DeltaTime * animation_speed);
+        }
+#endif
+        // Number of gradient segments
+        const int segments = 60;
+
+        // Calculate segment dimensions
+        const float segment_height = size.y / segments;
+        const float uv_segment_height = 1.0f / segments;
+
+        // Calculate zoom effect on UV coordinates
+        float zoom_amount = zoom_factor * s_animation_progress[id];
+        float uv_x = base_uv_x * (1.0f + zoom_amount);
+
+        // UV coordinates for x-axis with centered zoom
+        const float uv_left = 0.5f - uv_x / 2.0f;
+        const float uv_right = 0.5f + uv_x / 2.0f;
+
+        // Draw each segment with varying alpha
+        for (int i = 0; i < segments; i++) {
+            float y_start = pos.y + (i * segment_height);
+            float y_end = y_start + segment_height;
+
+            // Calculate UV y coordinates with centered zoom
+            float base_uv_y_start = i * uv_segment_height;
+            float base_uv_y_end = (i + 1) * uv_segment_height;
+
+            // Apply zoom to Y coordinates
+            float uv_y_center = 0.5f;
+            float uv_y_start = uv_y_center + (base_uv_y_start - uv_y_center) * (1.0f + zoom_amount);
+            float uv_y_end = uv_y_center + (base_uv_y_end - uv_y_center) * (1.0f + zoom_amount);
+
+            // Base alpha calculation (transparent to opaque)
+            float base_alpha = (float) i / segments;
+
+            // Apply hover effect
+            float hover_boost = hover_opacity_boost * s_animation_progress[id];
+#ifdef __linux__
+            float alpha = std::min(1.0f, base_alpha + hover_boost);
+#else
+            float alpha = min(1.0f, base_alpha + hover_boost);
+#endif
 
             ImVec4 tint_color(1.0f, 1.0f, 1.0f, alpha);
 
