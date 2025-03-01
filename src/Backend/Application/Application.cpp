@@ -60,8 +60,28 @@ GLFWwindow *Infinity::Application::s_WindowHandle = nullptr;
 #include "Assets/Images/windowIcons.h"
 
 namespace Infinity {
-    Application::Application(ApplicationSpecifications applicationSpecification) : m_Specification(
-        std::move(applicationSpecification)) {
+    // the base callback in glfw didnt work in wayland so we will simply force rebuild the swapchain on resize
+    void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
+        if (width == 0 || height == 0) {
+            return;
+        }
+
+        g_SwapChainRebuild = true;
+
+        auto app = static_cast<Application *>(glfwGetWindowUserPointer(window));
+        if (app) {
+            ImGui_ImplVulkanH_Window *wd = &g_MainWindowData;
+            vkDeviceWaitIdle(g_Device);
+            ImGui_ImplVulkanH_CreateOrResizeWindow(g_Instance, g_PhysicalDevice, g_Device, wd, g_QueueFamily, g_Allocator, width, height, g_MinImageCount);
+            wd->FrameIndex = 0;
+            s_AllocatedCommandBuffers.clear();
+            s_AllocatedCommandBuffers.resize(wd->ImageCount);
+            g_SwapChainRebuild = false;
+        }
+    }
+
+
+    Application::Application(ApplicationSpecifications applicationSpecification) : m_Specification(std::move(applicationSpecification)) {
         s_Instance = this;
         Init();
     }
@@ -94,23 +114,18 @@ namespace Infinity {
         glfwGetMonitorPos(primaryMonitor, &monitorX, &monitorY);
 
 
-        m_WindowHandle = glfwCreateWindow(static_cast<int>(m_Specification.window_size.first),
-                                          static_cast<int>(m_Specification.window_size.second),
-                                          m_Specification.name.c_str(), nullptr, nullptr);
+        m_WindowHandle = glfwCreateWindow(static_cast<int>(m_Specification.window_size.first), static_cast<int>(m_Specification.window_size.second), m_Specification.name.c_str(), nullptr, nullptr);
 
         s_WindowHandle = m_WindowHandle;
 
 
-        glfwSetWindowSizeLimits(m_WindowHandle, static_cast<int>(m_Specification.min_size.first),
-                                static_cast<int>(m_Specification.min_size.second),
-                                static_cast<int>(m_Specification.max_size.first),
+        glfwSetWindowSizeLimits(m_WindowHandle, static_cast<int>(m_Specification.min_size.first), static_cast<int>(m_Specification.min_size.second), static_cast<int>(m_Specification.max_size.first),
                                 static_cast<int>(m_Specification.max_size.second));
 
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
         if (m_Specification.center_window) {
-            glfwSetWindowPos(m_WindowHandle,
-                             static_cast<int>(monitorX + (videoMode->width - m_Specification.window_size.first) / 2),
+            glfwSetWindowPos(m_WindowHandle, static_cast<int>(monitorX + (videoMode->width - m_Specification.window_size.first) / 2),
                              static_cast<int>(monitorY + (videoMode->height - m_Specification.window_size.second) / 2));
         }
 
@@ -192,15 +207,14 @@ namespace Infinity {
 
         ImFontConfig fontConfig;
         fontConfig.FontDataOwnedByAtlas = false;
-        ImFont *robotoFont = io.Fonts->AddFontFromMemoryTTF(g_RobotoRegular, sizeof(g_RobotoRegular), 20.0f,
-                                                            &fontConfig);
+        ImFont *robotoFont = io.Fonts->AddFontFromMemoryTTF(g_RobotoRegular, sizeof(g_RobotoRegular), 20.0f, &fontConfig);
         s_Fonts["Default"] = robotoFont;
         s_Fonts["Bold"] = io.Fonts->AddFontFromMemoryTTF(g_RobotoBold, sizeof(g_RobotoBold), 20.0f, &fontConfig);
         s_Fonts["Italic"] = io.Fonts->AddFontFromMemoryTTF(g_RobotoItalic, sizeof(g_RobotoItalic), 20.0f, &fontConfig);
-        s_Fonts["DefaultLarge"] = io.Fonts->AddFontFromMemoryTTF(g_RobotoRegular, sizeof(g_RobotoRegular), 32.0f,
-                                                                 &fontConfig);
+        s_Fonts["DefaultLarge"] = io.Fonts->AddFontFromMemoryTTF(g_RobotoRegular, sizeof(g_RobotoRegular), 32.0f, &fontConfig);
 
-        io.FontDefault = robotoFont; {
+        io.FontDefault = robotoFont;
+        {
             VkCommandPool command_pool = wd->Frames[wd->FrameIndex].CommandPool;
             VkCommandBuffer command_buffer = wd->Frames[wd->FrameIndex].CommandBuffer;
 
@@ -226,27 +240,32 @@ namespace Infinity {
             err = vkDeviceWaitIdle(g_Device);
             inf_check_vk_result(err);
             ImGui_ImplVulkan_DestroyFontUploadObjects();
-        } {
+        }
+        {
             uint32_t w1, h1;
             void *data = Image::Decode(g_WindowCloseIcon, sizeof(g_WindowCloseIcon), w1, h1);
             m_IconClose = std::make_shared<Image>(w1, h1, ImageFormat::RGBA, data);
             free(data);
-        } {
+        }
+        {
             uint32_t w2, h2;
             void *data = Image::Decode(g_WindowMinimizeIcon, sizeof(g_WindowMinimizeIcon), w2, h2);
             m_IconMinimize = std::make_shared<Image>(w2, h2, ImageFormat::RGBA, data);
             free(data);
-        } {
+        }
+        {
             uint32_t w3, h3;
             void *data = Image::Decode(g_InfinityIcon, sizeof(g_InfinityIcon), w3, h3);
             m_AppHeaderIcon = std::make_shared<Image>(w3, h3, ImageFormat::RGBA, data);
             free(data);
-        } {
+        }
+        {
             uint32_t w4, h4;
             void *data = Image::Decode(g_WindowMaximizeIcon, sizeof(g_WindowMaximizeIcon), w4, h4);
             m_IconMaximize = std::make_shared<Image>(w4, h4, ImageFormat::RGBA, data);
             free(data);
-        } {
+        }
+        {
             uint32_t w5, h5;
             void *data = Image::Decode(g_WindowRestoreIcon, sizeof(g_WindowRestoreIcon), w5, h5);
             m_IconRestore = std::make_shared<Image>(w5, h5, ImageFormat::RGBA, data);
@@ -295,53 +314,44 @@ namespace Infinity {
 
         ImGui::SetCursorPos(ImVec2(windowPadding.x, windowPadding.y + title_bar_vertical_offset));
         const ImVec2 title_bar_min = ImGui::GetCursorScreenPos();
-        const ImVec2 title_bar_max = {
-            ImGui::GetCursorScreenPos().x + ImGui::GetWindowWidth() - windowPadding.y * 2.0f,
-            ImGui::GetCursorScreenPos().y + title_bar_height
-        };
+        const ImVec2 title_bar_max = {ImGui::GetCursorScreenPos().x + ImGui::GetWindowWidth() - windowPadding.y * 2.0f, ImGui::GetCursorScreenPos().y + title_bar_height};
         auto *bgDrawList = ImGui::GetBackgroundDrawList();
         auto *fgDrawList = ImGui::GetForegroundDrawList();
         bgDrawList->AddRectFilled(title_bar_min, title_bar_max, UI::Colors::Theme::title_bar);
         fgDrawList->AddRectFilled(title_bar_min, title_bar_max, ImColor(0.0f, 0.0f, 0.0f, 0.2f));
-        fgDrawList->AddLine(ImVec2(title_bar_min.x, title_bar_max.y), title_bar_max, ImColor(0.7f, 0.7f, 0.7f, 0.3f),
-                            1); {
+        fgDrawList->AddLine(ImVec2(title_bar_min.x, title_bar_max.y), title_bar_max, ImColor(0.7f, 0.7f, 0.7f, 0.3f), 1);
+        {
             constexpr int logoWidth = 36;
             constexpr int logoHeight = 36;
             const ImVec2 logoOffset(16.0f + windowPadding.x, 5.0f + windowPadding.y + title_bar_vertical_offset);
-            const ImVec2 logoRectStart = {
-                ImGui::GetItemRectMin().x + logoOffset.x, ImGui::GetItemRectMin().y + logoOffset.y
-            };
+            const ImVec2 logoRectStart = {ImGui::GetItemRectMin().x + logoOffset.x, ImGui::GetItemRectMin().y + logoOffset.y};
             const ImVec2 logoRectMax = {logoRectStart.x + logoWidth, logoRectStart.y + logoHeight};
             // fgDrawList->AddImage(m_AppHeaderIcon->GetDescriptorSet(), logoRectStart, logoRectMax);
-        } {
+        }
+        {
             auto text_size = ImGui::CalcTextSize(m_Specification.name.c_str());
-            fgDrawList->AddText(
-                ImVec2(ImGui::GetWindowWidth() / 2 - text_size.x / 2, title_bar_height / 2 - text_size.y / 2),
-                UI::Colors::Theme::text_darker, m_Specification.name.c_str());
+            fgDrawList->AddText(ImVec2(ImGui::GetWindowWidth() / 2 - text_size.x / 2, title_bar_height / 2 - text_size.y / 2), UI::Colors::Theme::text_darker, m_Specification.name.c_str());
         }
 
-        ImGui::BeginHorizontal("Titlebar", {
-                                   ImGui::GetWindowWidth() - windowPadding.y * 2.0f, ImGui::GetFrameHeightWithSpacing()
-                               });
+        ImGui::BeginHorizontal("Titlebar", {ImGui::GetWindowWidth() - windowPadding.y * 2.0f, ImGui::GetFrameHeightWithSpacing()});
 
         const float w = ImGui::GetContentRegionAvail().x;
         constexpr float buttonsAreaWidth = 94.0f;
         constexpr float leftButtonAreaWidth = 68.0f;
 
         ImGui::SetCursorPos(ImVec2(windowPadding.x + leftButtonAreaWidth, windowPadding.y + title_bar_vertical_offset));
-        ImGui::InvisibleButton("##titleBarDragZone",
-                               ImVec2(w - buttonsAreaWidth - leftButtonAreaWidth, title_bar_height));
+        ImGui::InvisibleButton("##titleBarDragZone", ImVec2(w - buttonsAreaWidth - leftButtonAreaWidth, title_bar_height));
 
         m_TitleBarHovered = ImGui::IsItemHovered();
 
         if (isMaximized) {
-            if (const float windowMousePosY = ImGui::GetMousePos().y - ImGui::GetCursorScreenPos().y;
-                windowMousePosY >= 0.0f && windowMousePosY <= 5.0f)
+            if (const float windowMousePosY = ImGui::GetMousePos().y - ImGui::GetCursorScreenPos().y; windowMousePosY >= 0.0f && windowMousePosY <= 5.0f)
                 m_TitleBarHovered = true;
         }
 
         if (m_MenubarCallback) {
-            ImGui::SuspendLayout(); {
+            ImGui::SuspendLayout();
+            {
                 ImGui::SetItemAllowOverlap();
                 const float logoHorizontalOffset = 16.0f * 2.0f + 48.0f + windowPadding.x;
                 ImGui::SetCursorPos(ImVec2(logoHorizontalOffset, 6.0f + title_bar_vertical_offset));
@@ -362,25 +372,24 @@ namespace Infinity {
 
 
         ImGui::Spring();
-        ShiftCursorY(8.0f); {
+        ShiftCursorY(8.0f);
+        {
             const int iconHeight = static_cast<int>(m_IconMinimize->GetHeight());
             const float padY = (buttonHeight - static_cast<float>(iconHeight)) / 2.0f;
             if (ImGui::InvisibleButton("Minimize", ImVec2(buttonWidth, buttonHeight))) {
                 if (m_WindowHandle) {
                     if (const auto application = Get(); application.has_value()) {
-                        (*application)->QueueEvent([windowHandle = m_WindowHandle]() {
-                            glfwIconifyWindow(windowHandle);
-                        });
+                        (*application)->QueueEvent([windowHandle = m_WindowHandle]() { glfwIconifyWindow(windowHandle); });
                     }
                 }
             }
 
-            DrawButtonImage(m_IconMinimize, buttonColN, buttonColH, buttonColP,
-                            RectExpanded(GetItemRect(), 0.0f, -padY));
+            DrawButtonImage(m_IconMinimize, buttonColN, buttonColH, buttonColP, RectExpanded(GetItemRect(), 0.0f, -padY));
         }
 
         ImGui::Spring(-1.0f, 17.0f);
-        ShiftCursorY(8.0f); {
+        ShiftCursorY(8.0f);
+        {
             const bool isMaximized = IsMaximized();
 
             if (ImGui::InvisibleButton("Maximize", ImVec2(buttonWidth, buttonHeight))) {
@@ -398,7 +407,8 @@ namespace Infinity {
         }
 
         ImGui::Spring(-1.0f, 15.0f);
-        ShiftCursorY(8.0f); {
+        ShiftCursorY(8.0f);
+        {
             if (ImGui::InvisibleButton("Close", ImVec2(buttonWidth, buttonHeight))) {
                 if (const auto application = Get(); application.has_value()) {
                     (*application)->Close();
@@ -419,10 +429,7 @@ namespace Infinity {
             return;
 
         if (m_Specification.custom_titlebar) {
-            const ImRect menuBarRect = {
-                ImGui::GetCursorPos(),
-                {ImGui::GetContentRegionAvail().x + ImGui::GetCursorScreenPos().x, ImGui::GetFrameHeightWithSpacing()}
-            };
+            const ImRect menuBarRect = {ImGui::GetCursorPos(), {ImGui::GetContentRegionAvail().x + ImGui::GetCursorScreenPos().x, ImGui::GetFrameHeightWithSpacing()}};
 
             ImGui::BeginGroup();
             if (BeginMenubar(menuBarRect)) {
@@ -460,11 +467,13 @@ namespace Infinity {
 
         io.IniFilename = nullptr;
 
+        glfwSetFramebufferSizeCallback(m_WindowHandle, framebuffer_size_callback);
 
         // Main loop
         while (!glfwWindowShouldClose(m_WindowHandle) && m_Running) {
             const double startTime = glfwGetTime();
-            glfwPollEvents(); {
+            glfwPollEvents();
+            {
                 std::scoped_lock<std::mutex> lock(m_EventQueueMutex);
 
                 while (!m_EventQueue.empty()) {
@@ -483,8 +492,7 @@ namespace Infinity {
                 glfwGetFramebufferSize(m_WindowHandle, &width, &height);
                 if (width > 0 && height > 0) {
                     ImGui_ImplVulkan_SetMinImageCount(g_MinImageCount);
-                    ImGui_ImplVulkanH_CreateOrResizeWindow(g_Instance, g_PhysicalDevice, g_Device, &g_MainWindowData,
-                                                           g_QueueFamily, g_Allocator, width, height, g_MinImageCount);
+                    ImGui_ImplVulkanH_CreateOrResizeWindow(g_Instance, g_PhysicalDevice, g_Device, &g_MainWindowData, g_QueueFamily, g_Allocator, width, height, g_MinImageCount);
                     g_MainWindowData.FrameIndex = 0;
 
                     s_AllocatedCommandBuffers.clear();
@@ -496,7 +504,8 @@ namespace Infinity {
 
             ImGui_ImplVulkan_NewFrame();
             ImGui_ImplGlfw_NewFrame();
-            ImGui::NewFrame(); {
+            ImGui::NewFrame();
+            {
                 ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDocking;
 
                 const ImGuiViewport *viewport = ImGui::GetMainViewport();
@@ -507,8 +516,7 @@ namespace Infinity {
                 ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 4.0f);
                 ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
                 ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-                window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize |
-                        ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBackground;
+                window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBackground;
                 window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
                 if (!m_Specification.custom_titlebar && m_MenubarCallback)
                     window_flags |= ImGuiWindowFlags_MenuBar;
@@ -534,8 +542,7 @@ namespace Infinity {
             // Rendering
             ImGui::Render();
             ImDrawData *main_draw_data = ImGui::GetDrawData();
-            const bool main_is_minimized = (main_draw_data->DisplaySize.x <= 0.0f || main_draw_data->DisplaySize.y <=
-                                            0.0f);
+            const bool main_is_minimized = (main_draw_data->DisplaySize.x <= 0.0f || main_draw_data->DisplaySize.y <= 0.0f);
             wd->ClearValue.color.float32[0] = clear_color.x * clear_color.w;
             wd->ClearValue.color.float32[1] = clear_color.y * clear_color.w;
             wd->ClearValue.color.float32[2] = clear_color.z * clear_color.w;
@@ -576,9 +583,7 @@ namespace Infinity {
 
     void Application::Close() { m_Running = false; }
 
-    bool Application::IsMaximized() const {
-        return static_cast<bool>(glfwGetWindowAttrib(m_WindowHandle, GLFW_MAXIMIZED));
-    }
+    bool Application::IsMaximized() const { return static_cast<bool>(glfwGetWindowAttrib(m_WindowHandle, GLFW_MAXIMIZED)); }
 
     float Application::GetTime() { return static_cast<float>(glfwGetTime()); }
 
@@ -652,9 +657,7 @@ namespace Infinity {
         vkDestroyFence(g_Device, fence, nullptr);
     }
 
-    void Application::SubmitResourceFree(std::function<void()> &&func) {
-        s_ResourceFreeQueue[s_CurrentFrameIndex].emplace_back(func);
-    }
+    void Application::SubmitResourceFree(std::function<void()> &&func) { s_ResourceFreeQueue[s_CurrentFrameIndex].emplace_back(func); }
 
     ImFont *Application::GetFont(const std::string &name) {
         if (!s_Fonts.contains(name))

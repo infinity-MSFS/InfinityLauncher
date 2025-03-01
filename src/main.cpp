@@ -27,7 +27,6 @@ bool g_ApplicationRunning = true;
 
 // #define TEST_LOADING_SCREEN
 
-
 static int downloadID = -1;
 static bool pages_registered = false;
 static std::vector<unsigned int> active_index = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13};

@@ -2,8 +2,8 @@
 #pragma once
 
 
-#include "Backend/Layer/Layer.hpp"
 #include "Backend/Image/Image.hpp"
+#include "Backend/Layer/Layer.hpp"
 
 #include <filesystem>
 #include <functional>
@@ -12,8 +12,8 @@
 #include <optional>
 #include <queue>
 #include <string>
-#include <vector>
 #include <utility>
+#include <vector>
 
 
 #include "imgui.h"
@@ -36,6 +36,7 @@ namespace Infinity {
         bool center_window;
     };
 
+    void framebuffer_size_callback(GLFWwindow *window, int width, int height);
     class Application {
     public:
         explicit Application(ApplicationSpecifications applicationSpecification);
@@ -136,4 +137,4 @@ namespace Infinity {
     };
 
     Application *CreateApplication(int argc, char **argv);
-}
+} // namespace Infinity

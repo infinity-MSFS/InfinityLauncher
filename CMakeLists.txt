@@ -26,7 +26,7 @@ load_keys()
 
 project(InfinityLauncher)
 
-set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD 23 REQUIRED)
 
 message("${Blue}Using toolchain file: ${Green}${CMAKE_TOOLCHAIN_FILE}")
 find_package(ZLIB REQUIRED)
@@ -80,6 +80,11 @@ message("${Blue}Fetched:${Green}InfinityDeps ${Blue}set to:${Green}${infinity_SO
 if (UNIX)
     message("${Blue}Fetched:${Green}MiniKdeNotify ${Blue}set to:${Green}${minikdenotify_SOURCE_DIR}${ColorReset}")
 endif ()
+
+if(NOT INFINITY_USE_X11 AND NOT INFINITY_USE_WAYLAND AND UNIX) 
+  set(INFINITY_USE_WAYLAND ON)
+endif()
+
 
 if (WIN32)
     message("${Green}Detected Windows${ColorReset}")

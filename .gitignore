@@ -1,5 +1,8 @@
 cmake-build-*
 build
 vcpkg-*
+out
 keys/*.bin
 .idea/workspace.xml
+compile_commands.json
+.cache
