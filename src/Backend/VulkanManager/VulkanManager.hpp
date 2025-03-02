@@ -7,8 +7,8 @@
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_vulkan.h"
 
-#include <stdexcept>
 #include <functional>
+#include <stdexcept>
 
 
 namespace Infinity::Vulkan {
@@ -307,17 +307,13 @@ namespace Infinity::Vulkan {
         wd->SemaphoreIndex = (wd->SemaphoreIndex + 1) % wd->ImageCount;
     }
 
-    static uint32_t findMemoryType(
-            VkPhysicalDevice physicalDevice,
-            uint32_t typeFilter,
-            VkMemoryPropertyFlags properties) {
+    static uint32_t findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties) {
 
         VkPhysicalDeviceMemoryProperties memProperties;
         vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
 
         for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
-            if ((typeFilter & (1 << i)) &&
-                (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+            if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
                 return i;
             }
         }
@@ -326,14 +322,8 @@ namespace Infinity::Vulkan {
     }
 
 
-    static VkResult createBuffer(
-            VkDevice device,
-            VkPhysicalDevice physicalDevice,
-            VkDeviceSize size,
-            VkBufferUsageFlags usage,
-            VkMemoryPropertyFlags properties,
-            VkBuffer &buffer,
-            VkDeviceMemory &bufferMemory) {
+    static VkResult createBuffer(VkDevice device, VkPhysicalDevice physicalDevice, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer &buffer,
+                                 VkDeviceMemory &bufferMemory) {
 
         VkBufferCreateInfo bufferInfo{};
         bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -351,11 +341,7 @@ namespace Infinity::Vulkan {
         VkMemoryAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
         allocInfo.allocationSize = memRequirements.size;
-        allocInfo.memoryTypeIndex = findMemoryType(
-                physicalDevice,
-                memRequirements.memoryTypeBits,
-                properties
-                );
+        allocInfo.memoryTypeIndex = findMemoryType(physicalDevice, memRequirements.memoryTypeBits, properties);
 
         if (vkAllocateMemory(device, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS) {
             vkDestroyBuffer(device, buffer, nullptr);
@@ -367,9 +353,7 @@ namespace Infinity::Vulkan {
     }
 
 
-    static VkCommandBuffer beginSingleTimeCommands(
-            VkDevice device,
-            VkCommandPool commandPool) {
+    static VkCommandBuffer beginSingleTimeCommands(VkDevice device, VkCommandPool commandPool) {
 
         VkCommandBufferAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -389,11 +373,7 @@ namespace Infinity::Vulkan {
         return commandBuffer;
     }
 
-    static void endSingleTimeCommands(
-            VkDevice device,
-            VkCommandPool commandPool,
-            VkQueue graphicsQueue,
-            VkCommandBuffer commandBuffer) {
+    static void endSingleTimeCommands(VkDevice device, VkCommandPool commandPool, VkQueue graphicsQueue, VkCommandBuffer commandBuffer) {
 
         vkEndCommandBuffer(commandBuffer);
 
@@ -409,14 +389,7 @@ namespace Infinity::Vulkan {
     }
 
 
-    static void transitionImageLayout(
-            VkDevice device,
-            VkCommandPool commandPool,
-            VkQueue graphicsQueue,
-            VkImage image,
-            VkFormat format,
-            VkImageLayout oldLayout,
-            VkImageLayout newLayout) {
+    static void transitionImageLayout(VkDevice device, VkCommandPool commandPool, VkQueue graphicsQueue, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) {
 
         VkCommandBuffer commandBuffer = beginSingleTimeCommands(device, commandPool);
 
@@ -436,15 +409,13 @@ namespace Infinity::Vulkan {
         VkPipelineStageFlags sourceStage;
         VkPipelineStageFlags destinationStage;
 
-        if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED &&
-            newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+        if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
             barrier.srcAccessMask = 0;
             barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 
             sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
             destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-        } else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL &&
-                   newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+        } else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
             barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
             barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
@@ -454,27 +425,13 @@ namespace Infinity::Vulkan {
             throw std::runtime_error("Unsupported layout transition!");
         }
 
-        vkCmdPipelineBarrier(
-                commandBuffer,
-                sourceStage, destinationStage,
-                0,
-                0, nullptr,
-                0, nullptr,
-                1, &barrier
-                );
+        vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 
         endSingleTimeCommands(device, commandPool, graphicsQueue, commandBuffer);
     }
 
 
-    static void copyBufferToImage(
-            VkDevice device,
-            VkCommandPool commandPool,
-            VkQueue graphicsQueue,
-            VkBuffer buffer,
-            VkImage image,
-            uint32_t width,
-            uint32_t height) {
+    static void copyBufferToImage(VkDevice device, VkCommandPool commandPool, VkQueue graphicsQueue, VkBuffer buffer, VkImage image, uint32_t width, uint32_t height) {
 
         VkCommandBuffer commandBuffer = beginSingleTimeCommands(device, commandPool);
 
@@ -489,18 +446,11 @@ namespace Infinity::Vulkan {
         region.imageOffset = {0, 0, 0};
         region.imageExtent = {width, height, 1};
 
-        vkCmdCopyBufferToImage(
-                commandBuffer,
-                buffer,
-                image,
-                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                1,
-                &region
-                );
+        vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
         endSingleTimeCommands(device, commandPool, graphicsQueue, commandBuffer);
     }
 
     static void glfw_error_callback(const int error, const char *description) { fprintf(stderr, "Glfw Error %d: %s\n", error, description); }
 
-} // namespace InfinityRenderer::Vulkan
+} // namespace Infinity::Vulkan

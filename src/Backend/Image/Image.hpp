@@ -1,21 +1,17 @@
 
 #pragma once
 
-#include <string>
-#include <memory>
-#include <vector>
 #include <map>
+#include <memory>
+#include <string>
+#include <vector>
 
+#include "curl/curl.h"
 #include "imgui.h"
 #include "vulkan/vulkan.h"
-#include "curl/curl.h"
 
 namespace Infinity {
-    enum class ImageFormat {
-        None = 0,
-        RGBA,
-        RGBA32F
-    };
+    enum class ImageFormat { None = 0, RGBA, RGBA32F };
 
     class Image {
     public:
@@ -39,7 +35,7 @@ namespace Infinity {
 
         void SetData(const void *data);
 
-        [[nodiscard]] VkDescriptorSet GetDescriptorSet() const { return m_DescriptorSet; }
+        [[nodiscard]] VkDescriptorSet GetDescriptorSet() const;
 
         void Resize(uint32_t width, uint32_t height);
 
@@ -60,7 +56,8 @@ namespace Infinity {
         static void RenderImage(const std::shared_ptr<Image> &image, ImVec2 pos, float scale);
 
         /// <summary>
-        /// Renders a pre-constructed image with a specified width and height. The image will always fill the height requirement (if the image width > specified width, the image will be clipped evenly left and right)
+        /// Renders a pre-constructed image with a specified width and height. The image will always fill the height requirement (if the image width > specified width, the image will be clipped evenly
+        /// left and right)
         /// </summary>
         /// <param name="image">Shared pointer to an Infinity::Image</param>
         /// <param name="pos">X any Y position to render the image</param>
@@ -80,25 +77,35 @@ namespace Infinity {
 
         void Release();
 
-    private:
+        struct Impl;
+        std::unique_ptr<Impl> m_Impl;
+
         uint32_t m_Width = 0, m_Height = 0;
-
-        VkImage m_Image = nullptr;
-        VkImageView m_ImageView = nullptr;
-        VkDeviceMemory m_Memory = nullptr;
-        VkSampler m_Sampler = nullptr;
-
         ImageFormat m_Format = ImageFormat::None;
-
-        VkBuffer m_StagingBuffer = nullptr;
-        VkDeviceMemory m_StagingBufferMemory = nullptr;
-
-        size_t m_AlignedSize = 0;
-
-        VkDescriptorSet m_DescriptorSet = nullptr;
-
         std::string m_Filepath;
 
         static std::map<ImGuiID, float> s_animation_progress;
     };
-}
+
+    namespace Utils {
+        struct VulkanDeleter {
+            void operator()(VkImage image) const;
+            void operator()(VkImageView imageView) const;
+            void operator()(VkSampler sampler) const;
+            void operator()(VkBuffer buffer) const;
+            void operator()(VkDeviceMemory memory) const;
+            void operator()(VkCommandPool commandPool) const;
+            void operator()(VkDescriptorPool descriptorPool) const;
+            void operator()(VkDescriptorSetLayout descriptorSetLayout) const;
+            void operator()(VkPipelineLayout pipelineLayout) const;
+            void operator()(VkPipeline pipeline) const;
+            void operator()(VkRenderPass renderPass) const;
+            void operator()(VkFramebuffer framebuffer) const;
+            void operator()(VkShaderModule shaderModule) const;
+            void operator()(VkSemaphore semaphore) const;
+            void operator()(VkFence fence) const;
+            void operator()(VkSwapchainKHR swapchain) const;
+            void operator()(VkSurfaceKHR surface) const;
+        };
+    } // namespace Utils
+} // namespace Infinity
