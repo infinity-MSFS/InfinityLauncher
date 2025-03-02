@@ -1,9 +1,9 @@
 
 #include "Home.hpp"
 
-#include "imgui.h"
 #include "Backend/Router/Router.hpp"
 #include "Frontend/SVG/SVGDrawing.hpp"
+#include "imgui.h"
 
 #include <numeric>
 
@@ -29,16 +29,12 @@ namespace Infinity {
         }
     }
 
-    void Home::RegisterProject(const std::string &name, const std::string &image_link, const std::string &logo_link, const int page_id) {
-        auto image_link_ptr = Image::LoadFromURL(image_link);
-        auto logo_link_ptr = Image::LoadFromURL(logo_link);
-        m_HomeProjectButtons.emplace_back(name, (std::move(image_link_ptr)), (std::move(logo_link_ptr)), page_id);
-    }
+    void Home::RegisterProject(const std::string &name, std::shared_ptr<Image> image, std::shared_ptr<Image> logo, const int page_id) { m_HomeProjectButtons.emplace_back(name, image, logo, page_id); }
 
     void Home::RegisterProject(const std::vector<HomeProjectButtonStruct> &projects) {
         // for (const auto &project: projects) {
         // }
-        //m_HomeProjectButtons = projects;
+        // m_HomeProjectButtons = projects;
     }
 
     void Home::UnregisterProject(const std::string &name) {
@@ -62,7 +58,7 @@ namespace Infinity {
         const ImVec2 position(x_pos, y_pos);
         const ImVec2 size(ImGui::GetWindowWidth() / 4 - 50.0f, ImGui::GetWindowHeight() - 250.0f);
 
-        //TODO: Max logo size
+        // TODO: Max logo size
         const ImVec2 logo_size(ImGui::GetWindowWidth() / 4 - 150.0f, ImGui::GetWindowWidth() / 4 - 150.0f);
         const auto logo_position = ImVec2(x_pos + size.x / 2 - logo_size.x / 2, ImGui::GetWindowHeight() - logo_size.y - 150.0f);
 
@@ -80,7 +76,6 @@ namespace Infinity {
                 if (auto result = (*router)->setPage(page_index); !result.has_value()) {
                     Errors::Error(result.error()).Dispatch();
                 }
-
             }
         }
         ImGui::PushFont(Application::GetFont("DefaultLarge"));
@@ -88,7 +83,6 @@ namespace Infinity {
         ImGui::SetCursorPos({x_pos + size.x / 2 - text_size.x / 2, ImGui::GetWindowHeight() - 80.0f});
         ImGui::Text("%s", project.name.c_str());
         ImGui::PopFont();
-
     }
 
     Home *Home::GetInstance() {
@@ -97,4 +91,4 @@ namespace Infinity {
     }
 
 
-}
+} // namespace Infinity

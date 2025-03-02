@@ -174,6 +174,16 @@ namespace Infinity {
 
         ~Impl() { Release(); }
 
+        void ReleaseStagingResources() {
+            auto release = [](auto &resource, auto deleter) {
+                if (auto device = Application::GetDevice().value(); resource) {
+                    Application::SubmitResourceFree([res = resource, del = deleter, device] { del(device, res, nullptr); });
+                }
+            };
+            release(staging_buffer, vkDestroyBuffer);
+            release(staging_buffer_memory, vkFreeMemory);
+        }
+
         void Release() {
             auto releaseResource = [](auto &resource, auto deleter) {
                 if (resource) {
@@ -474,6 +484,8 @@ namespace Infinity {
             vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 
             Application::FlushCommandBuffer(commandBuffer);
+
+            m_Impl->ReleaseStagingResources();
         }
     }
 
