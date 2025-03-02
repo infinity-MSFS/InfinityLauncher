@@ -72,9 +72,21 @@ namespace Infinity {
         if (app) {
             ImGui_ImplVulkanH_Window *wd = &g_MainWindowData;
             vkDeviceWaitIdle(g_Device);
+
+            for (size_t i = 0; i < s_AllocatedCommandBuffers.size(); i++) {
+                if (!s_AllocatedCommandBuffers[i].empty()) {
+                    VkCommandPool frame_command_pool = wd->Frames[i % wd->ImageCount].CommandPool;
+
+                    vkFreeCommandBuffers(g_Device, frame_command_pool, static_cast<uint32_t>(s_AllocatedCommandBuffers[i].size()), s_AllocatedCommandBuffers[i].data());
+
+                    s_AllocatedCommandBuffers[i].clear();
+                }
+            }
+
+            s_AllocatedCommandBuffers.clear();
+
             ImGui_ImplVulkanH_CreateOrResizeWindow(g_Instance, g_PhysicalDevice, g_Device, wd, g_QueueFamily, g_Allocator, width, height, g_MinImageCount);
             wd->FrameIndex = 0;
-            s_AllocatedCommandBuffers.clear();
             s_AllocatedCommandBuffers.resize(wd->ImageCount);
             g_SwapChainRebuild = false;
         }
@@ -609,23 +621,34 @@ namespace Infinity {
     }
 
     VkCommandBuffer Application::GetCommandBuffer(bool begin) {
+        while (g_SwapChainRebuild) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+
         const ImGui_ImplVulkanH_Window *wd = &g_MainWindowData;
         VkCommandPool command_pool = wd->Frames[wd->FrameIndex].CommandPool;
 
-        VkCommandBufferAllocateInfo cmdBufAllocateInfo = {};
-        cmdBufAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        cmdBufAllocateInfo.commandPool = command_pool;
-        cmdBufAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        cmdBufAllocateInfo.commandBufferCount = 1;
+        if (wd->FrameIndex >= s_AllocatedCommandBuffers.size()) {
+            s_AllocatedCommandBuffers.resize(wd->ImageCount);
+        }
+
+        VkCommandBufferAllocateInfo command_buffer_allocate_info = {};
+        command_buffer_allocate_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        command_buffer_allocate_info.commandPool = command_pool;
+        command_buffer_allocate_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        command_buffer_allocate_info.commandBufferCount = 1;
 
         VkCommandBuffer &command_buffer = s_AllocatedCommandBuffers[wd->FrameIndex].emplace_back();
-        auto err = vkAllocateCommandBuffers(g_Device, &cmdBufAllocateInfo, &command_buffer);
+        auto err = vkAllocateCommandBuffers(g_Device, &command_buffer_allocate_info, &command_buffer);
         inf_check_vk_result(err);
-        VkCommandBufferBeginInfo begin_info = {};
-        begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        begin_info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-        err = vkBeginCommandBuffer(command_buffer, &begin_info);
-        inf_check_vk_result(err);
+
+        if (begin) {
+            VkCommandBufferBeginInfo begin_info = {};
+            begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+            begin_info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+            err = vkBeginCommandBuffer(command_buffer, &begin_info);
+            inf_check_vk_result(err);
+        }
 
         return command_buffer;
     }
