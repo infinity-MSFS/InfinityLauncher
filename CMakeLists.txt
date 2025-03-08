@@ -60,6 +60,7 @@ message("${Blue}Fetching Remote Dependencies${Green}")
 if (WIN32)
     FetchContent_Declare(GLFW GIT_REPOSITORY https://github.com/TheCherno/glfw.git)
 endif ()
+FetchContent_Declare(Traypp GIT_REPOSITORY https://github.com/Soundux/traypp.git)
 FetchContent_Declare(Boxer GIT_REPOSITORY https://github.com/aaronmjacobs/Boxer.git)
 FetchContent_Declare(Infinity GIT_REPOSITORY https://github.com/infinity-MSFS/InfinityLauncherDependencies.git)
 if (UNIX)
@@ -67,10 +68,12 @@ if (UNIX)
     pkg_check_modules(DBUS REQUIRED dbus-1)
     FetchContent_Declare(MiniKDENotify GIT_REPOSITORY https://github.com/rikka-gh/MiniKDENotify.git)
 
-    FetchContent_MakeAvailable(Boxer Infinity MiniKDENotify)
+    FetchContent_MakeAvailable(Boxer Infinity MiniKDENotify Traypp)
 else ()
-    FetchContent_MakeAvailable(GLFW Boxer Infinity)
+    FetchContent_MakeAvailable(GLFW Boxer Infinity Traypp)
 endif ()
+
+#add_subdirectory(${traypp_SOURCE_DIR} EXCLUDE_FROM_ALL)
 
 if (WIN32)
     message("${Blue}Fetched:${Green}GLFW ${Blue}set to:${Green}${glfw_SOURCE_DIR}${ColorReset}")
@@ -81,9 +84,9 @@ if (UNIX)
     message("${Blue}Fetched:${Green}MiniKdeNotify ${Blue}set to:${Green}${minikdenotify_SOURCE_DIR}${ColorReset}")
 endif ()
 
-if(NOT INFINITY_USE_X11 AND NOT INFINITY_USE_WAYLAND AND UNIX) 
-  set(INFINITY_USE_WAYLAND ON)
-endif()
+if (NOT INFINITY_USE_X11 AND NOT INFINITY_USE_WAYLAND AND UNIX)
+    set(INFINITY_USE_WAYLAND ON)
+endif ()
 
 
 if (WIN32)
@@ -131,6 +134,8 @@ add_executable(InfinityLauncher
         src/Backend/Encryption/Encryption.hpp
         src/Backend/Encryption/Encryption.cpp
         src/Backend/Encryption/Encryption.hpp
+        src/Backend/SystemTray/SystemTray.cpp
+        src/Backend/SystemTray/SystemTray.hpp
 
         # -- Util Source Files --
         src/Util/Easing/Easing.hpp
@@ -164,6 +169,9 @@ add_executable(InfinityLauncher
         src/Util/GroupUtil/GroupUtil.hpp
         src/Backend/Updater/Updater.cpp
         src/Backend/Updater/Updater.hpp
+        src/Frontend/Markdown/Markdown.cpp
+        src/Frontend/Markdown/Markdown.hpp
+        src/Assets/Fonts/IcontsFontAwesome5.h
 )
 
 
@@ -257,7 +265,7 @@ if (WIN32)
 else ()
     set(ZOE_LIB zoe::zoe-static)
 endif ()
-target_link_libraries(InfinityLauncher PRIVATE WebP::webp WebP::webpdecoder ${ZOE_LIB} WebP::webpdemux Vulkan::Vulkan glfw Boxer CURL::libcurl OpenSSL::SSL OpenSSL::Crypto unofficial::minizip::minizip ZLIB::ZLIB msgpack-cxx ${TOAST_LIB})
+target_link_libraries(InfinityLauncher PRIVATE tray WebP::webp WebP::webpdecoder ${ZOE_LIB} WebP::webpdemux Vulkan::Vulkan glfw Boxer CURL::libcurl OpenSSL::SSL OpenSSL::Crypto unofficial::minizip::minizip ZLIB::ZLIB msgpack-cxx ${TOAST_LIB})
 
 add_custom_target(InfinityLauncherDist)
 add_dependencies(InfinityLauncherDist

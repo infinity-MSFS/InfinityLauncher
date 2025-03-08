@@ -2,5 +2,9 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/out/Debug/_deps/boxer-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/out/Debug/_deps/infinity-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/out/Debug/_deps/minikdenotify-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/out/Debug/_deps/traypp-src" vcs="Git" />
   </component>
 </project>

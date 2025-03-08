@@ -8,6 +8,7 @@
 #define GLFW_EXPOSE_NATIVE_X11
 #endif
 #include "Application.hpp"
+#include "Backend/SystemTray/SystemTray.hpp"
 #include "Backend/UIHelpers/UiHelpers.hpp"
 #include "Backend/VulkanManager/VulkanManager.hpp"
 #include "Frontend/Theme/Theme.hpp"
@@ -106,6 +107,8 @@ namespace Infinity {
     std::optional<Application *> Application::Get() { return s_Instance; }
 
     void Application::Init() {
+
+
         glfwSetErrorCallback(glfw_error_callback);
         if (!glfwInit()) {
             std::cerr << "could not init glfw\n";
@@ -224,6 +227,10 @@ namespace Infinity {
         s_Fonts["Bold"] = io.Fonts->AddFontFromMemoryTTF(g_RobotoBold, sizeof(g_RobotoBold), 20.0f, &fontConfig);
         s_Fonts["Italic"] = io.Fonts->AddFontFromMemoryTTF(g_RobotoItalic, sizeof(g_RobotoItalic), 20.0f, &fontConfig);
         s_Fonts["DefaultLarge"] = io.Fonts->AddFontFromMemoryTTF(g_RobotoRegular, sizeof(g_RobotoRegular), 32.0f, &fontConfig);
+        s_Fonts["h1"] = io.Fonts->AddFontFromMemoryTTF(g_RobotoBold, sizeof(g_RobotoBold), 32.0f, &fontConfig);
+        s_Fonts["h2"] = io.Fonts->AddFontFromMemoryTTF(g_RobotoBold, sizeof(g_RobotoBold), 24.0f, &fontConfig);
+        s_Fonts["h3"] = io.Fonts->AddFontFromMemoryTTF(g_RobotoBold, sizeof(g_RobotoBold), 20.0f, &fontConfig);
+
 
         io.FontDefault = robotoFont;
         {
@@ -473,6 +480,8 @@ namespace Infinity {
     void Application::Run() {
         m_Running = true;
 
+        SystemTray systemTray(m_WindowHandle);
+
         ImGui_ImplVulkanH_Window *wd = &g_MainWindowData;
         const auto clear_color = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
         ImGuiIO &io = ImGui::GetIO();
@@ -480,7 +489,7 @@ namespace Infinity {
         io.IniFilename = nullptr;
 
         glfwSetFramebufferSizeCallback(m_WindowHandle, framebuffer_size_callback);
-
+        systemTray.run();
         // Main loop
         while (!glfwWindowShouldClose(m_WindowHandle) && m_Running) {
             const double startTime = glfwGetTime();

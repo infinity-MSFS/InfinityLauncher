@@ -485,6 +485,7 @@ namespace Infinity {
 
             Application::FlushCommandBuffer(commandBuffer);
 
+
             m_Impl->ReleaseStagingResources();
         }
     }
