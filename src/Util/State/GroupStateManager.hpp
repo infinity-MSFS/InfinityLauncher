@@ -250,21 +250,21 @@ namespace Infinity {
         for (const auto &[group_key, group_bin]: bin.groupImages) {
             GroupDataImages group_images;
 
-            group_images.logo = Image::ConstructFromBin(group_bin.logo);
+            group_images.logo = Image::LoadFromBinary(group_bin.logo);
 
             group_images.projectImages.reserve(group_bin.projectImages.size());
             for (const auto &project_bin: group_bin.projectImages) {
                 ProjectImages project_images;
-                project_images.backgroundImage = Image::ConstructFromBin(project_bin.backgroundImage);
+                project_images.backgroundImage = Image::LoadFromBinary(project_bin.backgroundImage);
 
                 if (project_bin.pageBackgroundImage) {
-                    project_images.pageBackgroundImage = Image::ConstructFromBin(*project_bin.pageBackgroundImage);
+                    project_images.pageBackgroundImage = Image::LoadFromBinary(*project_bin.pageBackgroundImage);
                 }
 
                 group_images.projectImages.push_back(std::move(project_images));
             }
 
-            group_images.beta.background = Image::ConstructFromBin(group_bin.beta.background);
+            group_images.beta.background = Image::LoadFromBinary(group_bin.beta.background);
 
             images.groupImages[group_key] = std::move(group_images);
         }

@@ -50,24 +50,9 @@ public:
         state.RegisterPageState("main", std::make_shared<Infinity::MainState>(group_state));
 
         std::thread([] {
-            {
-                uint32_t w1, h1;
-                void *data = Infinity::Image::Decode(g_SettingIcon, sizeof(g_SettingIcon), w1, h1);
-                settingsIcon = std::make_shared<Infinity::Image>(w1, h1, Infinity::ImageFormat::RGBA, data);
-                free(data);
-            }
-            {
-                uint32_t w2, h2;
-                void *data = Infinity::Image::Decode(g_BackIcon, sizeof(g_BackIcon), w2, h2);
-                backIcon = std::make_shared<Infinity::Image>(w2, h2, Infinity::ImageFormat::RGBA, data);
-                free(data);
-            }
-            {
-                uint32_t w3, h3;
-                void *data = Infinity::Image::Decode(g_DownloadIcon, sizeof(g_DownloadIcon), w3, h3);
-                downloadsIcon = std::make_shared<Infinity::Image>(w3, h3, Infinity::ImageFormat::RGBA, data);
-                free(data);
-            }
+            settingsIcon = Infinity::Image::LoadFromMemory(g_SettingIcon, sizeof(g_SettingIcon));
+            backIcon = Infinity::Image::LoadFromMemory(g_BackIcon, sizeof(g_BackIcon));
+            downloadsIcon = Infinity::Image::LoadFromMemory(g_DownloadIcon, sizeof(g_DownloadIcon));
 
 
             auto thread_state = Infinity::State::GetInstance().GetPageState<Infinity::MainState>("main");

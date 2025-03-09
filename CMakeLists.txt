@@ -131,7 +131,6 @@ add_executable(InfinityLauncher
         src/Backend/Layer/Layer.hpp
         src/Backend/UIHelpers/UiHelpers.cpp
         src/Backend/UIHelpers/UiHelpers.hpp
-        src/Backend/VulkanManager/VulkanManager.hpp
         src/Backend/Router/Router.cpp
         src/Backend/Router/Router.hpp
         src/Backend/Encryption/Encryption.cpp
@@ -176,6 +175,8 @@ add_executable(InfinityLauncher
         src/Frontend/Pages/Project/Project.hpp
         src/Frontend/Markdown/Markdown.cpp
         src/Frontend/Markdown/Markdown.hpp
+        src/Backend/TextureQueue/TextureQueue.hpp
+        src/Backend/TextureQueue/TextureQueue.cpp
 
 )
 

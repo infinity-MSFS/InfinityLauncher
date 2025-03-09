@@ -30,6 +30,7 @@
 #include "Assets/Images/InfinityAppIcon.h"
 #include "Assets/Images/logo.h"
 #include "Assets/Images/windowIcons.h"
+#include "Backend/TextureQueue/TextureQueue.hpp"
 #include "stb_image/stb_image.h"
 
 
@@ -124,7 +125,12 @@ namespace Infinity {
 
         io.FontDefault = roboto;
 
-        // TODO: load images
+        {
+            int width, height;
+            GLuint data;
+            std::shared_ptr<Image> close_image = Image::LoadFromMemory(g_WindowCloseIcon, sizeof(g_WindowCloseIcon));
+            m_IconClose = close_image;
+        }
 
         return {};
     }
@@ -159,7 +165,7 @@ namespace Infinity {
         std::cout << "Shutting down" << std::endl;
         m_Layer->OnDetach();
         m_AppHeaderIcon.reset();
-        m_IconClose.reset();
+        // m_IconClose.reset();
         m_IconMinimize.reset();
         m_IconMaximize.reset();
         m_IconRestore.reset();
@@ -204,6 +210,7 @@ namespace Infinity {
                 }
             }
             m_Layer->OnUpdate(m_TimeStep);
+            ProcessImageQueue();
 
             ImGui_ImplOpenGL3_NewFrame();
             ImGui_ImplGlfw_NewFrame();
@@ -232,6 +239,7 @@ namespace Infinity {
                 }
 
                 m_Layer->OnUIRender();
+
 
                 ImGui::PopStyleVar(3);
 
@@ -316,6 +324,20 @@ namespace Infinity {
             }
         }
     }
+
+    void Application::ProcessImageQueue() {
+        std::vector<std::shared_ptr<Image>> toProcess;
+
+        {
+            std::lock_guard<std::mutex> lock(g_TextureQueueMutex);
+            toProcess.swap(g_TextureCreationQueue);
+        }
+
+        for (auto &image: toProcess) {
+            image->CreateGLTexture();
+        }
+    }
+
 
     void Application::DrawTitleBar(float &out_title_bar_height) {
 
@@ -426,7 +448,7 @@ namespace Infinity {
                 }
             }
 
-            DrawButtonImage(m_IconClose, UI::Colors::Theme::text, UI::Colors::Theme::text_error, buttonColP);
+            // DrawButtonImage(m_IconClose, UI::Colors::Theme::text, UI::Colors::Theme::text_error, buttonColP);
         }
 
         ImGui::Spring(-1.0f, 18.0f);

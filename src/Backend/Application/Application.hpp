@@ -83,6 +83,8 @@ namespace Infinity {
 
         static void GLFWErrorCallback(int error, const char *description);
 
+        void ProcessImageQueue();
+
     private:
         ApplicationSpecifications m_Specification;
         static Application *s_Instance;
@@ -104,11 +106,20 @@ namespace Infinity {
         std::mutex m_EventQueueMutex;
         std::queue<std::function<void()>> m_EventQueue;
 
+        struct ImageStore {
+            GLuint texture_id;
+            int width;
+            int height;
+        };
+
         std::shared_ptr<Image> m_AppHeaderIcon;
         std::shared_ptr<Image> m_IconClose;
         std::shared_ptr<Image> m_IconMinimize;
         std::shared_ptr<Image> m_IconMaximize;
         std::shared_ptr<Image> m_IconRestore;
+
+        std::vector<std::shared_ptr<Image>> m_TextureCreationQueue;
+        std::mutex m_TextureCreationQueueMutex;
     };
 
 

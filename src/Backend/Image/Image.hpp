@@ -1,35 +1,55 @@
 
 #pragma once
 
-#include <map>
+#include <GL/gl.h>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "curl/curl.h"
 #include "imgui.h"
 #include "vulkan/vulkan.h"
 
+struct GLFWwindow;
+
 namespace Infinity {
-    enum class ImageFormat { None = 0, RGBA, RGBA32F };
 
     class Image {
     public:
-        Image(uint32_t width, uint32_t height, ImageFormat format, const void *data = nullptr);
-        Image(const std::string &url);
-        Image(const std::vector<uint8_t> &bin);
+        enum class Format { None, RGBA8, RGBA32F };
+
+        Image();
         ~Image();
 
-        // Factory methods
-        static std::unique_ptr<Image> LoadFromURL(const std::string &url);
-        static std::shared_ptr<Image> LoadFromURLShared(const std::string &url);
-        static std::shared_ptr<Image> ConstructFromBin(const std::vector<uint8_t> &bin);
+        Image(const Image &) = delete;
+        Image &operator=(const Image &) = delete;
+        Image(Image &&other) noexcept;
+        Image &operator=(Image &&other) noexcept;
+
+        static std::shared_ptr<Image> Create(uint32_t width, uint32_t height, Format format = Format::RGBA8, const void *data = nullptr);
+
+        static std::shared_ptr<Image> LoadFromMemory(const void *data, size_t dataSize);
+
+        static std::shared_ptr<Image> LoadFromURL(const std::string &url);
+
+        static std::shared_ptr<Image> LoadFromBinary(const std::vector<uint8_t> &binaryData);
+
         static std::vector<uint8_t> FetchFromURL(const std::string &url);
 
-        // Image operations
         void SetData(const void *data);
         void Resize(uint32_t width, uint32_t height);
         void Release();
+
+
+        uint32_t GetWidth() const { return m_Width; }
+        uint32_t GetHeight() const { return m_Height; }
+        Format GetFormat() const { return m_Format; }
+        uint32_t GetTextureID() const;
+
+        void *GetImGuiTextureID() const;
+
+        static void *DecodeImage(const uint8_t *data, size_t dataSize, uint32_t &outWidth, uint32_t &outHeight);
 
 
         /// <summary>
@@ -53,18 +73,18 @@ namespace Infinity {
         static void RenderHomeImage(const std::unique_ptr<Image> &image, ImVec2 pos, ImVec2 size, bool is_hovered);
         static void RenderHomeImage(const std::shared_ptr<Image> &image, ImVec2 pos, ImVec2 size, bool is_hovered);
 
-
-        uint32_t GetWidth() const { return m_Width; }
-        uint32_t GetHeight() const { return m_Height; }
-        ImageFormat GetFormat() const { return m_Format; }
-        VkDescriptorSet GetDescriptorSet() const;
-
-        static void *Decode(const uint8_t *data, uint64_t bin_size, uint32_t &outWidth, uint32_t &outHeight);
-
-        // TODO: overflow for scaling an image inside of a specified frame (hover action for the cards zooms in)
+        static float &GetAnimationProgress(ImGuiID id);
+        void CreateGLTexture();
 
     private:
-        void AllocateMemory(uint64_t size);
+        void AllocateMemory(const void *data);
+
+
+        // Helper to select the correct OpenGL format based on the Image format
+        static uint32_t GetGLFormat(Format format);
+        static uint32_t GetGLInternalFormat(Format format);
+        static uint32_t GetGLDataType(Format format);
+        static uint32_t GetBytesPerPixel(Format format);
 
 
         class Impl;
@@ -72,9 +92,10 @@ namespace Infinity {
 
         uint32_t m_Width = 0;
         uint32_t m_Height = 0;
-        ImageFormat m_Format = ImageFormat::None;
+        Format m_Format = Format::None;
 
-        static std::map<ImGuiID, float> s_animation_progress;
+
+        static std::unordered_map<ImGuiID, float> s_AnimationProgress;
     };
 
 
