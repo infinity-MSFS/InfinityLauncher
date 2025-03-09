@@ -3,9 +3,8 @@
 
 #include <string>
 
-#include "boxer/boxer.h"
-#include "Backend/Application/Application.hpp"
 
+#include "boxer/boxer.h"
 
 namespace Infinity::Errors {
 
@@ -31,19 +30,11 @@ namespace Infinity::Errors {
     inline void ShowErrorPopup(Error &error) {
         switch (error.GetErrorType()) {
             case ErrorType::Fatal:
-                if (const boxer::Selection selection = boxer::show(error.GetErrorMessage().c_str(), "Fatal Error",
-                                                                   boxer::Style::Error, boxer::Buttons::Quit);
-                    selection == boxer::Selection::Quit) {
-                    if (const auto app = Application::Get(); app.has_value()) {
-                        (*app)->Close();
-                    }
+                if (const boxer::Selection selection = boxer::show(error.GetErrorMessage().c_str(), "Fatal Error", boxer::Style::Error, boxer::Buttons::Quit); selection == boxer::Selection::Quit) {
                 }
                 break;
             case ErrorType::NonFatal:
-                if (const boxer::Selection selection =
-                            boxer::show(error.GetErrorMessage().c_str(), "NonFatal Error", boxer::Style::Error,
-                                        boxer::Buttons::OK);
-                    selection == boxer::Selection::Quit) {
+                if (const boxer::Selection selection = boxer::show(error.GetErrorMessage().c_str(), "NonFatal Error", boxer::Style::Error, boxer::Buttons::OK); selection == boxer::Selection::Quit) {
                     // if (const auto app = InfinityRenderer::Application::Get(); app.has_value()) {
                     //     static_cast<InfinityRenderer::Application *>(*app)->Close();
                     // }
@@ -63,8 +54,6 @@ namespace Infinity::Errors {
         ShowErrorPopup(error);
     }
 
-    inline void Error::Dispatch() {
-        ShowErrorPopup(*this);
-    }
+    inline void Error::Dispatch() { ShowErrorPopup(*this); }
 
-}
+} // namespace Infinity::Errors

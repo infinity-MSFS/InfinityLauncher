@@ -1,8 +1,8 @@
 function(print_system_dependencies_info)
-    if (Vulkan_FOUND)
-        message("${Blue}Vulkan Version: ${Green}${Vulkan_VERSION}${ColorReset}")
+    if (OpenGL_FOUND)
+        message("${Blue}OpenGL Found${ColorReset}")
     else ()
-        message(FATAL_ERROR "CURL Not Found")
+        message(FATAL_ERROR "OpenGL Not Found")
     endif ()
 
     if (CURL_FOUND)
@@ -24,7 +24,7 @@ function(print_system_dependencies_info)
     else ()
         message(FATAL_ERROR "MiniZip Not Found")
     endif ()
-    
+
     if (WIN32)
         if (WinToast_LIBRARY_DEBUG)
             message("${Blue}WinToast Found: ${Green}${WinToast_LIBRARY_DEBUG} ${ColorReset}")

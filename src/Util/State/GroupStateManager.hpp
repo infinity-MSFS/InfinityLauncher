@@ -2,23 +2,24 @@
 #pragma once
 
 #include <iostream>
-//#include <map>
-#include <vector>
-#include <string>
+// #include <map>
+#include <future>
+#include <memory>
+#include <mutex>
 #include <optional>
 #include <sstream>
 #include <stdexcept>
-#include <memory>
-#include <mutex>
+#include <string>
 #include <thread>
-#include <future>
+#include <vector>
 
-#include "curl/curl.h"
-#include "zlib.h"
+#include "Backend/Image/Image.hpp"
 #include "Json/json.hpp"
-#include "msgpack.hpp"
-#include "imgui.h"
 #include "State.hpp"
+#include "curl/curl.h"
+#include "imgui.h"
+#include "msgpack.hpp"
+#include "zlib.h"
 
 namespace Infinity {
     inline size_t WriteCallback(char *ptr, size_t size, size_t nmemb, void *userdata) {
@@ -42,10 +43,13 @@ namespace Infinity {
         CURL *curl;
 
     public:
-        explicit CurlGuard(CURL *curl) : curl(curl) {
-        }
+        explicit CurlGuard(CURL *curl) : curl(curl) {}
 
-        ~CurlGuard() { if (curl) { curl_easy_cleanup(curl); } }
+        ~CurlGuard() {
+            if (curl) {
+                curl_easy_cleanup(curl);
+            }
+        }
 
         CurlGuard(const CurlGuard &) = delete;
 
@@ -70,11 +74,10 @@ namespace Infinity {
         std::string description;
         std::string background;
         std::optional<std::string> pageBackground;
-        std::optional<std::vector<std::string> > variants;
+        std::optional<std::vector<std::string>> variants;
         std::optional<Package> package;
 
-        MSGPACK_DEFINE(name, version, date, changelog, overview, description, background, pageBackground, variants,
-                       package);
+        MSGPACK_DEFINE(name, version, date, changelog, overview, description, background, pageBackground, variants, package);
     };
 
     struct Palette {
@@ -144,8 +147,7 @@ namespace Infinity {
         inflateEnd(&strm);
 
         try {
-            msgpack::object_handle oh = msgpack::unpack(reinterpret_cast<const char *>(decompressed_data.data()),
-                                                        decompressed_data.size());
+            msgpack::object_handle oh = msgpack::unpack(reinterpret_cast<const char *>(decompressed_data.data()), decompressed_data.size());
             msgpack::object obj = oh.get();
 
             std::map<std::string, GroupData> group_data;
@@ -159,7 +161,7 @@ namespace Infinity {
     // temporary struct for queueing images to be loaded into vulkan textures
     struct ProjectImagesBin {
         std::vector<uint8_t> backgroundImage;
-        std::optional<std::vector<uint8_t> > pageBackgroundImage;
+        std::optional<std::vector<uint8_t>> pageBackgroundImage;
     };
 
     struct BetaProjectImagesBin {
@@ -180,7 +182,7 @@ namespace Infinity {
 
     struct ProjectImages {
         std::shared_ptr<Image> backgroundImage;
-        std::optional<std::shared_ptr<Image> > pageBackgroundImage;
+        std::optional<std::shared_ptr<Image>> pageBackgroundImage;
     };
 
     struct BetaProjectImages {
@@ -202,19 +204,18 @@ namespace Infinity {
         GroupDataState state;
         StateImages images;
 
-        MainState(GroupDataState &state) : state(state) {
-        }
+        MainState(GroupDataState &state) : state(state) {}
 
         void PrintState() const override { std::cout << "MainState::PrintState()" << std::endl; }
     };
 
     inline StateImagesBin FetchAllImages(const GroupDataState &state) {
         StateImagesBin bin;
-        std::vector<std::future<void> > futures;
+        std::vector<std::future<void>> futures;
         std::mutex bin_mutex;
 
         for (const auto &[group_key, group_data]: state.groups) {
-            futures.push_back(std::async(std::launch::async, [&,group_key, group_data ] {
+            futures.push_back(std::async(std::launch::async, [&, group_key, group_data] {
                 GroupDataImagesBin group_bin;
 
                 group_bin.logo = Image::FetchFromURL(group_data.logo);
@@ -230,7 +231,8 @@ namespace Infinity {
 
                     group_bin.projectImages.push_back(std::move(project_bin));
                 }
-                group_bin.beta.background = Image::FetchFromURL(group_data.beta.background); {
+                group_bin.beta.background = Image::FetchFromURL(group_data.beta.background);
+                {
                     std::lock_guard lock(bin_mutex);
                     bin.groupImages[group_key] = std::move(group_bin);
                 }
@@ -293,8 +295,7 @@ namespace Infinity {
         curl_easy_setopt(curl, CURLOPT_USERAGENT, "Infinity-MSFS-Client/1.0");
 
         if (const CURLcode res = curl_easy_perform(curl); res != CURLE_OK) {
-            throw std::runtime_error(std::string("Failed to fetch data: ") +
-                                     curl_easy_strerror(res));
+            throw std::runtime_error(std::string("Failed to fetch data: ") + curl_easy_strerror(res));
         }
 
         std::cout << "Fetched data" << received_data.size() << " bytes" << std::endl;
@@ -343,4 +344,4 @@ namespace Infinity {
         }
         return {r, g, b, alpha};
     }
-}
+} // namespace Infinity

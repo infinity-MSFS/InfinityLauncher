@@ -4,6 +4,7 @@
 
 #include "Backend/Application/Application.hpp"
 #include "Backend/Downloads/Downloads.hpp"
+#include "Backend/Layer/Layer.hpp"
 #include "Backend/Router/Router.hpp"
 #include "Backend/UIHelpers/UiHelpers.hpp"
 #include "Frontend/Background/Background.hpp"
@@ -203,34 +204,18 @@ public:
         };
 #endif
     }
+
+    void OnDetach() override {}
+
+    void OnUpdate(float ts) override {}
 };
 
-Infinity::Application *Infinity::CreateApplication(int argc, char **argv) {
-    const std::filesystem::path path = "Assets/Images/Logo.h";
-    const ApplicationSpecifications specifications = ApplicationSpecifications{"Infinity Launcher",
-                                                                               std::make_pair(1440, 1026),
-                                                                               std::make_pair(3840, 2160),
-                                                                               std::make_pair(1240, 680),
-                                                                               path,
-                                                                               true,
-#ifdef WIN32
-                                                                               true,
-#else
-                                                                               false,
-#endif
-                                                                               true};
-    const auto app = new Infinity::Application{specifications};
-    app->PushLayer<PageRenderLayer>();
-
-    return app;
-}
 
 namespace Infinity {
     int Main(const int argc, char **argv) {
         while (g_ApplicationRunning) {
-            const auto app = CreateApplication(argc, argv);
+            const auto app = Application::CreateApplication(argc, argv, std::make_unique<PageRenderLayer>());
             app->Run();
-            delete app;
             g_ApplicationRunning = false;
         }
         return 0;

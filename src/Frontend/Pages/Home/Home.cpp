@@ -1,6 +1,7 @@
 
 #include "Home.hpp"
 
+#include "Backend/Application/Application.hpp"
 #include "Backend/Router/Router.hpp"
 #include "Frontend/SVG/SVGDrawing.hpp"
 #include "imgui.h"
@@ -13,7 +14,7 @@ namespace Infinity {
     bool Home::m_DoneLoading = false;
 
     void Home::Render() const {
-        ImGui::PushFont(Infinity::Application::GetFont("DefaultLarge"));
+        ImGui::PushFont(Application::GetFont("DefaultLarge"));
         auto text_size = ImGui::CalcTextSize("Infinity");
         std::vector<unsigned int> active_index(242 - 1);
         std::iota(active_index.begin(), active_index.end(), 1);

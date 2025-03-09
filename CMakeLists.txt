@@ -26,11 +26,15 @@ load_keys()
 
 project(InfinityLauncher)
 
-set(CMAKE_CXX_STANDARD 23 REQUIRED)
+cmake_policy(SET CMP0167 NEW)
+
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 message("${Blue}Using toolchain file: ${Green}${CMAKE_TOOLCHAIN_FILE}")
 find_package(ZLIB REQUIRED)
-find_package(Vulkan REQUIRED)
+find_package(OpenGL REQUIRED)
 find_package(CURL REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(msgpack-cxx CONFIG REQUIRED)
@@ -136,6 +140,15 @@ add_executable(InfinityLauncher
         src/Backend/Encryption/Encryption.hpp
         src/Backend/SystemTray/SystemTray.cpp
         src/Backend/SystemTray/SystemTray.hpp
+        src/Backend/Downloads/Downloads.cpp
+        src/Backend/Downloads/Downloads.hpp
+        src/Backend/ZipExtractor/ZipExtractor.cpp
+        src/Backend/ZipExtractor/ZipExtractor.hpp
+        src/Backend/Installer/Installer.cpp
+        src/Backend/Installer/Installer.hpp
+        src/Backend/Updater/Updater.cpp
+        src/Backend/Updater/Updater.hpp
+        src/Assets/Fonts/IcontsFontAwesome5.h
 
         # -- Util Source Files --
         src/Util/Easing/Easing.hpp
@@ -143,6 +156,7 @@ add_executable(InfinityLauncher
         src/Util/Error/Error.hpp
         src/Util/State/GroupStateManager.hpp
         src/Util/State/RenderGroupData.hpp
+        src/Util/GroupUtil/GroupUtil.hpp
 
         # -- Frontend Source Files --
         src/Frontend/Theme/Theme.cpp
@@ -160,18 +174,9 @@ add_executable(InfinityLauncher
         src/Frontend/Pages/Settings/Settings.hpp
         src/Frontend/Pages/Project/Project.cpp
         src/Frontend/Pages/Project/Project.hpp
-        src/Backend/Downloads/Downloads.cpp
-        src/Backend/Downloads/Downloads.hpp
-        src/Backend/ZipExtractor/ZipExtractor.cpp
-        src/Backend/ZipExtractor/ZipExtractor.hpp
-        src/Backend/Installer/Installer.cpp
-        src/Backend/Installer/Installer.hpp
-        src/Util/GroupUtil/GroupUtil.hpp
-        src/Backend/Updater/Updater.cpp
-        src/Backend/Updater/Updater.hpp
         src/Frontend/Markdown/Markdown.cpp
         src/Frontend/Markdown/Markdown.hpp
-        src/Assets/Fonts/IcontsFontAwesome5.h
+
 )
 
 
@@ -187,7 +192,7 @@ file(GLOB IMGUI_SOURCES
         ${infinity_SOURCE_DIR}/src/imgui/imgui_tables.cpp
         ${infinity_SOURCE_DIR}/src/imgui/misc/cpp/imgui_stdlib.cpp
         ${infinity_SOURCE_DIR}/src/imgui/backends/imgui_impl_glfw.cpp
-        ${infinity_SOURCE_DIR}/src/imgui/backends/imgui_impl_vulkan.cpp
+        ${infinity_SOURCE_DIR}/src/imgui/backends/imgui_impl_opengl3.cpp
 )
 message("${Blue}Gathering Stb Image Source Files")
 file(GLOB STB_IMAGE ${infinity_SOURCE_DIR}/include/stb_image/stb_image.h)
@@ -265,7 +270,7 @@ if (WIN32)
 else ()
     set(ZOE_LIB zoe::zoe-static)
 endif ()
-target_link_libraries(InfinityLauncher PRIVATE tray WebP::webp WebP::webpdecoder ${ZOE_LIB} WebP::webpdemux Vulkan::Vulkan glfw Boxer CURL::libcurl OpenSSL::SSL OpenSSL::Crypto unofficial::minizip::minizip ZLIB::ZLIB msgpack-cxx ${TOAST_LIB})
+target_link_libraries(InfinityLauncher PRIVATE tray WebP::webp WebP::webpdecoder ${ZOE_LIB} WebP::webpdemux OpenGL::GL OpenGL::OpenGL glfw Boxer CURL::libcurl OpenSSL::SSL OpenSSL::Crypto unofficial::minizip::minizip ZLIB::ZLIB msgpack-cxx ${TOAST_LIB})
 
 add_custom_target(InfinityLauncherDist)
 add_dependencies(InfinityLauncherDist

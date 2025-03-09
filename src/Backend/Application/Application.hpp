@@ -1,10 +1,6 @@
-
 #pragma once
 
-
-#include "Backend/Image/Image.hpp"
-#include "Backend/Layer/Layer.hpp"
-
+#include <expected>
 #include <filesystem>
 #include <functional>
 #include <memory>
@@ -12,122 +8,101 @@
 #include <optional>
 #include <queue>
 #include <string>
+#include <unordered_map>
 #include <utility>
-#include <vector>
 
+
+#include <GLFW/glfw3.h>
+#include "Backend/Image/Image.hpp"
+#include "Backend/Layer/Layer.hpp"
+#include "Util/Error/Error.hpp"
 
 #include "imgui.h"
-#include "vulkan/vulkan.h"
-
-
-void check_vk_result(VkResult err);
-
-struct GLFWwindow;
 
 namespace Infinity {
+
     struct ApplicationSpecifications {
         std::string name;
         std::pair<uint32_t, uint32_t> window_size;
         std::pair<uint32_t, uint32_t> max_size;
         std::pair<uint32_t, uint32_t> min_size;
-        std::filesystem::path icon_path;
         bool resizable;
         bool custom_titlebar;
-        bool center_window;
     };
 
-    void framebuffer_size_callback(GLFWwindow *window, int width, int height);
     class Application {
     public:
-        explicit Application(ApplicationSpecifications applicationSpecification);
-
+        explicit Application(const ApplicationSpecifications &specifications);
         ~Application();
 
-        static std::optional<Application *> Get();
-
-        ApplicationSpecifications GetSpecifications() { return m_Specification; }
-
-        void Run();
-
-        void SetMenubarCallback(const std::function<void()> &menubarCallback) { m_MenubarCallback = menubarCallback; }
+        static std::unique_ptr<Application> CreateApplication(int argc, char **argv, std::unique_ptr<Layer> layer);
 
         template<typename T>
         void PushLayer() {
-            static_assert(std::is_base_of_v<Layer, T>, "Pushed type is not subclass of Layer!");
-            m_LayerStack.emplace_back(std::make_shared<T>())->OnAttach();
+            static_assert(std::is_base_of_v<Layer, T>, "T must derive from Layer");
+            m_Layer = std::make_shared<T>();
+            m_Layer->OnAttach();
         }
 
         void PushLayer(const std::shared_ptr<Layer> &layer) {
-            m_LayerStack.emplace_back(layer);
+            m_Layer = layer;
             layer->OnAttach();
         }
+
+        std::expected<void, Errors::Error> Run();
 
         void Close();
 
         [[nodiscard]] bool IsMaximized() const;
 
-        [[nodiscard]] std::shared_ptr<Image> GetApplicationIcon() const { return m_AppHeaderIcon; }
+        [[nodiscard]] std::shared_ptr<Image> GetIcon() const { return m_AppHeaderIcon; }
 
-        static float GetTime();
-
-        [[nodiscard]] GLFWwindow *GetWindowHandle() const { return m_WindowHandle; }
-        [[nodiscard]] bool IsTitleBarHovered() const { return m_TitleBarHovered; }
-
-        static std::optional<VkInstance> GetInstance();
-
-        static std::optional<VkPhysicalDevice> GetPhysicalDevice();
-
-        static std::optional<VkDevice> GetDevice();
-
-        static VkCommandBuffer GetCommandBuffer(bool begin);
-
-        static void FlushCommandBuffer(VkCommandBuffer commandBuffer);
-
-        static void SubmitResourceFree(std::function<void()> &&func);
+        [[nodiscard]] static float GetTime();
 
         static ImFont *GetFont(const std::string &name);
 
-        template<typename Func>
-        void QueueEvent(Func &&func) {
+        template<typename F>
+        void QueueEvent(F &&func) {
             m_EventQueue.push(func);
         }
 
-
         static void SetWindowTitle(const std::string &title);
 
+        static std::optional<Application *> Get();
 
-        static GLFWwindow *s_WindowHandle;
+        ApplicationSpecifications GetSpecifications() { return m_Specification; }
 
     private:
-        void Init();
-
-        void Shutdown();
-
+        std::expected<void, Errors::Error> Init();
+        const char *SetupGLVersion();
+        std::expected<void, Errors::Error> Shutdown();
         static void SetWindowIcon(GLFWwindow *window, const unsigned char *data, int size);
 
-        void UI_DrawTitleBar(float &out_title_bar_height);
+        void DrawTitleBar(float &out_title_bar_height);
+        void DrawMenubar() const;
 
-        void UI_DrawMenubar() const;
-
+        static void GLFWErrorCallback(int error, const char *description);
 
     private:
         ApplicationSpecifications m_Specification;
-        GLFWwindow *m_WindowHandle = nullptr;
+        static Application *s_Instance;
+        GLFWwindow *m_Window;
 
-        bool m_Running = false;
+        std::unordered_map<std::string, ImFont *> m_Fonts;
+
+        bool m_Running = true;
 
         float m_TimeStep = 0.0f;
         float m_FrameTime = 0.0f;
         float m_LastFrameTime = 0.0f;
 
-        bool m_TitleBarHovered = false;
+        bool m_TitlebarHovered = false;
 
-        std::vector<std::shared_ptr<Layer>> m_LayerStack;
+        std::shared_ptr<Layer> m_Layer;
         std::function<void()> m_MenubarCallback;
 
         std::mutex m_EventQueueMutex;
         std::queue<std::function<void()>> m_EventQueue;
-
 
         std::shared_ptr<Image> m_AppHeaderIcon;
         std::shared_ptr<Image> m_IconClose;
@@ -136,5 +111,5 @@ namespace Infinity {
         std::shared_ptr<Image> m_IconRestore;
     };
 
-    Application *CreateApplication(int argc, char **argv);
+
 } // namespace Infinity

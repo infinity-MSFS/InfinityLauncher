@@ -5,16 +5,12 @@ namespace Infinity {
     public:
         virtual ~Layer() = default;
 
-        virtual void OnAttach() {
-        }
+        virtual void OnAttach() = 0;
 
-        virtual void OnDetach() {
-        }
+        virtual void OnDetach() = 0;
 
-        virtual void OnUpdate(float ts) {
-        }
+        virtual void OnUpdate(float ts) = 0;
 
-        virtual void OnUIRender() {
-        }
+        virtual void OnUIRender() = 0;
     };
-}
+} // namespace Infinity

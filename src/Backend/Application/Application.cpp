@@ -7,32 +7,31 @@
 #elif INFINITY_X11
 #define GLFW_EXPOSE_NATIVE_X11
 #endif
+
 #include "Application.hpp"
 #include "Backend/SystemTray/SystemTray.hpp"
 #include "Backend/UIHelpers/UiHelpers.hpp"
-#include "Backend/VulkanManager/VulkanManager.hpp"
 #include "Frontend/Theme/Theme.hpp"
 #include "backends/imgui_impl_glfw.h"
-#include "backends/imgui_impl_vulkan.h"
+#include "backends/imgui_impl_opengl3.h"
 #include "imgui_internal.h"
 
+#include <GL/gl.h>
 #include <algorithm>
-#include <cstdio>
 #include <cstdlib>
 #include <iostream>
 #include <thread>
 #include <unordered_map>
 #include <utility>
 
-#include <vulkan/vulkan.h>
-
-#include "GLFW/glfw3.h"
-#include "GLFW/glfw3native.h"
+#include "Assets/Fonts/Roboto-Bold.h"
+#include "Assets/Fonts/Roboto-Italic.h"
+#include "Assets/Fonts/Roboto-Regular.h"
+#include "Assets/Images/InfinityAppIcon.h"
+#include "Assets/Images/logo.h"
+#include "Assets/Images/windowIcons.h"
 #include "stb_image/stb_image.h"
 
-using namespace Infinity::Vulkan;
-
-extern bool g_ApplicationRunning;
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1900) && !defined(IMGUI_DISABLE_WIN32_FUNCTIONS)
 #pragma comment(lib, "legacy_stdio_definitions")
@@ -43,139 +42,52 @@ extern bool g_ApplicationRunning;
 #endif
 
 
-static std::unordered_map<std::string, ImFont *> s_Fonts;
-
-static Infinity::Application *s_Instance = nullptr;
-
 constexpr int FPS_CAP = 144;
 constexpr double FRAME_DURATION = 1.0 / FPS_CAP;
 
-GLFWwindow *Infinity::Application::s_WindowHandle = nullptr;
-
-
-#include "Assets/Fonts/Roboto-Bold.h"
-#include "Assets/Fonts/Roboto-Italic.h"
-#include "Assets/Fonts/Roboto-Regular.h"
-#include "Assets/Images/InfinityAppIcon.h"
-#include "Assets/Images/logo.h"
-#include "Assets/Images/windowIcons.h"
-
 namespace Infinity {
-    // the base callback in glfw didnt work in wayland so we will simply force rebuild the swapchain on resize
-    void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
-        if (width == 0 || height == 0) {
-            return;
+    Application *Application::s_Instance = nullptr;
+
+    Application::Application(const ApplicationSpecifications &specifications) : m_Specification(specifications), m_Window(nullptr) {
+        if (auto result = Init(); !result.has_value()) {
+            result.error().Dispatch();
         }
-
-        g_SwapChainRebuild = true;
-
-        auto app = static_cast<Application *>(glfwGetWindowUserPointer(window));
-        if (app) {
-            ImGui_ImplVulkanH_Window *wd = &g_MainWindowData;
-            vkDeviceWaitIdle(g_Device);
-
-            for (size_t i = 0; i < s_AllocatedCommandBuffers.size(); i++) {
-                if (!s_AllocatedCommandBuffers[i].empty()) {
-                    VkCommandPool frame_command_pool = wd->Frames[i % wd->ImageCount].CommandPool;
-
-                    vkFreeCommandBuffers(g_Device, frame_command_pool, static_cast<uint32_t>(s_AllocatedCommandBuffers[i].size()), s_AllocatedCommandBuffers[i].data());
-
-                    s_AllocatedCommandBuffers[i].clear();
-                }
-            }
-
-            s_AllocatedCommandBuffers.clear();
-
-            ImGui_ImplVulkanH_CreateOrResizeWindow(g_Instance, g_PhysicalDevice, g_Device, wd, g_QueueFamily, g_Allocator, width, height, g_MinImageCount);
-            wd->FrameIndex = 0;
-            s_AllocatedCommandBuffers.resize(wd->ImageCount);
-            g_SwapChainRebuild = false;
-        }
-    }
-
-
-    Application::Application(ApplicationSpecifications applicationSpecification) : m_Specification(std::move(applicationSpecification)) {
         s_Instance = this;
-        Init();
     }
 
-    Application::~Application() {
-        Shutdown();
-        s_Instance = nullptr;
+    Application::~Application() { Shutdown(); }
+
+    std::optional<Application *> Application::Get() {
+        if (s_Instance == nullptr) {
+            return std::nullopt;
+        }
+        return s_Instance;
     }
 
-    std::optional<Application *> Application::Get() { return s_Instance; }
-
-    void Application::Init() {
+    void Application::GLFWErrorCallback(int error, const char *description) { std::cerr << "GLFW Error " << error << ": " << description << "\n"; }
 
 
-        glfwSetErrorCallback(glfw_error_callback);
+    std::expected<void, Errors::Error> Application::Init() {
+
+        std::cout << "Initializing" << std::endl;
+
+        glfwSetErrorCallback(GLFWErrorCallback);
+
         if (!glfwInit()) {
-            std::cerr << "could not init glfw\n";
-            return;
-        }
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-
-#ifdef INFINITY_WINDOWS
-        if (m_Specification.center_window) {
-            glfwWindowHint(GLFW_TITLEBAR, GLFW_FALSE);
-        }
-#endif
-
-        GLFWmonitor *primaryMonitor = glfwGetPrimaryMonitor();
-        const GLFWvidmode *videoMode = glfwGetVideoMode(primaryMonitor);
-
-        int monitorX, monitorY;
-        glfwGetMonitorPos(primaryMonitor, &monitorX, &monitorY);
-
-
-        m_WindowHandle = glfwCreateWindow(static_cast<int>(m_Specification.window_size.first), static_cast<int>(m_Specification.window_size.second), m_Specification.name.c_str(), nullptr, nullptr);
-
-        s_WindowHandle = m_WindowHandle;
-
-
-        glfwSetWindowSizeLimits(m_WindowHandle, static_cast<int>(m_Specification.min_size.first), static_cast<int>(m_Specification.min_size.second), static_cast<int>(m_Specification.max_size.first),
-                                static_cast<int>(m_Specification.max_size.second));
-
-        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-
-        if (m_Specification.center_window) {
-            glfwSetWindowPos(m_WindowHandle, static_cast<int>(monitorX + (videoMode->width - m_Specification.window_size.first) / 2),
-                             static_cast<int>(monitorY + (videoMode->height - m_Specification.window_size.second) / 2));
+            return std::unexpected(Errors::Error(Errors::ErrorType::Fatal, "Failed to initialize GLFW"));
         }
 
-        SetWindowIcon(m_WindowHandle, g_infAppIconTransparent, sizeof(g_infAppIconTransparent));
+        const auto version = SetupGLVersion();
 
-        glfwShowWindow(m_WindowHandle);
+        m_Window = glfwCreateWindow(m_Specification.window_size.first, m_Specification.window_size.second, m_Specification.name.c_str(), nullptr, nullptr);
 
-        if (!glfwVulkanSupported()) {
-            std::cerr << "Vulkan is not supported on this device\n";
-            return;
+        if (m_Window == nullptr) {
+            return std::unexpected(Errors::Error(Errors::ErrorType::Fatal, "Failed to create window"));
         }
 
-        glfwSetWindowUserPointer(m_WindowHandle, this);
 
-#ifdef INFINITY_WINDOWS
-        glfwSetTitlebarHitTestCallback(m_WindowHandle, [](GLFWwindow *window, int x, int y, int *hit) {
-            const auto *app = static_cast<Application *>(glfwGetWindowUserPointer(window));
-            *hit = app->IsTitleBarHovered();
-        });
-#endif
-        uint32_t extensions_count = 0;
-        const char **extensions = glfwGetRequiredInstanceExtensions(&extensions_count);
-        SetupVulkan(extensions, extensions_count);
-
-        VkSurfaceKHR surface;
-        VkResult err = glfwCreateWindowSurface(g_Instance, m_WindowHandle, g_Allocator, &surface);
-        inf_check_vk_result(err);
-
-        int w, h;
-        glfwGetFramebufferSize(m_WindowHandle, &w, &h);
-        ImGui_ImplVulkanH_Window *wd = &g_MainWindowData;
-        SetupVulkanWindow(wd, surface, w, h);
-
-        s_AllocatedCommandBuffers.resize(wd->ImageCount);
-        s_ResourceFreeQueue.resize(wd->ImageCount);
+        glfwMakeContextCurrent(m_Window);
+        glfwSwapInterval(1);
 
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -185,7 +97,6 @@ namespace Infinity {
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
         UI::SetInfinityTheme();
-
 
         ImGuiStyle &style = ImGui::GetStyle();
         style.WindowPadding = ImVec2(10.0f, 10.0f);
@@ -197,135 +108,217 @@ namespace Infinity {
         style.Colors[ImGuiCol_WindowBg].w = 0.0f;
         style.WindowTitleAlign = ImVec2(0.5f, 0.5f);
 
-        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
-            style.WindowRounding = 12.0f;
-            style.Colors[ImGuiCol_WindowBg].w = 1.0f;
-        }
+        ImGui_ImplGlfw_InitForOpenGL(m_Window, true);
+        ImGui_ImplOpenGL3_Init(version);
 
-        ImGui_ImplGlfw_InitForVulkan(m_WindowHandle, true);
-        ImGui_ImplVulkan_InitInfo init_info = {};
-        init_info.Instance = g_Instance;
-        init_info.PhysicalDevice = g_PhysicalDevice;
-        init_info.Device = g_Device;
-        init_info.QueueFamily = g_QueueFamily;
-        init_info.Queue = g_Queue;
-        init_info.PipelineCache = g_PipelineCache;
-        init_info.DescriptorPool = g_DescriptorPool;
-        init_info.Subpass = 0;
-        init_info.MinImageCount = g_MinImageCount;
-        init_info.ImageCount = wd->ImageCount;
-        init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
-        init_info.Allocator = g_Allocator;
-        init_info.CheckVkResultFn = inf_check_vk_result;
-        ImGui_ImplVulkan_Init(&init_info, wd->RenderPass);
+        ImFontConfig font_config;
+        font_config.FontDataOwnedByAtlas = false;
+        ImFont *roboto = io.Fonts->AddFontFromMemoryTTF(g_RobotoRegular, sizeof(g_RobotoRegular), 20.0f, &font_config);
+        m_Fonts["Default"] = roboto;
+        m_Fonts["Bold"] = io.Fonts->AddFontFromMemoryTTF(g_RobotoBold, sizeof(g_RobotoBold), 20.0f, &font_config);
+        m_Fonts["Italic"] = io.Fonts->AddFontFromMemoryTTF(g_RobotoItalic, sizeof(g_RobotoItalic), 20.0f, &font_config);
+        m_Fonts["DefaultLarge"] = io.Fonts->AddFontFromMemoryTTF(g_RobotoRegular, sizeof(g_RobotoRegular), 32.0f, &font_config);
+        m_Fonts["h1"] = io.Fonts->AddFontFromMemoryTTF(g_RobotoBold, sizeof(g_RobotoBold), 32.0f, &font_config);
+        m_Fonts["h2"] = io.Fonts->AddFontFromMemoryTTF(g_RobotoBold, sizeof(g_RobotoBold), 24.0f, &font_config);
+        m_Fonts["h3"] = io.Fonts->AddFontFromMemoryTTF(g_RobotoBold, sizeof(g_RobotoBold), 20.0f, &font_config);
 
+        io.FontDefault = roboto;
 
-        ImFontConfig fontConfig;
-        fontConfig.FontDataOwnedByAtlas = false;
-        ImFont *robotoFont = io.Fonts->AddFontFromMemoryTTF(g_RobotoRegular, sizeof(g_RobotoRegular), 20.0f, &fontConfig);
-        s_Fonts["Default"] = robotoFont;
-        s_Fonts["Bold"] = io.Fonts->AddFontFromMemoryTTF(g_RobotoBold, sizeof(g_RobotoBold), 20.0f, &fontConfig);
-        s_Fonts["Italic"] = io.Fonts->AddFontFromMemoryTTF(g_RobotoItalic, sizeof(g_RobotoItalic), 20.0f, &fontConfig);
-        s_Fonts["DefaultLarge"] = io.Fonts->AddFontFromMemoryTTF(g_RobotoRegular, sizeof(g_RobotoRegular), 32.0f, &fontConfig);
-        s_Fonts["h1"] = io.Fonts->AddFontFromMemoryTTF(g_RobotoBold, sizeof(g_RobotoBold), 32.0f, &fontConfig);
-        s_Fonts["h2"] = io.Fonts->AddFontFromMemoryTTF(g_RobotoBold, sizeof(g_RobotoBold), 24.0f, &fontConfig);
-        s_Fonts["h3"] = io.Fonts->AddFontFromMemoryTTF(g_RobotoBold, sizeof(g_RobotoBold), 20.0f, &fontConfig);
+        // TODO: load images
 
-
-        io.FontDefault = robotoFont;
-        {
-            VkCommandPool command_pool = wd->Frames[wd->FrameIndex].CommandPool;
-            VkCommandBuffer command_buffer = wd->Frames[wd->FrameIndex].CommandBuffer;
-
-            err = vkResetCommandPool(g_Device, command_pool, 0);
-            inf_check_vk_result(err);
-            VkCommandBufferBeginInfo begin_info = {};
-            begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-            begin_info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-            err = vkBeginCommandBuffer(command_buffer, &begin_info);
-            inf_check_vk_result(err);
-
-            ImGui_ImplVulkan_CreateFontsTexture(command_buffer);
-
-            VkSubmitInfo end_info = {};
-            end_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-            end_info.commandBufferCount = 1;
-            end_info.pCommandBuffers = &command_buffer;
-            err = vkEndCommandBuffer(command_buffer);
-            inf_check_vk_result(err);
-            err = vkQueueSubmit(g_Queue, 1, &end_info, VK_NULL_HANDLE);
-            inf_check_vk_result(err);
-
-            err = vkDeviceWaitIdle(g_Device);
-            inf_check_vk_result(err);
-            ImGui_ImplVulkan_DestroyFontUploadObjects();
-        }
-        {
-            uint32_t w1, h1;
-            void *data = Image::Decode(g_WindowCloseIcon, sizeof(g_WindowCloseIcon), w1, h1);
-            m_IconClose = std::make_shared<Image>(w1, h1, ImageFormat::RGBA, data);
-            free(data);
-        }
-        {
-            uint32_t w2, h2;
-            void *data = Image::Decode(g_WindowMinimizeIcon, sizeof(g_WindowMinimizeIcon), w2, h2);
-            m_IconMinimize = std::make_shared<Image>(w2, h2, ImageFormat::RGBA, data);
-            free(data);
-        }
-        {
-            uint32_t w3, h3;
-            void *data = Image::Decode(g_InfinityIcon, sizeof(g_InfinityIcon), w3, h3);
-            m_AppHeaderIcon = std::make_shared<Image>(w3, h3, ImageFormat::RGBA, data);
-            free(data);
-        }
-        {
-            uint32_t w4, h4;
-            void *data = Image::Decode(g_WindowMaximizeIcon, sizeof(g_WindowMaximizeIcon), w4, h4);
-            m_IconMaximize = std::make_shared<Image>(w4, h4, ImageFormat::RGBA, data);
-            free(data);
-        }
-        {
-            uint32_t w5, h5;
-            void *data = Image::Decode(g_WindowRestoreIcon, sizeof(g_WindowRestoreIcon), w5, h5);
-            m_IconRestore = std::make_shared<Image>(w5, h5, ImageFormat::RGBA, data);
-            free(data);
-        }
+        return {};
     }
 
-    void Application::Shutdown() {
-        for (const auto &layer: m_LayerStack)
-            layer->OnDetach();
+    const char *Application::SetupGLVersion() {
+#if defined(IMGUI_IMPL_OPENGL_ES2)
+        // GL ES 2.0 + GLSL 100
+        const char *glsl_version = "#version 100";
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+#elif defined(__APPLE__)
+        // GL 3.2 + GLSL 150
+        const char *glsl_version = "#version 150";
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // 3.2+ only
+        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // Required on Mac
+#else
+        // GL 3.0 + GLSL 130
+        const char *glsl_version = "#version 130";
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+        // glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
+        // glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // 3.0+ only
+#endif
 
-        m_LayerStack.clear();
+        return glsl_version;
+    }
+
+    std::expected<void, Errors::Error> Application::Shutdown() {
+        std::cout << "Shutting down" << std::endl;
+        m_Layer->OnDetach();
         m_AppHeaderIcon.reset();
         m_IconClose.reset();
         m_IconMinimize.reset();
         m_IconMaximize.reset();
         m_IconRestore.reset();
 
-        const VkResult err = vkDeviceWaitIdle(g_Device);
-        inf_check_vk_result(err);
 
-        for (auto &queue: s_ResourceFreeQueue) {
-            for (auto &func: queue)
-                func();
-        }
-        s_ResourceFreeQueue.clear();
-
-        ImGui_ImplVulkan_Shutdown();
+        ImGui_ImplOpenGL3_Shutdown();
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
 
-        CleanupVulkanWindow();
-        CleanupVulkan();
 
-        glfwDestroyWindow(m_WindowHandle);
+        glfwDestroyWindow(m_Window);
         glfwTerminate();
 
-        g_ApplicationRunning = false;
+        m_Running = false;
+
+        return {};
     }
 
-    void Application::UI_DrawTitleBar(float &out_title_bar_height) {
+    std::expected<void, Errors::Error> Application::Run() {
+        m_Running = true;
+
+
+        SystemTray system_tray(m_Window);
+
+        const auto clear_color = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
+        ImGuiIO &io = ImGui::GetIO();
+
+        io.IniFilename = nullptr;
+
+        system_tray.run();
+
+        while (!glfwWindowShouldClose(m_Window) && m_Running) {
+            const double start_time = glfwGetTime();
+            glfwPollEvents();
+            {
+                std::scoped_lock lock(m_EventQueueMutex);
+
+                while (!m_EventQueue.empty()) {
+                    auto &func = m_EventQueue.front();
+                    func();
+                    m_EventQueue.pop();
+                }
+            }
+            m_Layer->OnUpdate(m_TimeStep);
+
+            ImGui_ImplOpenGL3_NewFrame();
+            ImGui_ImplGlfw_NewFrame();
+            ImGui::NewFrame();
+            {
+                ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDocking;
+
+                const ImGuiViewport *viewport = ImGui::GetMainViewport();
+                const ImVec2 windowPos = viewport->Pos;
+                ImGui::SetNextWindowPos(ImVec2(windowPos.x - 1, windowPos.y));
+                ImGui::SetNextWindowSize(ImVec2(viewport->Size.x + 1, viewport->Size.y));
+                ImGui::SetNextWindowViewport(viewport->ID);
+                ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 4.0f);
+                ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+                ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+                window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBackground;
+                window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+                if (!m_Specification.custom_titlebar && m_MenubarCallback)
+                    window_flags |= ImGuiWindowFlags_MenuBar;
+
+
+                ImGui::Begin("DockSpaceWindow", nullptr, window_flags);
+                if (m_Specification.custom_titlebar) {
+                    float titleBarHeight;
+                    DrawTitleBar(titleBarHeight);
+                }
+
+                m_Layer->OnUIRender();
+
+                ImGui::PopStyleVar(3);
+
+                ImGui::End();
+            }
+
+            ImGui::Render();
+
+            int display_w, display_h;
+            glfwGetFramebufferSize(m_Window, &display_w, &display_h);
+            glViewport(0, 0, display_w, display_h);
+            glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
+            glClear(GL_COLOR_BUFFER_BIT);
+            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+            glfwSwapBuffers(m_Window);
+
+            const float time = GetTime();
+            m_FrameTime = time - m_LastFrameTime;
+#ifdef INFINITY_WINDOWS
+            m_TimeStep = min(m_FrameTime, 0.0333f);
+#else
+            m_TimeStep = std::min(m_FrameTime, 0.0333f);
+#endif
+            m_LastFrameTime = time;
+
+            const double endTime = glfwGetTime();
+
+            if (const double frameTime = endTime - start_time; frameTime < FRAME_DURATION) {
+                std::this_thread::sleep_for(std::chrono::duration<double>(FRAME_DURATION - frameTime));
+            }
+        }
+        return {};
+    }
+
+    void Application::Close() { m_Running = false; }
+
+    float Application::GetTime() { return static_cast<float>(glfwGetTime()); }
+
+    bool Application::IsMaximized() const { return static_cast<bool>(glfwGetWindowAttrib(m_Window, GLFW_MAXIMIZED)); }
+
+    ImFont *Application::GetFont(const std::string &name) {
+        if (!s_Instance->m_Fonts.contains(name)) {
+            return nullptr;
+        }
+        return s_Instance->m_Fonts.at(name);
+    }
+
+    void Application::SetWindowIcon(GLFWwindow *window, const unsigned char *data, int size) {
+
+        GLFWimage images[1];
+        images[0].pixels = stbi_load_from_memory(data, size, &images[0].width, &images[0].height, nullptr, 4);
+
+        if (images[0].pixels == nullptr) {
+            std::cerr << "Failed to load image" << std::endl;
+            return;
+        }
+
+        glfwSetWindowIcon(s_Instance->m_Window, 1, images);
+        stbi_image_free(images[0].pixels);
+    }
+
+    void Application::SetWindowTitle(const std::string &title) { glfwSetWindowTitle(s_Instance->m_Window, title.c_str()); }
+
+    void Application::DrawMenubar() const {
+        if (!m_MenubarCallback)
+            return;
+
+        if (m_Specification.custom_titlebar) {
+            const ImRect menuBarRect = {ImGui::GetCursorPos(), {ImGui::GetContentRegionAvail().x + ImGui::GetCursorScreenPos().x, ImGui::GetFrameHeightWithSpacing()}};
+
+            ImGui::BeginGroup();
+            if (BeginMenubar(menuBarRect)) {
+                m_MenubarCallback();
+            }
+
+            EndMenubar();
+            ImGui::EndGroup();
+        } else {
+            if (ImGui::BeginMenuBar()) {
+                m_MenubarCallback();
+                ImGui::EndMenuBar();
+            }
+        }
+    }
+
+    void Application::DrawTitleBar(float &out_title_bar_height) {
+
         constexpr float title_bar_height = 40.0f;
         const bool isMaximized = IsMaximized();
         const float title_bar_vertical_offset = isMaximized ? -6.0f : 0.0f;
@@ -361,11 +354,11 @@ namespace Infinity {
         ImGui::SetCursorPos(ImVec2(windowPadding.x + leftButtonAreaWidth, windowPadding.y + title_bar_vertical_offset));
         ImGui::InvisibleButton("##titleBarDragZone", ImVec2(w - buttonsAreaWidth - leftButtonAreaWidth, title_bar_height));
 
-        m_TitleBarHovered = ImGui::IsItemHovered();
+        m_TitlebarHovered = ImGui::IsItemHovered();
 
         if (isMaximized) {
             if (const float windowMousePosY = ImGui::GetMousePos().y - ImGui::GetCursorScreenPos().y; windowMousePosY >= 0.0f && windowMousePosY <= 5.0f)
-                m_TitleBarHovered = true;
+                m_TitlebarHovered = true;
         }
 
         if (m_MenubarCallback) {
@@ -374,10 +367,10 @@ namespace Infinity {
                 ImGui::SetItemAllowOverlap();
                 const float logoHorizontalOffset = 16.0f * 2.0f + 48.0f + windowPadding.x;
                 ImGui::SetCursorPos(ImVec2(logoHorizontalOffset, 6.0f + title_bar_vertical_offset));
-                UI_DrawMenubar();
+                DrawMenubar();
 
                 if (ImGui::IsItemHovered())
-                    m_TitleBarHovered = false;
+                    m_TitlebarHovered = false;
             }
 
             ImGui::ResumeLayout();
@@ -396,10 +389,9 @@ namespace Infinity {
             const int iconHeight = static_cast<int>(m_IconMinimize->GetHeight());
             const float padY = (buttonHeight - static_cast<float>(iconHeight)) / 2.0f;
             if (ImGui::InvisibleButton("Minimize", ImVec2(buttonWidth, buttonHeight))) {
-                if (m_WindowHandle) {
-                    if (const auto application = Get(); application.has_value()) {
-                        (*application)->QueueEvent([windowHandle = m_WindowHandle]() { glfwIconifyWindow(windowHandle); });
-                    }
+
+                if (const auto application = Get(); application.has_value()) {
+                    (*application)->QueueEvent([windowHandle = m_Window]() { glfwIconifyWindow(windowHandle); });
                 }
             }
 
@@ -413,7 +405,7 @@ namespace Infinity {
 
             if (ImGui::InvisibleButton("Maximize", ImVec2(buttonWidth, buttonHeight))) {
                 if (const auto application = Get(); application.has_value()) {
-                    (*application)->QueueEvent([isMaximized, windowHandle = m_WindowHandle]() {
+                    (*application)->QueueEvent([isMaximized, windowHandle = m_Window]() {
                         if (isMaximized)
                             glfwRestoreWindow(windowHandle);
                         else
@@ -443,264 +435,25 @@ namespace Infinity {
         out_title_bar_height = title_bar_height;
     }
 
-    void Application::UI_DrawMenubar() const {
-        if (!m_MenubarCallback)
-            return;
 
-        if (m_Specification.custom_titlebar) {
-            const ImRect menuBarRect = {ImGui::GetCursorPos(), {ImGui::GetContentRegionAvail().x + ImGui::GetCursorScreenPos().x, ImGui::GetFrameHeightWithSpacing()}};
-
-            ImGui::BeginGroup();
-            if (BeginMenubar(menuBarRect)) {
-                m_MenubarCallback();
-            }
-
-            EndMenubar();
-            ImGui::EndGroup();
-        } else {
-            if (ImGui::BeginMenuBar()) {
-                m_MenubarCallback();
-                ImGui::EndMenuBar();
-            }
-        }
-    }
-
-    void Application::SetWindowIcon(GLFWwindow *window, const unsigned char *data, const int size) {
-        GLFWimage images[1];
-        images[0].pixels = stbi_load_from_memory(data, size, &images[0].width, &images[0].height, nullptr, 4);
-
-        if (images[0].pixels == nullptr) {
-            fprintf(stderr, "Failed to load image from memory\n");
-            return;
-        }
-        glfwSetWindowIcon(window, 1, images);
-        stbi_image_free(images[0].pixels);
-    }
-
-    void Application::Run() {
-        m_Running = true;
-
-        SystemTray systemTray(m_WindowHandle);
-
-        ImGui_ImplVulkanH_Window *wd = &g_MainWindowData;
-        const auto clear_color = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
-        ImGuiIO &io = ImGui::GetIO();
-
-        io.IniFilename = nullptr;
-
-        glfwSetFramebufferSizeCallback(m_WindowHandle, framebuffer_size_callback);
-        systemTray.run();
-        // Main loop
-        while (!glfwWindowShouldClose(m_WindowHandle) && m_Running) {
-            const double startTime = glfwGetTime();
-            glfwPollEvents();
-            {
-                std::scoped_lock<std::mutex> lock(m_EventQueueMutex);
-
-                while (!m_EventQueue.empty()) {
-                    auto &func = m_EventQueue.front();
-                    func();
-                    m_EventQueue.pop();
-                }
-            }
-
-            for (const auto &layer: m_LayerStack)
-                layer->OnUpdate(m_TimeStep);
-
-
-            if (g_SwapChainRebuild) {
-                int width, height;
-                glfwGetFramebufferSize(m_WindowHandle, &width, &height);
-                if (width > 0 && height > 0) {
-                    ImGui_ImplVulkan_SetMinImageCount(g_MinImageCount);
-                    ImGui_ImplVulkanH_CreateOrResizeWindow(g_Instance, g_PhysicalDevice, g_Device, &g_MainWindowData, g_QueueFamily, g_Allocator, width, height, g_MinImageCount);
-                    g_MainWindowData.FrameIndex = 0;
-
-                    s_AllocatedCommandBuffers.clear();
-                    s_AllocatedCommandBuffers.resize(g_MainWindowData.ImageCount);
-
-                    g_SwapChainRebuild = false;
-                }
-            }
-
-            ImGui_ImplVulkan_NewFrame();
-            ImGui_ImplGlfw_NewFrame();
-            ImGui::NewFrame();
-            {
-                ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDocking;
-
-                const ImGuiViewport *viewport = ImGui::GetMainViewport();
-                const ImVec2 windowPos = viewport->Pos;
-                ImGui::SetNextWindowPos(ImVec2(windowPos.x - 1, windowPos.y));
-                ImGui::SetNextWindowSize(ImVec2(viewport->Size.x + 1, viewport->Size.y));
-                ImGui::SetNextWindowViewport(viewport->ID);
-                ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 4.0f);
-                ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-                ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-                window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBackground;
-                window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
-                if (!m_Specification.custom_titlebar && m_MenubarCallback)
-                    window_flags |= ImGuiWindowFlags_MenuBar;
-
-
-                ImGui::Begin("DockSpaceWindow", nullptr, window_flags);
-                if (m_Specification.custom_titlebar) {
-                    float titleBarHeight;
-
-                    UI_DrawTitleBar(titleBarHeight);
-                    // ImGui::SetCursorPosY(titleBarHeight);
-                }
-
-                for (const auto &layer: m_LayerStack)
-                    layer->OnUIRender();
-
-
-                ImGui::PopStyleVar(3);
-
-                ImGui::End();
-            }
-
-            // Rendering
-            ImGui::Render();
-            ImDrawData *main_draw_data = ImGui::GetDrawData();
-            const bool main_is_minimized = (main_draw_data->DisplaySize.x <= 0.0f || main_draw_data->DisplaySize.y <= 0.0f);
-            wd->ClearValue.color.float32[0] = clear_color.x * clear_color.w;
-            wd->ClearValue.color.float32[1] = clear_color.y * clear_color.w;
-            wd->ClearValue.color.float32[2] = clear_color.z * clear_color.w;
-            wd->ClearValue.color.float32[3] = clear_color.w;
-            if (!main_is_minimized)
-                FrameRender(wd, main_draw_data);
-
-            // Update and Render additional Platform Windows
-            if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
-                ImGui::UpdatePlatformWindows();
-                ImGui::RenderPlatformWindowsDefault();
-            }
-
-            if (!main_is_minimized)
-                FramePresent(wd);
-            else {
-                using namespace std::chrono_literals;
-                std::this_thread::sleep_for(5ms);
-            }
-
-
-            const float time = GetTime();
-            m_FrameTime = time - m_LastFrameTime;
-#ifdef INFINITY_WINDOWS
-            m_TimeStep = min(m_FrameTime, 0.0333f);
+    std::unique_ptr<Application> Application::CreateApplication(int argc, char **argv, std::unique_ptr<Layer> layer) {
+        const auto specifications = ApplicationSpecifications{
+                "Infinity Launcher",
+                std::make_pair(1440, 1026),
+                std::make_pair(3840, 2160),
+                std::make_pair(1240, 680),
+                true,
+#ifdef WIN32
+                true,
 #else
-            m_TimeStep = std::min(m_FrameTime, 0.0333f);
+                false,
 #endif
-            m_LastFrameTime = time;
+        };
+        auto app = std::make_unique<Application>(specifications);
+        app->PushLayer(std::move(layer));
 
-            const double endTime = glfwGetTime();
-
-            if (const double frameTime = endTime - startTime; frameTime < FRAME_DURATION) {
-                std::this_thread::sleep_for(std::chrono::duration<double>(FRAME_DURATION - frameTime));
-            }
-        }
+        return app;
     }
 
-    void Application::Close() { m_Running = false; }
 
-    bool Application::IsMaximized() const { return static_cast<bool>(glfwGetWindowAttrib(m_WindowHandle, GLFW_MAXIMIZED)); }
-
-    float Application::GetTime() { return static_cast<float>(glfwGetTime()); }
-
-    std::optional<VkInstance> Application::GetInstance() {
-        if (g_Instance != nullptr) {
-            return g_Instance;
-        }
-        return std::nullopt;
-    }
-
-    std::optional<VkPhysicalDevice> Application::GetPhysicalDevice() {
-        if (g_PhysicalDevice != nullptr) {
-            return g_PhysicalDevice;
-        }
-        return std::nullopt;
-    }
-
-    std::optional<VkDevice> Application::GetDevice() {
-        if (g_Device != nullptr) {
-            return g_Device;
-        }
-        return std::nullopt;
-    }
-
-    VkCommandBuffer Application::GetCommandBuffer(bool begin) {
-        while (g_SwapChainRebuild) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        }
-
-        const ImGui_ImplVulkanH_Window *wd = &g_MainWindowData;
-        VkCommandPool command_pool = wd->Frames[wd->FrameIndex].CommandPool;
-
-        if (wd->FrameIndex >= s_AllocatedCommandBuffers.size()) {
-            s_AllocatedCommandBuffers.resize(wd->ImageCount);
-        }
-
-        VkCommandBufferAllocateInfo command_buffer_allocate_info = {};
-        command_buffer_allocate_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        command_buffer_allocate_info.commandPool = command_pool;
-        command_buffer_allocate_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        command_buffer_allocate_info.commandBufferCount = 1;
-
-        VkCommandBuffer &command_buffer = s_AllocatedCommandBuffers[wd->FrameIndex].emplace_back();
-        auto err = vkAllocateCommandBuffers(g_Device, &command_buffer_allocate_info, &command_buffer);
-        inf_check_vk_result(err);
-
-        if (begin) {
-            VkCommandBufferBeginInfo begin_info = {};
-            begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-            begin_info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-            err = vkBeginCommandBuffer(command_buffer, &begin_info);
-            inf_check_vk_result(err);
-        }
-
-        return command_buffer;
-    }
-
-    void Application::FlushCommandBuffer(VkCommandBuffer commandBuffer) {
-        constexpr uint64_t DEFAULT_FENCE_TIMEOUT = 100000000000;
-
-        VkSubmitInfo end_info = {};
-        end_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        end_info.commandBufferCount = 1;
-        end_info.pCommandBuffers = &commandBuffer;
-        auto err = vkEndCommandBuffer(commandBuffer);
-        inf_check_vk_result(err);
-
-        // Create fence to ensure that the command buffer has finished executing
-        VkFenceCreateInfo fenceCreateInfo = {};
-        fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-        fenceCreateInfo.flags = 0;
-        VkFence fence;
-        err = vkCreateFence(g_Device, &fenceCreateInfo, nullptr, &fence);
-        inf_check_vk_result(err);
-
-        err = vkQueueSubmit(g_Queue, 1, &end_info, fence);
-        inf_check_vk_result(err);
-
-        err = vkWaitForFences(g_Device, 1, &fence, VK_TRUE, DEFAULT_FENCE_TIMEOUT);
-        inf_check_vk_result(err);
-
-        vkDestroyFence(g_Device, fence, nullptr);
-    }
-
-    void Application::SubmitResourceFree(std::function<void()> &&func) { s_ResourceFreeQueue[s_CurrentFrameIndex].emplace_back(func); }
-
-    ImFont *Application::GetFont(const std::string &name) {
-        if (!s_Fonts.contains(name))
-            return nullptr;
-
-        return s_Fonts.at(name);
-    }
-
-    void Application::SetWindowTitle(const std::string &title) {
-        if (s_WindowHandle != nullptr) {
-            glfwSetWindowTitle(s_WindowHandle, title.c_str());
-        }
-    }
 } // namespace Infinity

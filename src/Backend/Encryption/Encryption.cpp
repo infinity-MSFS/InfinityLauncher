@@ -31,7 +31,11 @@ namespace Infinity {
 
         ByteVector ciphertext(plain_text.size() + EVP_MAX_BLOCK_LENGTH + EVP_MAX_IV_LENGTH);
 
+#ifdef WIN32
         std::ranges::copy(iv, ciphertext.begin());
+#else
+        std::copy(iv.begin(), iv.end(), ciphertext.begin());
+#endif
         int offset = EVP_MAX_IV_LENGTH;
         int len;
         if (!EVP_EncryptUpdate(ctx, ciphertext.data() + offset, &len, reinterpret_cast<const unsigned char *>(plain_text.c_str()), static_cast<int>(plain_text.size()))) {
@@ -69,8 +73,12 @@ namespace Infinity {
         }
 
         ByteVector ciphertext(binary.size() + EVP_MAX_BLOCK_LENGTH + EVP_MAX_IV_LENGTH);
-
+#ifdef WIN32
         std::ranges::copy(iv, ciphertext.begin());
+#else
+        std::copy(iv.begin(), iv.end(), ciphertext.begin());
+#endif
+
         int offset = EVP_MAX_IV_LENGTH;
 
         int len;
@@ -246,4 +254,4 @@ namespace Infinity {
         return result;
     }
 
-}
+} // namespace Infinity
