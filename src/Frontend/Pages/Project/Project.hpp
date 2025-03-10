@@ -12,66 +12,102 @@ namespace Infinity {
 
     class AircraftSelectButton {
     public:
-        AircraftSelectButton(std::string name, int32_t id);
+        AircraftSelectButton(std::string name, int32_t id, const std::shared_ptr<uint8_t> &selected_aircraft);
         void Render();
 
-        void SetActive(bool active);
+    private:
+        bool IsActive();
 
     private:
         std::string m_Name;
         int32_t m_Id;
         bool m_Active;
+        std::shared_ptr<uint8_t> m_SelectedAircraft;
     };
 
     class AircraftSelectButtonBar {
     public:
-        explicit AircraftSelectButtonBar(std::vector<AircraftSelectButton> aircraft_select_buttons);
+        explicit AircraftSelectButtonBar(const std::vector<AircraftSelectButton> &aircraft_select_buttons, const std::shared_ptr<uint8_t> &selected_aircraft);
         void Render();
-        [[nodiscard]] int32_t GetSelectedAircraftId() const;
 
     private:
         std::vector<AircraftSelectButton> m_AircraftSelectButtons;
-        int32_t m_SelectedAircraftId;
+        std::shared_ptr<uint8_t> m_SelectedAircraft;
     };
 
-    class VariantButton {
+    class TopRegion {
     public:
-        explicit VariantButton(const std::string &name, int32_t id);
+        explicit TopRegion(GroupData *group_data, const std::shared_ptr<uint8_t> &selected_aircraft);
+        void Render();
+
+    private:
+        AircraftSelectButtonBar m_AircraftSelectButtonBar;
+        std::vector<AircraftSelectButton> m_AircraftSelectButtons;
+        std::shared_ptr<uint8_t> m_SelectedAircraft;
+    };
+
+
+    class ContentRegionButton {
+    public:
+        struct Button {
+            std::string name;
+            uint8_t page;
+        };
+
+        explicit ContentRegionButton(const std::string &name, int8_t id, const std::shared_ptr<uint8_t> &selected_page);
+        explicit ContentRegionButton(const Button &button, const std::shared_ptr<uint8_t> &selected_page);
 
         void Render();
 
-        void SetActive(bool active);
-
     private:
-        std::string m_Name;
-        int32_t m_Id;
-        bool m_Active;
+        Button m_ButtonSpec;
+        std::shared_ptr<uint8_t> m_SelectedPage;
     };
 
-    class VariantButtonBar {
+    class ContentRegionButtonBar {
     public:
-        VariantButtonBar(std::vector<VariantButton> variant_buttons, const std::string &title);
+        explicit ContentRegionButtonBar(std::vector<ContentRegionButton> buttons, const std::shared_ptr<uint8_t> &selected_page);
+        void Render();
 
     private:
-        std::string m_Title;
-        std::vector<VariantButton> m_VariantButtons;
-        int32_t m_SelectedVariantId;
+        std::vector<ContentRegionButton> m_Buttons;
+        std::shared_ptr<uint8_t> m_SelectedPage;
     };
 
-    class ContentRegionButton {};
+    class ContentRegion {
+    public:
+        explicit ContentRegion(GroupData *group_data, const std::shared_ptr<uint8_t> &selected_page);
+        void Render();
 
-    class ContentRegionButtonBar {};
+    private:
+        std::vector<std::string> m_Changelogs;
+        std::string m_Description;
+        std::string m_Overview;
 
-    class ContentRegion {};
+        GroupData *m_GroupData;
+        ContentRegionButtonBar m_ButtonBar;
+        std::vector<ContentRegionButton> m_Buttons;
+
+        std::shared_ptr<uint8_t> m_SelectedPage;
+    };
 
     class ProjectPage {
     public:
-        explicit ProjectPage(GroupData group_data, GroupDataImages state_images);
-
+        explicit ProjectPage(const GroupData &group_data, GroupDataImages state_images);
+        static void ResetState() {
+            m_SelectedPage = std::make_shared<uint8_t>(0);
+            m_SelectedAircraft = std::make_shared<uint8_t>(0);
+        }
         void Render();
 
     private:
         GroupData m_GroupData;
         GroupDataImages m_StateImages;
+
+        static std::shared_ptr<uint8_t> m_SelectedPage;
+        static std::shared_ptr<uint8_t> m_SelectedAircraft;
+
+        ContentRegion m_ContentRegion;
+        TopRegion m_TopRegion;
     };
 } // namespace Infinity

@@ -8,6 +8,8 @@
 
 #include <numeric>
 
+#include "Frontend/Pages/Project/Project.hpp"
+
 namespace Infinity {
 
     unsigned int Home::m_ExpectedProjects = 800000;
@@ -74,6 +76,7 @@ namespace Infinity {
 
         if (clicked) {
             if (const auto router = Utils::Router::getInstance(); router.has_value()) {
+                ProjectPage::ResetState();
                 if (auto result = (*router)->setPage(page_index); !result.has_value()) {
                     Errors::Error(result.error()).Dispatch();
                 }
