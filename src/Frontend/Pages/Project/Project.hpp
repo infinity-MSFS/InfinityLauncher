@@ -61,7 +61,10 @@ namespace Infinity {
         explicit ContentRegionButton(const std::string &name, int8_t id, const std::shared_ptr<uint8_t> &selected_page);
         explicit ContentRegionButton(const Button &button, const std::shared_ptr<uint8_t> &selected_page);
 
-        void Render();
+        void Render(ImVec2 size, ImVec2 pos);
+
+    private:
+        bool ButtonRender(const char *label, ImVec2 size, bool active);
 
     private:
         Button m_ButtonSpec;
@@ -80,8 +83,14 @@ namespace Infinity {
 
     class ContentRegion {
     public:
-        explicit ContentRegion(GroupData *group_data, const std::shared_ptr<uint8_t> &selected_page);
+        explicit ContentRegion(GroupData *group_data, const std::shared_ptr<uint8_t> &selected_page, const std::shared_ptr<uint8_t> &selected_aircraft);
         void Render();
+
+    private:
+        void RenderInstalledWidget();
+
+        bool RenderDownloadButton(const char *label, ImVec2 size, ImVec2 pos);
+        bool RenderBugReportButton(ImVec2 size, ImVec2 pos);
 
     private:
         std::vector<std::string> m_Changelogs;
@@ -93,6 +102,7 @@ namespace Infinity {
         std::vector<ContentRegionButton> m_Buttons;
 
         std::shared_ptr<uint8_t> m_SelectedPage;
+        std::shared_ptr<uint8_t> m_SelectedAircraft;
     };
 
     class ProjectPage {
