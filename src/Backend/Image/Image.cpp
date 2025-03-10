@@ -581,4 +581,40 @@ namespace Infinity {
                                 ImGui::ColorConvertFloat4ToU32(tint_color));
         }
     }
+
+    void Image::RenderImage(const std::shared_ptr<Image> &image, ImVec2 pos, ImVec2 size, float opacity) {
+        if (!image)
+            return;
+
+        const float imgWidth = image->GetWidth();
+        const float imgHeight = image->GetHeight();
+
+        float aspectRatio = imgWidth / imgHeight;
+
+        float newHeight = size.x / aspectRatio;
+        float newWidth = size.y * aspectRatio;
+
+        float uvLeft = 0.0f, uvRight = 1.0f, uvTop = 0.0f, uvBottom = 1.0f;
+
+        if (newHeight > size.y) {
+            float excessHeight = newHeight - size.y;
+            float uvCrop = (excessHeight / 2.0f) / newHeight;
+            uvTop += uvCrop;
+            uvBottom -= uvCrop;
+            newHeight = size.y;
+        } else if (newWidth > size.x) {
+            float excessWidth = newWidth - size.x;
+            float uvCrop = (excessWidth / 2.0f) / newWidth;
+            uvLeft += uvCrop;
+            uvRight -= uvCrop;
+            newWidth = size.x;
+        }
+
+        ImDrawList *draw_list = ImGui::GetWindowDrawList();
+
+        ImVec4 tint_color(1.0f, 1.0f, 1.0f, opacity);
+        draw_list->AddImage((void *) (intptr_t) image->GetTextureID(), ImVec2(pos.x, pos.y), ImVec2(pos.x + size.x, pos.y + size.y), ImVec2(uvLeft, uvTop), ImVec2(uvRight, uvBottom),
+                            ImGui::ColorConvertFloat4ToU32(tint_color));
+    }
+
 } // namespace Infinity

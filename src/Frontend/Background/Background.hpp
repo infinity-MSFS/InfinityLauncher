@@ -27,7 +27,9 @@ namespace Infinity {
 
         Background();
 
-        static void RenderBackground();
+        static void SetDotOpacity(float opacity);
+
+        void RenderBackground();
 
         static void UpdateColorScheme() {
             auto &interpolator = ColorInterpolation::GetInstance();
@@ -57,6 +59,8 @@ namespace Infinity {
         }
 
     private:
+        void UpdateDotOpacity();
+
         static void RenderBackgroundDotsLayer();
 
         static void RenderBackgroundGradientLayer();
@@ -94,6 +98,8 @@ namespace Infinity {
         static ImVec4 m_circleColor4;
         static ImVec4 m_circleColor5;
         static bool m_HomePage;
+        static float m_dotOpacity;
+        static float m_targetDotOpacity;
     };
 
 

@@ -75,7 +75,7 @@ public:
     }
 
     void OnUIRender() override {
-        const auto bg = Infinity::Background::GetInstance();
+        auto bg = Infinity::Background::GetInstance();
         bg.RenderBackground();
 
         auto loading_screen = [] {

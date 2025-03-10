@@ -1,6 +1,7 @@
 
 #include "Router.hpp"
 
+#include "Frontend/Background/Background.hpp"
 #include "Frontend/ColorInterpolation/ColorInterpolation.hpp"
 #include "Util/Error/Error.hpp"
 
@@ -25,11 +26,11 @@ namespace Infinity::Utils {
     std::expected<bool, Errors::Error> Router::setPage(const int pageId) {
         if (m_PageData.contains(pageId)) {
             m_CurrentPageID = pageId;
+            Background::GetInstance().SetDotOpacity(pageId < 3 ? 0.3f : 0.1f);
             ColorInterpolation::GetInstance().ChangeGradientColors(hexToImVec4(m_PageData[m_CurrentPageID].second.primary), hexToImVec4(m_PageData[m_CurrentPageID].second.secondary),
                                                                    hexToImVec4(m_PageData[m_CurrentPageID].second.circle1), hexToImVec4(m_PageData[m_CurrentPageID].second.circle2),
                                                                    hexToImVec4(m_PageData[m_CurrentPageID].second.circle3), hexToImVec4(m_PageData[m_CurrentPageID].second.circle4),
-                                                                   hexToImVec4(m_PageData[m_CurrentPageID].second.circle5),
-                                                                   1.0f);
+                                                                   hexToImVec4(m_PageData[m_CurrentPageID].second.circle5), 1.0f);
             return true;
         } else {
             std::ostringstream oss;
@@ -38,9 +39,7 @@ namespace Infinity::Utils {
         }
     }
 
-    int Router::getPage() const {
-        return m_CurrentPageID;
-    }
+    int Router::getPage() const { return m_CurrentPageID; }
 
     void Router::RenderCurrentPage() {
         if (m_PageData.contains(m_CurrentPageID)) {
@@ -50,7 +49,5 @@ namespace Infinity::Utils {
         }
     }
 
-    Router::Router(std::unordered_map<int, std::pair<std::function<void()>, Palette>> pages) :
-        m_CurrentPageID(0), m_PageData(std::move(pages)) {
-    }
-}
+    Router::Router(std::unordered_map<int, std::pair<std::function<void()>, Palette>> pages) : m_CurrentPageID(0), m_PageData(std::move(pages)) {}
+} // namespace Infinity::Utils

@@ -20,12 +20,12 @@ namespace Infinity {
 
         UpdateScrollAnimation();
 
-        ImGui::PushFont(Application::GetFont("DefaultLarge"));
+        ImGui::PushFont(Application::GetFont("DefaultXLarge"));
         auto text_size = ImGui::CalcTextSize("Infinity");
         std::vector<unsigned int> active_index(242 - 1);
         std::iota(active_index.begin(), active_index.end(), 1);
-        // TODO: Replace with a png resource
-        DrawInfinityLogoHome(0.09f, ImVec2(ImGui::GetWindowWidth() / 2 - 50.0f, 70.0f), active_index, 2.0f);
+        auto logo = Application::Get().value()->GetIcon();
+        Image::RenderImage(logo, ImVec2(ImGui::GetWindowWidth() / 2 - 120.0f, 54.0f), {100.0f, 100.0f});
         ImGui::SetCursorPos(ImVec2(ImGui::GetWindowWidth() / 2 - text_size.x / 2 + 50, 80.0f));
         ImGui::Text("Infinity");
         ImGui::PopFont();

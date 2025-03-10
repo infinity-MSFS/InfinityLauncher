@@ -15,6 +15,8 @@ namespace Infinity {
     ImVec2 Background::m_windowPos = {0.0f, 0.0f};
     ImVec2 Background::m_windowSize = {0.0f, 0.0f};
     bool Background::m_HomePage = true;
+    float Background::m_dotOpacity = 0.3f;
+    float Background::m_targetDotOpacity = 0.3f;
 
     const std::unordered_map<std::string, ImVec2> defaultCirclePositions = {
             {"Circle1", ImVec2(100, 100)}, {"Circle2", ImVec2(200, 200)}, {"Circle3", ImVec2(300, 300)}, {"Circle4", ImVec2(400, 400)}, {"Circle5", ImVec2(200, 50)}};
@@ -29,6 +31,8 @@ namespace Infinity {
     void Background::RenderBackground() {
         m_windowPos = ImGui::GetWindowPos();
         m_windowSize = ImGui::GetWindowSize();
+
+        UpdateDotOpacity();
         RenderBackgroundBaseLayer();
         RenderBackgroundGradientLayer();
         RenderBackgroundDotsLayer();
@@ -76,10 +80,29 @@ namespace Infinity {
         }
     }
 
+    void Background::SetDotOpacity(float opacity) { m_targetDotOpacity = opacity; }
+
+    void Background::UpdateDotOpacity() {
+        constexpr float transitionSpeed = 0.003f;
+
+        if (m_dotOpacity < m_targetDotOpacity) {
+            m_dotOpacity += transitionSpeed;
+            if (m_dotOpacity > m_targetDotOpacity) {
+                m_dotOpacity = m_targetDotOpacity;
+            }
+        } else if (m_dotOpacity > m_targetDotOpacity) {
+            m_dotOpacity -= transitionSpeed;
+            if (m_dotOpacity < m_targetDotOpacity) {
+                m_dotOpacity = m_targetDotOpacity;
+            }
+        }
+    }
+
+
     void Background::RenderBackgroundDotsLayer() {
         const auto offsetPosition = ImVec2(m_windowPos.x + 10, m_windowPos.y + 10);
         const auto dotCount2D = ImVec2(300, 150);
-        const auto color = ImColor(1.0f, 1.0f, 1.0f, 0.3f);
+        const auto color = ImColor(1.0f, 1.0f, 1.0f, m_dotOpacity);
 
         for (int y = 0; static_cast<float>(y) < dotCount2D.y; y++) {
             for (int x = 0; static_cast<float>(x) < dotCount2D.x; x++) {

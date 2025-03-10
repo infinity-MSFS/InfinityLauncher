@@ -53,6 +53,8 @@ namespace Infinity {
 
         void Close();
 
+        [[nodiscard]] std::shared_ptr<Image> GetAppLogo() { return m_AppHeaderIcon; }
+
         [[nodiscard]] bool IsMaximized() const;
 
         [[nodiscard]] std::shared_ptr<Image> GetIcon() const { return m_AppHeaderIcon; }

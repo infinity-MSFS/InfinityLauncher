@@ -13,7 +13,9 @@ namespace Infinity {
     class AircraftSelectButton {
     public:
         AircraftSelectButton(std::string name, int32_t id, const std::shared_ptr<uint8_t> &selected_aircraft);
-        void Render();
+        void Render(ImVec2 size, ImVec2 pos);
+
+        static bool Button(const char *label, ImVec2 size, bool active);
 
     private:
         bool IsActive();
@@ -37,13 +39,15 @@ namespace Infinity {
 
     class TopRegion {
     public:
-        explicit TopRegion(GroupData *group_data, const std::shared_ptr<uint8_t> &selected_aircraft);
+        explicit TopRegion(GroupData *group_data, GroupDataImages *group_data_images, const std::shared_ptr<uint8_t> &selected_aircraft);
         void Render();
 
     private:
         AircraftSelectButtonBar m_AircraftSelectButtonBar;
         std::vector<AircraftSelectButton> m_AircraftSelectButtons;
         std::shared_ptr<uint8_t> m_SelectedAircraft;
+        GroupData *m_GroupData;
+        GroupDataImages *m_GroupDataImages;
     };
 
 
