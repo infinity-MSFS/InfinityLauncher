@@ -24,14 +24,21 @@ namespace Infinity {
             ImGui::Separator();
             ImGui::Text("%s", m_GroupData.name.c_str());
             if (!m_StateImages.projectImages.empty()) {
-                if (m_StateImages.projectImages[0].pageBackgroundImage.has_value()) {
 #ifdef WIN32
-                    constexpr float top_padding = 45.0f;
+                constexpr float top_padding = 45.0f;
 #else
-                    constexpr float top_padding = 0.0f;
+                constexpr float top_padding = 0.0f;
 #endif
+                if (m_StateImages.projectImages[0].pageBackgroundImage.has_value()) {
+
                     // TODO: Implement Image::RenderProjectImage
+                    ImGui::Text("Project Image");
                     Image::RenderHomeImage(m_StateImages.projectImages[0].pageBackgroundImage.value(), {0.0f, top_padding}, {ImGui::GetWindowWidth(), ImGui::GetWindowHeight()}, true);
+                    m_TopRegion.Render();
+                    m_ContentRegion.Render();
+                } else if (m_StateImages.projectImages[0].backgroundImage) {
+                    ImGui::Text("Project Image");
+                    Image::RenderHomeImage(m_StateImages.projectImages[0].backgroundImage, {0.0f, top_padding}, {ImGui::GetWindowWidth(), ImGui::GetWindowHeight()}, true);
                     m_TopRegion.Render();
                     m_ContentRegion.Render();
                 }

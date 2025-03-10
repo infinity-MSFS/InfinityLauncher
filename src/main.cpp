@@ -68,6 +68,8 @@ public:
                                                            thread_state_ptr->images.groupImages.at("lunar_sim").logo, 5);
             Infinity::Home::GetInstance()->RegisterProject("Ouroboros Jets", thread_state_ptr->images.groupImages.at("ouroboros").projectImages[0].backgroundImage,
                                                            thread_state_ptr->images.groupImages.at("ouroboros").logo, 6);
+            Infinity::Home::GetInstance()->RegisterProject("QBit Sim", thread_state_ptr->images.groupImages.at("qbitsim").projectImages[0].backgroundImage,
+                                                           thread_state_ptr->images.groupImages.at("qbitsim").logo, 7);
             Infinity::Home::SetLoaded(true);
         }).detach();
     }
@@ -142,6 +144,12 @@ public:
                               Infinity::ProjectPage project_page(statePtr->state.groups["ouroboros"], statePtr->images.groupImages["ouroboros"]);
                               project_page.Render();
                           },
+                          {"#210e3a", "#2a2fff", "#1271FF02", "#DD4AFF02", "#64DCFF02", "#C8323202", "#B4B43202"}}},
+                        {7,
+                         {[&statePtr] {
+                              Infinity::ProjectPage project_page(statePtr->state.groups["qbitsim"], statePtr->images.groupImages["qbitsim"]);
+                              project_page.Render();
+                          },
                           {"#210e3a", "#2a2fff", "#1271FF02", "#DD4AFF02", "#64DCFF02", "#C8323202", "#B4B43202"}}}
 
                 };
@@ -162,6 +170,11 @@ public:
 #ifdef TEST_LOADING_SCREEN
         loading_screen();
 #else
+
+        // if (const auto main_state = state.GetPageState<Infinity::MainState>("main"); main_state.has_value()) {
+        //     main_state.value()->PrintState();
+        // }
+
         const auto router = Infinity::Utils::Router::getInstance();
         const int page = (*router)->getPage();
         if (router.has_value()) {

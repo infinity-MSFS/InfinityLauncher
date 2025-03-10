@@ -199,6 +199,8 @@ namespace Infinity {
         std::map<std::string, GroupDataImages> groupImages;
     };
 
+    inline ImVec4 hexToImVec4(const std::string &hexColor);
+
     class MainState : public PageState {
     public:
         GroupDataState state;
@@ -206,7 +208,167 @@ namespace Infinity {
 
         MainState(GroupDataState &state) : state(state) {}
 
-        void PrintState() const override { std::cout << "MainState::PrintState()" << std::endl; }
+
+        void PrintState() const override {
+            ImGui::Begin("State Information");
+
+            if (state.groups.empty()) {
+                ImGui::Text("No group data available");
+                ImGui::End();
+                return;
+            }
+            ImGui::Text("Total Groups: %zu", state.groups.size());
+            ImGui::Separator();
+
+            for (const auto &[groupKey, groupData]: state.groups) {
+                if (ImGui::TreeNode(("Group: " + groupData.name + " (" + groupKey + ")").c_str())) {
+                    ImGui::Text("Logo URL: %s", groupData.logo.c_str());
+                    ImGui::Text("Path: %s", groupData.path.c_str());
+                    if (ImGui::TreeNode("Palette")) {
+                        try {
+                            ImVec4 primaryColor = hexToImVec4(groupData.palette.primary);
+                            ImVec4 secondaryColor = hexToImVec4(groupData.palette.secondary);
+                            ImVec4 circle1Color = hexToImVec4(groupData.palette.circle1);
+                            ImVec4 circle2Color = hexToImVec4(groupData.palette.circle2);
+                            ImVec4 circle3Color = hexToImVec4(groupData.palette.circle3);
+                            ImVec4 circle4Color = hexToImVec4(groupData.palette.circle4);
+                            ImVec4 circle5Color = hexToImVec4(groupData.palette.circle5);
+
+                            ImGui::ColorButton("Primary", primaryColor, 0, ImVec2(20, 20));
+                            ImGui::SameLine();
+                            ImGui::Text("Primary: %s", groupData.palette.primary.c_str());
+
+                            ImGui::ColorButton("Secondary", secondaryColor, 0, ImVec2(20, 20));
+                            ImGui::SameLine();
+                            ImGui::Text("Secondary: %s", groupData.palette.secondary.c_str());
+
+                            ImGui::ColorButton("Circle1", circle1Color, 0, ImVec2(20, 20));
+                            ImGui::SameLine();
+                            ImGui::Text("Circle1: %s", groupData.palette.circle1.c_str());
+
+                            ImGui::ColorButton("Circle2", circle2Color, 0, ImVec2(20, 20));
+                            ImGui::SameLine();
+                            ImGui::Text("Circle2: %s", groupData.palette.circle2.c_str());
+
+                            ImGui::ColorButton("Circle3", circle3Color, 0, ImVec2(20, 20));
+                            ImGui::SameLine();
+                            ImGui::Text("Circle3: %s", groupData.palette.circle3.c_str());
+
+                            ImGui::ColorButton("Circle4", circle4Color, 0, ImVec2(20, 20));
+                            ImGui::SameLine();
+                            ImGui::Text("Circle4: %s", groupData.palette.circle4.c_str());
+
+                            ImGui::ColorButton("Circle5", circle5Color, 0, ImVec2(20, 20));
+                            ImGui::SameLine();
+                            ImGui::Text("Circle5: %s", groupData.palette.circle5.c_str());
+                        } catch (const std::invalid_argument &e) {
+                            ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Error with palette colors: %s", e.what());
+                        }
+                        ImGui::TreePop();
+                    }
+
+                    ImGui::Text("Hidden: %s", groupData.hide.has_value() && *groupData.hide ? "Yes" : "No");
+
+                    if (ImGui::TreeNode("Beta Project")) {
+                        ImGui::Text("Background URL: %s", groupData.beta.background.c_str());
+
+                        auto groupImagesIt = images.groupImages.find(groupKey);
+                        if (groupImagesIt != images.groupImages.end() && groupImagesIt->second.beta.background) {
+                            ImGui::Text("Background Image:");
+                            void *textureId = groupImagesIt->second.beta.background->GetImGuiTextureID();
+                            if (textureId) {
+                                ImGui::Image(textureId, ImVec2(100, 100));
+                            } else {
+                                ImGui::Text("   [Texture not loaded]");
+                            }
+                        }
+
+                        ImGui::TreePop();
+                    }
+
+                    if (ImGui::TreeNode(("Projects (" + std::to_string(groupData.projects.size()) + ")").c_str())) {
+                        for (size_t i = 0; i < groupData.projects.size(); i++) {
+                            const auto &project = groupData.projects[i];
+                            if (ImGui::TreeNode(("Project: " + project.name + " (" + std::to_string(i) + ")").c_str())) {
+                                ImGui::Text("Version: %s", project.version.c_str());
+                                ImGui::Text("Date: %s", project.date.c_str());
+
+                                if (ImGui::TreeNode("Overview")) {
+                                    ImGui::TextWrapped("%s", project.overview.c_str());
+                                    ImGui::TreePop();
+                                }
+
+                                if (ImGui::TreeNode("Description")) {
+                                    ImGui::TextWrapped("%s", project.description.c_str());
+                                    ImGui::TreePop();
+                                }
+
+                                if (ImGui::TreeNode("Changelog")) {
+                                    ImGui::TextWrapped("%s", project.changelog.c_str());
+                                    ImGui::TreePop();
+                                }
+
+                                ImGui::Text("Background URL: %s", project.background.c_str());
+                                if (project.pageBackground) {
+                                    ImGui::Text("Page Background URL: %s", project.pageBackground->c_str());
+                                }
+
+                                auto groupImagesIt = images.groupImages.find(groupKey);
+                                if (groupImagesIt != images.groupImages.end() && i < groupImagesIt->second.projectImages.size()) {
+                                    const auto &projectImages = groupImagesIt->second.projectImages[i];
+
+                                    ImGui::Text("Background Image:");
+                                    if (projectImages.backgroundImage) {
+                                        void *textureId = projectImages.backgroundImage->GetImGuiTextureID();
+                                        if (textureId) {
+                                            ImGui::Image(textureId, ImVec2(100, 100));
+                                        } else {
+                                            ImGui::Text("   [Texture not loaded]");
+                                        }
+                                    }
+
+                                    if (projectImages.pageBackgroundImage) {
+                                        ImGui::Text("Page Background Image:");
+                                        auto textureId = (*projectImages.pageBackgroundImage)->GetImGuiTextureID();
+                                        if (textureId) {
+                                            ImGui::Image(textureId, ImVec2(100, 100));
+                                        } else {
+                                            ImGui::Text("   [Texture not loaded]");
+                                        }
+                                    }
+                                }
+
+                                if (project.variants && !project.variants->empty()) {
+                                    if (ImGui::TreeNode(("Variants (" + std::to_string(project.variants->size()) + ")").c_str())) {
+                                        for (const auto &variant: *project.variants) {
+                                            ImGui::BulletText("%s", variant.c_str());
+                                        }
+                                        ImGui::TreePop();
+                                    }
+                                }
+
+                                if (project.package) {
+                                    if (ImGui::TreeNode("Package")) {
+                                        ImGui::Text("Owner: %s", project.package->owner.c_str());
+                                        ImGui::Text("Repo Name: %s", project.package->repoName.c_str());
+                                        ImGui::Text("Version: %s", project.package->version.c_str());
+                                        ImGui::Text("File Name: %s", project.package->fileName.c_str());
+                                        ImGui::TreePop();
+                                    }
+                                }
+
+                                ImGui::TreePop();
+                            }
+                        }
+                        ImGui::TreePop();
+                    }
+
+                    ImGui::TreePop();
+                }
+            }
+
+            ImGui::End();
+        }
     };
 
     inline StateImagesBin FetchAllImages(const GroupDataState &state) {

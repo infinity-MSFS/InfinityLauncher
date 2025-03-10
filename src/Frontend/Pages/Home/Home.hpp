@@ -33,15 +33,24 @@ namespace Infinity {
         void RegisterProject(const std::vector<HomeProjectButtonStruct> &projects);
         void UnregisterProject(const std::vector<std::string> &projects);
 
-        void Render() const;
+        void Render();
 
     private:
         Home() = default;
-        static void RenderProject(const HomeProjectButtonStruct &project, int page_index);
+        void RenderProject(const HomeProjectButtonStruct &project, int page_index);
+
+        void HandleScrollInput();
+        void UpdateScrollAnimation();
 
     private:
         std::vector<HomeProjectButtonStruct> m_HomeProjectButtons;
         static unsigned int m_ExpectedProjects;
         static bool m_DoneLoading;
+        float m_ScrollOffset = 0.0f;
+        float m_TargetScrollOffset = 0.0f;
+        float m_ScrollSpeed = 15.0f;
+        float m_SnapThreashold = 0.5f;
+        bool m_IsScrolling = false;
+        float m_LastScrollTime = 0.0f;
     };
 } // namespace Infinity

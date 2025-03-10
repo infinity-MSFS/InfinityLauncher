@@ -15,7 +15,11 @@ namespace Infinity {
     unsigned int Home::m_ExpectedProjects = 800000;
     bool Home::m_DoneLoading = false;
 
-    void Home::Render() const {
+    void Home::Render() {
+        HandleScrollInput();
+
+        UpdateScrollAnimation();
+
         ImGui::PushFont(Application::GetFont("DefaultLarge"));
         auto text_size = ImGui::CalcTextSize("Infinity");
         std::vector<unsigned int> active_index(242 - 1);
@@ -54,12 +58,81 @@ namespace Infinity {
         }
     }
 
+    void Home::HandleScrollInput() {
+
+
+        float wheel = ImGui::GetIO().MouseWheel;
+
+        if (wheel != 0) {
+            // std::cout << "Got update from mouse wheel: " << wheel << std::endl;
+            m_TargetScrollOffset += wheel * 100.0f;
+            m_IsScrolling = true;
+            m_LastScrollTime = ImGui::GetTime();
+        }
+        float max_scroll;
+        float responsive_start;
+        int max_scroll_past; // how many projects can be scrolled past
+        if (ImGui::GetWindowWidth() > 1200) {
+            responsive_start = ImGui::GetWindowWidth() / 4.3;
+            max_scroll_past = 4;
+        } else {
+            responsive_start = ImGui::GetWindowWidth() / 2.8;
+            max_scroll_past = 3;
+        }
+        if (m_HomeProjectButtons.size() > 4) {
+            max_scroll = static_cast<float>(m_HomeProjectButtons.size() - max_scroll_past) * (responsive_start);
+        } else {
+            max_scroll = static_cast<float>(m_HomeProjectButtons.size()) * (responsive_start);
+        }
+        m_TargetScrollOffset = std::max(0.0f, std::min(m_TargetScrollOffset, max_scroll));
+    }
+    void Home::UpdateScrollAnimation() {
+        if (m_ScrollOffset != m_TargetScrollOffset) {
+            float delta_time = ImGui::GetIO().DeltaTime;
+            float diff = m_TargetScrollOffset - m_ScrollOffset;
+            float step = diff * m_ScrollSpeed * delta_time;
+
+            if (std::abs(diff) < 1.0f) {
+                m_ScrollOffset = m_TargetScrollOffset;
+            } else {
+                m_ScrollOffset += step;
+            }
+        }
+
+        const float current_time = ImGui::GetTime();
+        if (m_IsScrolling && (current_time - m_LastScrollTime > 0.3f)) {
+            m_IsScrolling = false;
+
+            float baseX;
+            if (ImGui::GetWindowWidth() > 1200) {
+                baseX = ImGui::GetWindowWidth() / 4.3;
+            } else {
+                baseX = ImGui::GetWindowWidth() / 2.8;
+            }
+            const float currentPosition = m_ScrollOffset / baseX;
+            const float fractionalPart = currentPosition - std::floor(currentPosition);
+
+            if (fractionalPart < m_SnapThreashold) {
+                m_TargetScrollOffset = std::floor(currentPosition) * baseX;
+            } else if (fractionalPart > (1.0f - m_SnapThreashold)) {
+                m_TargetScrollOffset = std::ceil(currentPosition) * baseX;
+            }
+        }
+    }
+
+
     void Home::RenderProject(const HomeProjectButtonStruct &project, const int page_index) {
-        const float base_x = ImGui::GetWindowWidth() / 4;
-        const float x_pos = base_x - base_x + 30.0f + static_cast<float>(page_index - 3) * base_x;
+        float base_x;
+        if (ImGui::GetWindowWidth() > 1200) {
+            base_x = ImGui::GetWindowWidth() / 4.3;
+        } else {
+            base_x = ImGui::GetWindowWidth() / 2.8;
+        }
+        const float x_pos = base_x - base_x + 30.0f + static_cast<float>(page_index - 3) * base_x - m_ScrollOffset;
         constexpr float y_pos = 150.0f;
         const ImVec2 position(x_pos, y_pos);
-        const ImVec2 size(ImGui::GetWindowWidth() / 4 - 50.0f, ImGui::GetWindowHeight() - 250.0f);
+        const ImVec2 size(base_x - 50.0f, ImGui::GetWindowHeight() - 250.0f);
+
 
         // TODO: Max logo size
         const ImVec2 logo_size(ImGui::GetWindowWidth() / 4 - 150.0f, ImGui::GetWindowWidth() / 4 - 150.0f);
