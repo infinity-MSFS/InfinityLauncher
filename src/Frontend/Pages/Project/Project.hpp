@@ -10,118 +10,130 @@
 
 namespace Infinity {
 
-    class AircraftSelectButton {
-    public:
-        AircraftSelectButton(std::string name, int32_t id, const std::shared_ptr<uint8_t> &selected_aircraft);
-        void Render(ImVec2 size, ImVec2 pos);
+  class AircraftSelectButton {
+public:
+    AircraftSelectButton(std::string name, int32_t id,
+                         const std::shared_ptr<uint8_t> &selected_aircraft);
+    void Render(ImVec2 size, ImVec2 pos);
 
-        static bool Button(const char *label, ImVec2 size, bool active);
+    static bool Button(const char *label, ImVec2 size, bool active);
 
-    private:
-        bool IsActive();
+private:
+    bool IsActive();
 
-    private:
-        std::string m_Name;
-        int32_t m_Id;
-        bool m_Active;
-        std::shared_ptr<uint8_t> m_SelectedAircraft;
+private:
+    std::string m_Name;
+    int32_t m_Id;
+    bool m_Active;
+    std::shared_ptr<uint8_t> m_SelectedAircraft;
+  };
+
+  class AircraftSelectButtonBar {
+public:
+    explicit AircraftSelectButtonBar(
+        const std::vector<AircraftSelectButton> &aircraft_select_buttons,
+        const std::shared_ptr<uint8_t> &selected_aircraft);
+    void Render();
+
+private:
+    std::vector<AircraftSelectButton> m_AircraftSelectButtons;
+    std::shared_ptr<uint8_t> m_SelectedAircraft;
+  };
+
+  class TopRegion {
+public:
+    explicit TopRegion(GroupData *group_data,
+                       GroupDataImages *group_data_images,
+                       const std::shared_ptr<uint8_t> &selected_aircraft);
+    void Render();
+
+private:
+    AircraftSelectButtonBar m_AircraftSelectButtonBar;
+    std::vector<AircraftSelectButton> m_AircraftSelectButtons;
+    std::shared_ptr<uint8_t> m_SelectedAircraft;
+    GroupData *m_GroupData;
+    GroupDataImages *m_GroupDataImages;
+  };
+
+
+  class ContentRegionButton {
+public:
+    struct Button {
+      std::string name;
+      uint8_t page;
     };
 
-    class AircraftSelectButtonBar {
-    public:
-        explicit AircraftSelectButtonBar(const std::vector<AircraftSelectButton> &aircraft_select_buttons, const std::shared_ptr<uint8_t> &selected_aircraft);
-        void Render();
+    explicit ContentRegionButton(const std::string &name, int8_t id,
+                                 const std::shared_ptr<uint8_t> &selected_page);
+    explicit ContentRegionButton(const Button &button,
+                                 const std::shared_ptr<uint8_t> &selected_page);
 
-    private:
-        std::vector<AircraftSelectButton> m_AircraftSelectButtons;
-        std::shared_ptr<uint8_t> m_SelectedAircraft;
-    };
+    void Render(ImVec2 size, ImVec2 pos);
 
-    class TopRegion {
-    public:
-        explicit TopRegion(GroupData *group_data, GroupDataImages *group_data_images, const std::shared_ptr<uint8_t> &selected_aircraft);
-        void Render();
+private:
+    bool ButtonRender(const char *label, ImVec2 size, bool active);
 
-    private:
-        AircraftSelectButtonBar m_AircraftSelectButtonBar;
-        std::vector<AircraftSelectButton> m_AircraftSelectButtons;
-        std::shared_ptr<uint8_t> m_SelectedAircraft;
-        GroupData *m_GroupData;
-        GroupDataImages *m_GroupDataImages;
-    };
+private:
+    Button m_ButtonSpec;
+    std::shared_ptr<uint8_t> m_SelectedPage;
+  };
 
+  class ContentRegionButtonBar {
+public:
+    explicit ContentRegionButtonBar(
+        std::vector<ContentRegionButton> buttons,
+        const std::shared_ptr<uint8_t> &selected_page);
+    void Render();
 
-    class ContentRegionButton {
-    public:
-        struct Button {
-            std::string name;
-            uint8_t page;
-        };
+private:
+    std::vector<ContentRegionButton> m_Buttons;
+    std::shared_ptr<uint8_t> m_SelectedPage;
+  };
 
-        explicit ContentRegionButton(const std::string &name, int8_t id, const std::shared_ptr<uint8_t> &selected_page);
-        explicit ContentRegionButton(const Button &button, const std::shared_ptr<uint8_t> &selected_page);
+  class ContentRegion {
+public:
+    explicit ContentRegion(GroupData *group_data,
+                           const std::shared_ptr<uint8_t> &selected_page,
+                           const std::shared_ptr<uint8_t> &selected_aircraft);
+    void Render();
 
-        void Render(ImVec2 size, ImVec2 pos);
+private:
+    void RenderInstalledWidget();
 
-    private:
-        bool ButtonRender(const char *label, ImVec2 size, bool active);
+    bool RenderDownloadButton(const char *label, ImVec2 size, ImVec2 pos);
+    bool RenderBugReportButton(ImVec2 size, ImVec2 pos);
 
-    private:
-        Button m_ButtonSpec;
-        std::shared_ptr<uint8_t> m_SelectedPage;
-    };
+private:
+    std::vector<std::string> m_Changelogs;
+    std::string m_Description;
+    std::string m_Overview;
 
-    class ContentRegionButtonBar {
-    public:
-        explicit ContentRegionButtonBar(std::vector<ContentRegionButton> buttons, const std::shared_ptr<uint8_t> &selected_page);
-        void Render();
+    GroupData *m_GroupData;
+    ContentRegionButtonBar m_ButtonBar;
+    std::vector<ContentRegionButton> m_Buttons;
 
-    private:
-        std::vector<ContentRegionButton> m_Buttons;
-        std::shared_ptr<uint8_t> m_SelectedPage;
-    };
+    std::shared_ptr<uint8_t> m_SelectedPage;
+    std::shared_ptr<uint8_t> m_SelectedAircraft;
+  };
 
-    class ContentRegion {
-    public:
-        explicit ContentRegion(GroupData *group_data, const std::shared_ptr<uint8_t> &selected_page, const std::shared_ptr<uint8_t> &selected_aircraft);
-        void Render();
+  class ProjectPage {
+public:
+    explicit ProjectPage(const GroupData &group_data,
+                         GroupDataImages state_images);
+    static void ResetState() {
+      m_SelectedPage = std::make_shared<uint8_t>(0);
+      m_SelectedAircraft = std::make_shared<uint8_t>(0);
+    }
+    void Render();
 
-    private:
-        void RenderInstalledWidget();
+private:
+    GroupData m_GroupData;
+    GroupDataImages m_StateImages;
 
-        bool RenderDownloadButton(const char *label, ImVec2 size, ImVec2 pos);
-        bool RenderBugReportButton(ImVec2 size, ImVec2 pos);
+    static std::shared_ptr<uint8_t> m_SelectedPage;
+    static std::shared_ptr<uint8_t> m_SelectedAircraft;
 
-    private:
-        std::vector<std::string> m_Changelogs;
-        std::string m_Description;
-        std::string m_Overview;
-
-        GroupData *m_GroupData;
-        ContentRegionButtonBar m_ButtonBar;
-        std::vector<ContentRegionButton> m_Buttons;
-
-        std::shared_ptr<uint8_t> m_SelectedPage;
-        std::shared_ptr<uint8_t> m_SelectedAircraft;
-    };
-
-    class ProjectPage {
-    public:
-        explicit ProjectPage(const GroupData &group_data, GroupDataImages state_images);
-        static void ResetState() {
-            m_SelectedPage = std::make_shared<uint8_t>(0);
-            m_SelectedAircraft = std::make_shared<uint8_t>(0);
-        }
-        void Render();
-
-    private:
-        GroupData m_GroupData;
-        GroupDataImages m_StateImages;
-
-        static std::shared_ptr<uint8_t> m_SelectedPage;
-        static std::shared_ptr<uint8_t> m_SelectedAircraft;
-
-        ContentRegion m_ContentRegion;
-        TopRegion m_TopRegion;
-    };
-} // namespace Infinity
+    ContentRegion m_ContentRegion;
+    TopRegion m_TopRegion;
+  };
+}  // namespace Infinity

@@ -2,7 +2,4 @@
 #pragma once
 
 
-
-class Downloads {
-
-};
+class Downloads {};

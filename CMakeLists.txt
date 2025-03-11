@@ -147,6 +147,8 @@ add_executable(InfinityLauncher
         src/Backend/Installer/Installer.hpp
         src/Backend/Updater/Updater.cpp
         src/Backend/Updater/Updater.hpp
+        src/Backend/TextureQueue/TextureQueue.hpp
+        src/Backend/TextureQueue/TextureQueue.cpp
         src/Assets/Fonts/IcontsFontAwesome5.h
 
         # -- Util Source Files --
@@ -175,8 +177,7 @@ add_executable(InfinityLauncher
         src/Frontend/Pages/Project/Project.hpp
         src/Frontend/Markdown/Markdown.cpp
         src/Frontend/Markdown/Markdown.hpp
-        src/Backend/TextureQueue/TextureQueue.hpp
-        src/Backend/TextureQueue/TextureQueue.cpp
+
 
 )
 
