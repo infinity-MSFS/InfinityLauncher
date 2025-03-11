@@ -271,7 +271,7 @@ if (WIN32)
 else ()
     set(ZOE_LIB zoe::zoe-static)
 endif ()
-target_link_libraries(InfinityLauncher PRIVATE tray WebP::webp WebP::webpdecoder ${ZOE_LIB} WebP::webpdemux OpenGL::GL OpenGL::OpenGL glfw Boxer CURL::libcurl OpenSSL::SSL OpenSSL::Crypto unofficial::minizip::minizip ZLIB::ZLIB msgpack-cxx ${TOAST_LIB})
+target_link_libraries(InfinityLauncher PRIVATE tray WebP::webp WebP::webpdecoder ${ZOE_LIB} WebP::webpdemux OpenGL::GL glfw Boxer CURL::libcurl OpenSSL::SSL OpenSSL::Crypto unofficial::minizip::minizip ZLIB::ZLIB msgpack-cxx ${TOAST_LIB})
 
 add_custom_target(InfinityLauncherDist)
 add_dependencies(InfinityLauncherDist

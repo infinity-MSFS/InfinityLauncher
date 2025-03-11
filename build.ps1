@@ -1,7 +1,7 @@
 $BuildType = $null
 
 Write-Host "Select build type:"
-Write-Host "1. Debug (defauly)"
+Write-Host "1. Debug (default)"
 Write-Host "2. Release"
 $selection = Read-Host "Enter build type (1 or 2)"
 
