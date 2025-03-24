@@ -8,6 +8,7 @@
 #include "Assets/Images/settingsIcon.h"
 #include "Backend/Application/Application.hpp"
 #include "Backend/Downloads/Downloads.hpp"
+#include "Backend/HWID/Hwid.hpp"
 #include "Backend/Layer/Layer.hpp"
 #include "Backend/Router/Router.hpp"
 #include "Backend/UIHelpers/UiHelpers.hpp"
@@ -276,6 +277,11 @@ class PageRenderLayer final : public Infinity::Layer {
       }
 
       router.value()->RenderCurrentPage();
+      if (ImGui::Button("HWID")) {
+        HWID hwidgen;
+        auto hwid = hwidgen.GetHWID();
+        std::cout << "HWID: " << hwid << std::endl;
+      }
     };
 #endif
   }
