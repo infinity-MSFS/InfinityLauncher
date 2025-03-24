@@ -1,6 +1,8 @@
 
 #include "Downloads.hpp"
 
+#include <iostream>
+
 namespace Infinity {
   Downloads *Downloads::m_Instance = nullptr;
   std::mutex Downloads::m_DownloadsMutex;
@@ -41,6 +43,7 @@ namespace Infinity {
     download.progress = 0.0;
     download.size = 0;
     download.error = 0;
+    download.zoe = std::make_shared<zoe::Zoe>();
 
     download.future = download.zoe->start(
         zoe::utf8string(url), zoe::utf8string(local_path),
@@ -54,6 +57,8 @@ namespace Infinity {
             //         it->second.error = zoe::Result::CANCELED;
             // } TODO: something more advanced like this to actually make use of
             // the errors
+            std::cout << "Download result: " << static_cast<int>(result)
+                      << std::endl;
             if (result != zoe::Result::SUCCESSED) {
               it->second.error = result;
             }
@@ -133,5 +138,20 @@ namespace Infinity {
   std::map<int, Downloads::DownloadData> *Downloads::GetAllDownloads() {
     return &m_DownloadsMap;
   }
+
+  void Downloads::RemoveDownload(int id) {
+    std::shared_ptr<zoe::Zoe> zoe;
+    {
+      std::lock_guard lock(m_Mutex);
+      auto it = m_DownloadsMap.find(id);
+      if (it == m_DownloadsMap.end()) return;
+      zoe = it->second.zoe;
+      m_DownloadsMap.erase(it);
+    }
+    if (zoe) {
+      zoe->stop();
+    }
+  }
+
 
 }  // namespace Infinity

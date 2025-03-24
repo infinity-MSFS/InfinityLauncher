@@ -25,7 +25,7 @@ public:
       int64_t speed;
       int64_t size;
       std::shared_future<zoe::Result> future;
-      std::unique_ptr<zoe::Zoe> zoe;
+      std::shared_ptr<zoe::Zoe> zoe;
 
       DownloadData()
           : id(0)
@@ -35,7 +35,7 @@ public:
           , error(-1)
           , speed(0)
           , size(0)
-          , zoe(std::make_unique<zoe::Zoe>()) {}
+          , zoe(std::make_shared<zoe::Zoe>()) {}
 
       DownloadData(DownloadData &&) = default;
       DownloadData &operator=(DownloadData &&) = default;
@@ -53,6 +53,7 @@ public:
     void PauseAllDownloads();
     void ResumeAllDownloads();
     void StopAllDownloads();
+    void RemoveDownload(int id);
     std::map<int, DownloadData> *GetAllDownloads();
     void SetMaxSpeed(int64_t speed);
     void SetDiskCacheSize(int64_t size);

@@ -13,6 +13,7 @@
 #include "Backend/UIHelpers/UiHelpers.hpp"
 #include "Frontend/Background/Background.hpp"
 #include "Frontend/ColorInterpolation/ColorInterpolation.hpp"
+#include "Frontend/Pages/Downloads/Downloads.hpp"
 #include "Frontend/Pages/Home/Home.hpp"
 #include "Frontend/Pages/Project/Project.hpp"
 #include "Frontend/SVG/SVGDrawing.hpp"
@@ -166,7 +167,10 @@ class PageRenderLayer final : public Infinity::Layer {
                   {"#1271FF1C", "#DD4AFF1C", "#1271FF02", "#DD4AFF02",
                    "#64DCFF02", "#C8323202", "#B4B43202"}}},
                 {2,
-                 {[] { ImGui::Text("Downloads"); },
+                 {[] {
+                    Downloads downloads;
+                    downloads.Render();
+                  },
                   {"#1271FF1C", "#DD4AFF1C", "#1271FF02", "#DD4AFF02",
                    "#64DCFF02", "#C8323202", "#B4B43202"}}},
                 {3,
