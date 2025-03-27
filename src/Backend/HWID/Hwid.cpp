@@ -1,5 +1,11 @@
 #include "Hwid.hpp"
 
+#include <intrin.h>
+#ifdef WIN32
+#include <atlbase.h>
+#include <atlconv.h>
+#endif
+
 
 std::string HWID::GetHWID() {
   std::string hwid = GetCPUInfo() + GetMotherboardSerial() + GetGPUInfo();
@@ -88,7 +94,7 @@ std::string HWID::GetMotherboardSerial() {
 
     VARIANT vtProp;
     hres = pclsObj->Get(L"SerialNumber", 0, &vtProp, 0, 0);
-    serial = vtProp.bstrVal ? vtProp.bstrVal : "Unknown";
+    serial = vtProp.bstrVal ? CW2A(vtProp.bstrVal) : "Unknown";
     VariantClear(&vtProp);
     pclsObj->Release();
   }
@@ -152,7 +158,7 @@ std::string HWID::GetGPUInfo() {
 
     VARIANT vtProp;
     hres = pclsObj->Get(L"Name", 0, &vtProp, 0, 0);
-    gpuInfo = vtProp.bstrVal ? vtProp.bstrVal : "Unknown";
+    gpuInfo = vtProp.bstrVal ? CW2A(vtProp.bstrVal) : "Unknown";
     VariantClear(&vtProp);
     pclsObj->Release();
   }
@@ -183,6 +189,7 @@ std::string HWID::Hash(const std::string &input) {
 
 
 std::string HWID::exec(const char *cmd) {
+#if defined(__linux__)
   std::array<char, 128> buffer;
   std::string result = "";
   FILE *pipe = popen(cmd, "r");
@@ -192,4 +199,7 @@ std::string HWID::exec(const char *cmd) {
   }
   fclose(pipe);
   return result;
+#else
+  return "Unknown";
+  #endif
 }

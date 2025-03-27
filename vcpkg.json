@@ -5,7 +5,11 @@
     "zlib",
     "msgpack",
     "openssl",
-    "vulkan",
+    {
+      "name": "vulkan",
+      "platform": "windows"
+    },
+    "glew",
     "curl",
     "minizip",
     "zoe",

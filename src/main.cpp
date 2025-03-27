@@ -2,6 +2,9 @@
 #include <filesystem>
 #include <iostream>
 
+#include "GL/glew.h"
+//
+
 #include "Assets/Images/backArrow.h"
 #include "Assets/Images/backIcon.h"
 #include "Assets/Images/downloadIcon.h"
@@ -175,46 +178,56 @@ class PageRenderLayer final : public Infinity::Layer {
                   {"#1271FF1C", "#DD4AFF1C", "#1271FF02", "#DD4AFF02",
                    "#64DCFF02", "#C8323202", "#B4B43202"}}},
                 {3,
-                 {[&statePtr] {
+                 {[statePtr] {
                     Infinity::ProjectPage project_page(
-                        statePtr->state.groups["aero_dynamics"],
-                        statePtr->images.groupImages["aero_dynamics"]);
+                        std::make_shared<Infinity::GroupData>(
+                            statePtr->state.groups["aero_dynamics"]),
+                        std::make_shared<Infinity::GroupDataImages>(
+                            statePtr->images.groupImages["aero_dynamics"]));
                     project_page.Render();
                   },
                   {"#050912", "#050505", "#1271FF02", "#DD4AFF02", "#64DCFF02",
                    "#C8323202", "#B4B43202"}}},
                 {4,
-                 {[&statePtr] {
+                 {[statePtr] {
                     Infinity::ProjectPage project_page(
-                        statePtr->state.groups["delta_sim"],
-                        statePtr->images.groupImages["delta_sim"]);
+                        std::make_shared<Infinity::GroupData>(
+                            statePtr->state.groups["delta_sim"]),
+                        std::make_shared<Infinity::GroupDataImages>(
+                            statePtr->images.groupImages["delta_sim"]));
                     project_page.Render();
                   },
                   {"#4f1a00", "#efaa00", "#1271FF02", "#DD4AFF02", "#64DCFF02",
                    "#C8323202", "#B4B43202"}}},
                 {5,
-                 {[&statePtr] {
+                 {[statePtr] {
                     Infinity::ProjectPage project_page(
-                        statePtr->state.groups["lunar_sim"],
-                        statePtr->images.groupImages["lunar_sim"]);
+                        std::make_shared<Infinity::GroupData>(
+                            statePtr->state.groups.at("lunar_sim")),
+                        std::make_shared<Infinity::GroupDataImages>(
+                            statePtr->images.groupImages.at("lunar_sim")));
                     project_page.Render();
                   },
                   {"#080F19", "#384B5F", "#1271FF02", "#DD4AFF02", "#64DCFF02",
                    "#C8323202", "#B4B43202"}}},
                 {6,
-                 {[&statePtr] {
+                 {[statePtr] {
                     Infinity::ProjectPage project_page(
-                        statePtr->state.groups["ouroboros"],
-                        statePtr->images.groupImages["ouroboros"]);
+                        std::make_shared<Infinity::GroupData>(
+                            statePtr->state.groups["ouroboros"]),
+                        std::make_shared<Infinity::GroupDataImages>(
+                            statePtr->images.groupImages["ouroboros"]));
                     project_page.Render();
                   },
                   {"#210e3a", "#2a2fff", "#1271FF02", "#DD4AFF02", "#64DCFF02",
                    "#C8323202", "#B4B43202"}}},
                 {7,
-                 {[&statePtr] {
+                 {[statePtr] {
                     Infinity::ProjectPage project_page(
-                        statePtr->state.groups["qbitsim"],
-                        statePtr->images.groupImages["qbitsim"]);
+                        std::make_shared<Infinity::GroupData>(
+                            statePtr->state.groups["qbitsim"]),
+                        std::make_shared<Infinity::GroupDataImages>(
+                            statePtr->images.groupImages["qbitsim"]));
                     project_page.Render();
                   },
                   {"#210e3a", "#2a2fff", "#1271FF02", "#DD4AFF02", "#64DCFF02",

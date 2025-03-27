@@ -14,6 +14,7 @@
 
 #include "Backend/Image/Image.hpp"
 #include "Backend/Layer/Layer.hpp"
+#include "GL/glew.h"
 #include "Util/Error/Error.hpp"
 #include "imgui.h"
 
@@ -77,9 +78,11 @@ public:
 
     ApplicationSpecifications GetSpecifications() { return m_Specification; }
 
+    [[nodiscard]] bool IsTitleBarHovered() const { return m_TitlebarHovered; }
+
 private:
     std::expected<void, Errors::Error> Init();
-    static constexpr const char *SetupGLVersion();
+    static const char *SetupGLVersion();
     std::expected<void, Errors::Error> Shutdown();
     static void SetWindowIcon(GLFWwindow *window, const unsigned char *data,
                               int size);
@@ -90,6 +93,7 @@ private:
     static void GLFWErrorCallback(int error, const char *description);
 
     static void ProcessImageQueue();
+
 
 private:
     ApplicationSpecifications m_Specification;

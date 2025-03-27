@@ -458,10 +458,8 @@ public:
                               bool is_hovered) {
     if (!image) return;
 
-    // Generate a unique ID for this image instance based on its position
     ImGuiID id = ImGui::GetID(std::to_string(pos.x + pos.y).c_str());
 
-    // Initialize animation progress for this instance if it doesn't exist
     if (s_AnimationProgress.find(id) == s_AnimationProgress.end()) {
       s_AnimationProgress[id] = 0.0f;
     }
@@ -483,12 +481,21 @@ public:
 
     ImDrawList *draw_list = ImGui::GetWindowDrawList();
 
-    // Animation parameters
     const float animation_speed = 3.1f;
     const float hover_opacity_boost = 0.3f;
     const float zoom_factor = -0.01f;
 
-    // Update animation progress using the map
+#ifdef WIN32
+    if (is_hovered) {
+      s_AnimationProgress[id] = min(
+          1.0f,
+          s_AnimationProgress[id] + ImGui::GetIO().DeltaTime * animation_speed);
+    } else {
+      s_AnimationProgress[id] = max(
+          0.0f,
+          s_AnimationProgress[id] - ImGui::GetIO().DeltaTime * animation_speed);
+    }
+#else
     if (is_hovered) {
       s_AnimationProgress[id] = std::min(
           1.0f,
@@ -498,45 +505,41 @@ public:
           0.0f,
           s_AnimationProgress[id] - ImGui::GetIO().DeltaTime * animation_speed);
     }
+#endif
 
-    // Number of gradient segments
+
     const int segments = 60;
 
-    // Calculate segment dimensions
     const float segment_height = size.y / segments;
     const float uv_segment_height = 1.0f / segments;
 
-    // Calculate zoom effect on UV coordinates
     float zoom_amount = zoom_factor * s_AnimationProgress[id];
     float uv_x = base_uv_x * (1.0f + zoom_amount);
 
-    // UV coordinates for x-axis with centered zoom
     const float uv_left = 0.5f - uv_x / 2.0f;
     const float uv_right = 0.5f + uv_x / 2.0f;
 
-    // Draw each segment with varying alpha
     for (int i = 0; i < segments; i++) {
       float y_start = pos.y + (i * segment_height);
       float y_end = y_start + segment_height;
 
-      // Calculate UV y coordinates with centered zoom
       float base_uv_y_start = i * uv_segment_height;
       float base_uv_y_end = (i + 1) * uv_segment_height;
 
-      // Apply zoom to Y coordinates
       float uv_y_center = 0.5f;
       float uv_y_start =
           uv_y_center + (base_uv_y_start - uv_y_center) * (1.0f + zoom_amount);
       float uv_y_end =
           uv_y_center + (base_uv_y_end - uv_y_center) * (1.0f + zoom_amount);
 
-      // Base alpha calculation (transparent to opaque)
       float base_alpha = (float) i / segments;
 
-      // Apply hover effect
       float hover_boost = hover_opacity_boost * s_AnimationProgress[id];
+#ifdef WIN32
+      float alpha = min(1.0f, base_alpha + hover_boost);
+#else
       float alpha = std::min(1.0f, base_alpha + hover_boost);
-
+#endif
       ImVec4 tint_color(1.0f, 1.0f, 1.0f, alpha);
 
       draw_list->AddImage((void *) (intptr_t) image->GetTextureID(),
@@ -552,10 +555,8 @@ public:
                               bool is_hovered) {
     if (!image) return;
 
-    // Generate a unique ID for this image instance based on its position
     ImGuiID id = ImGui::GetID(std::to_string(pos.x + pos.y).c_str());
 
-    // Initialize animation progress for this instance if it doesn't exist
     if (s_AnimationProgress.find(id) == s_AnimationProgress.end()) {
       s_AnimationProgress[id] = 0.0f;
     }
@@ -577,12 +578,21 @@ public:
 
     ImDrawList *draw_list = ImGui::GetWindowDrawList();
 
-    // Animation parameters
     const float animation_speed = 3.1f;
     const float hover_opacity_boost = 0.3f;
     const float zoom_factor = -0.01f;
 
-    // Update animation progress using the map
+#ifdef WIN32
+    if (is_hovered) {
+      s_AnimationProgress[id] = min(
+          1.0f,
+          s_AnimationProgress[id] + ImGui::GetIO().DeltaTime * animation_speed);
+    } else {
+      s_AnimationProgress[id] = max(
+          0.0f,
+          s_AnimationProgress[id] - ImGui::GetIO().DeltaTime * animation_speed);
+    }
+#else
     if (is_hovered) {
       s_AnimationProgress[id] = std::min(
           1.0f,
@@ -592,44 +602,40 @@ public:
           0.0f,
           s_AnimationProgress[id] - ImGui::GetIO().DeltaTime * animation_speed);
     }
+#endif
 
-    // Number of gradient segments
     const int segments = 60;
 
-    // Calculate segment dimensions
     const float segment_height = size.y / segments;
     const float uv_segment_height = 1.0f / segments;
 
-    // Calculate zoom effect on UV coordinates
     float zoom_amount = zoom_factor * s_AnimationProgress[id];
     float uv_x = base_uv_x * (1.0f + zoom_amount);
 
-    // UV coordinates for x-axis with centered zoom
     const float uv_left = 0.5f - uv_x / 2.0f;
     const float uv_right = 0.5f + uv_x / 2.0f;
 
-    // Draw each segment with varying alpha
     for (int i = 0; i < segments; i++) {
       float y_start = pos.y + (i * segment_height);
       float y_end = y_start + segment_height;
 
-      // Calculate UV y coordinates with centered zoom
       float base_uv_y_start = i * uv_segment_height;
       float base_uv_y_end = (i + 1) * uv_segment_height;
 
-      // Apply zoom to Y coordinates
       float uv_y_center = 0.5f;
       float uv_y_start =
           uv_y_center + (base_uv_y_start - uv_y_center) * (1.0f + zoom_amount);
       float uv_y_end =
           uv_y_center + (base_uv_y_end - uv_y_center) * (1.0f + zoom_amount);
 
-      // Base alpha calculation (transparent to opaque)
       float base_alpha = (float) i / segments;
 
-      // Apply hover effect
       float hover_boost = hover_opacity_boost * s_AnimationProgress[id];
+#ifdef WIN32
+      float alpha = min(1.0f, base_alpha + hover_boost);
+#else
       float alpha = std::min(1.0f, base_alpha + hover_boost);
+#endif
 
       ImVec4 tint_color(1.0f, 1.0f, 1.0f, alpha);
 

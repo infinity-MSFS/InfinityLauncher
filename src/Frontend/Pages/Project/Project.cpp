@@ -15,34 +15,36 @@ namespace Infinity {
   std::shared_ptr<uint8_t> ProjectPage::m_SelectedPage =
       std::make_shared<uint8_t>(0);
 
-  ProjectPage::ProjectPage(const GroupData &group_data,
-                           GroupDataImages state_images)
+  ProjectPage::ProjectPage(const std::shared_ptr<GroupData> &group_data,
+                           const std::shared_ptr<GroupDataImages> &state_images)
       : m_GroupData(group_data)
-      , m_StateImages(std::move(state_images))
-      , m_ContentRegion(&m_GroupData, m_SelectedPage, m_SelectedAircraft)
-      , m_TopRegion(&m_GroupData, &m_StateImages, m_SelectedAircraft) {}
+      , m_StateImages(state_images)
+      , m_ContentRegion(m_GroupData, m_SelectedPage, m_SelectedAircraft)
+      , m_TopRegion(m_GroupData, m_StateImages, m_SelectedAircraft) {}
 
 
   void ProjectPage::Render() {
     auto &state = State::GetInstance();
     if (const auto main_state = state.GetPageState<MainState>("main");
         main_state.has_value()) {
-      if (!m_StateImages.projectImages.empty()) {
+      if (!m_StateImages->projectImages.empty()) {
 #ifdef WIN32
-        constexpr float top_padding = 45.0f;
+        constexpr float top_padding = 40.0f;
 #else
         constexpr float top_padding = 0.0f;
 #endif
-        if (m_StateImages.projectImages[0].pageBackgroundImage.has_value()) {
+
+        if (!m_StateImages->projectImages.empty() &&
+            m_StateImages->projectImages[0].pageBackgroundImage.has_value()) {
           Image::RenderImage(
-              m_StateImages.projectImages[0].pageBackgroundImage.value(),
+              m_StateImages->projectImages[0].pageBackgroundImage.value(),
               {0.0f, top_padding},
               {ImGui::GetWindowWidth(), ImGui::GetWindowHeight() / 3.0f}, 0.3f);
           m_TopRegion.Render();
           m_ContentRegion.Render();
-        } else if (m_StateImages.projectImages[0].backgroundImage) {
+        } else if (m_StateImages->projectImages[0].backgroundImage) {
           Image::RenderImage(
-              m_StateImages.projectImages[0].backgroundImage,
+              m_StateImages->projectImages[0].backgroundImage,
               {0.0f, top_padding},
               {ImGui::GetWindowWidth(), ImGui::GetWindowHeight() / 3.0f}, 0.3f);
           m_TopRegion.Render();
@@ -146,9 +148,10 @@ namespace Infinity {
     }
   }
 
-  TopRegion::TopRegion(GroupData *group_data,
-                       GroupDataImages *group_data_images,
-                       const std::shared_ptr<uint8_t> &selected_aircraft)
+  TopRegion::TopRegion(
+      const std::shared_ptr<GroupData> &group_data,
+      const std::shared_ptr<GroupDataImages> &group_data_images,
+      const std::shared_ptr<uint8_t> &selected_aircraft)
       : m_GroupData(group_data)
       , m_GroupDataImages(group_data_images)
       , m_AircraftSelectButtonBar({}, selected_aircraft)
@@ -262,7 +265,8 @@ namespace Infinity {
   }
 
   ContentRegion::ContentRegion(
-      GroupData *group_data, const std::shared_ptr<uint8_t> &selected_page,
+      const std::shared_ptr<GroupData> &group_data,
+      const std::shared_ptr<uint8_t> &selected_page,
       const std::shared_ptr<uint8_t> &selected_aircraft)
       : m_GroupData(group_data)
       , m_ButtonBar({}, selected_page)

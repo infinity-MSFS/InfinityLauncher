@@ -42,17 +42,18 @@ private:
 
   class TopRegion {
 public:
-    explicit TopRegion(GroupData *group_data,
-                       GroupDataImages *group_data_images,
-                       const std::shared_ptr<uint8_t> &selected_aircraft);
+    explicit TopRegion(
+        const std::shared_ptr<GroupData> &group_data,
+        const std::shared_ptr<GroupDataImages> &group_data_images,
+        const std::shared_ptr<uint8_t> &selected_aircraft);
     void Render();
 
 private:
     AircraftSelectButtonBar m_AircraftSelectButtonBar;
     std::vector<AircraftSelectButton> m_AircraftSelectButtons;
     std::shared_ptr<uint8_t> m_SelectedAircraft;
-    GroupData *m_GroupData;
-    GroupDataImages *m_GroupDataImages;
+    std::shared_ptr<GroupData> m_GroupData;
+    std::shared_ptr<GroupDataImages> m_GroupDataImages;
   };
 
 
@@ -92,7 +93,7 @@ private:
 
   class ContentRegion {
 public:
-    explicit ContentRegion(GroupData *group_data,
+    explicit ContentRegion(const std::shared_ptr<GroupData> &group_data,
                            const std::shared_ptr<uint8_t> &selected_page,
                            const std::shared_ptr<uint8_t> &selected_aircraft);
     void Render();
@@ -108,7 +109,7 @@ private:
     std::string m_Description;
     std::string m_Overview;
 
-    GroupData *m_GroupData;
+    std::shared_ptr<GroupData> m_GroupData;
     ContentRegionButtonBar m_ButtonBar;
     std::vector<ContentRegionButton> m_Buttons;
 
@@ -118,8 +119,8 @@ private:
 
   class ProjectPage {
 public:
-    explicit ProjectPage(const GroupData &group_data,
-                         GroupDataImages state_images);
+    explicit ProjectPage(const std::shared_ptr<GroupData> &group_data,
+                         const std::shared_ptr<GroupDataImages> &state_images);
     static void ResetState() {
       m_SelectedPage = std::make_shared<uint8_t>(0);
       m_SelectedAircraft = std::make_shared<uint8_t>(0);
@@ -127,8 +128,8 @@ public:
     void Render();
 
 private:
-    GroupData m_GroupData;
-    GroupDataImages m_StateImages;
+    std::shared_ptr<GroupData> m_GroupData;
+    std::shared_ptr<GroupDataImages> m_StateImages;
 
     static std::shared_ptr<uint8_t> m_SelectedPage;
     static std::shared_ptr<uint8_t> m_SelectedAircraft;

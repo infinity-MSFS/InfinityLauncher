@@ -10,6 +10,8 @@
 
 #include "Application.hpp"
 
+#include "GL/glew.h"
+//
 #include <GL/gl.h>
 #include <algorithm>
 #include <cstdlib>
@@ -87,6 +89,11 @@ namespace Infinity {
           Errors::Error(Errors::ErrorType::Fatal, "Failed to initialize GLFW"));
     }
 
+    // glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    if (m_Specification.custom_titlebar) {
+      glfwWindowHint(GLFW_TITLEBAR, GLFW_FALSE);
+    }
+
     const auto version = SetupGLVersion();
 
     m_Window =
@@ -101,7 +108,22 @@ namespace Infinity {
 
 
     glfwMakeContextCurrent(m_Window);
-    glfwSwapInterval(1);
+    glfwSwapInterval(0);
+
+    glfwSetWindowUserPointer(m_Window, this);
+    glfwSetTitlebarHitTestCallback(
+        m_Window, [](GLFWwindow *window, int x, int y, int *hit) {
+          const auto *app =
+              static_cast<Application *>(glfwGetWindowUserPointer(window));
+          *hit = app->IsTitleBarHovered();
+        });
+
+
+    GLenum err = glewInit();
+    if (err != GLEW_OK) {
+      return std::unexpected(
+          Errors::Error(Errors::ErrorType::Fatal, "Failed to initialize GLEW"));
+    }
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -152,8 +174,6 @@ namespace Infinity {
     io.FontDefault = roboto;
 
     {
-      int width, height;
-      GLuint data;
       std::shared_ptr<Image> close_image =
           Image::LoadFromMemory(g_WindowCloseIcon, sizeof(g_WindowCloseIcon));
       m_IconClose = close_image;
@@ -163,11 +183,25 @@ namespace Infinity {
           g_infAppIconTransparent, sizeof(g_infAppIconTransparent));
       m_AppHeaderIcon = logo;
     }
+    {
+      std::shared_ptr<Image> minimize_image = Image::LoadFromMemory(
+          g_WindowMinimizeIcon, sizeof(g_WindowMinimizeIcon));
+      m_IconMinimize = minimize_image;
+    }
+    {
+      std::shared_ptr<Image> maximize_image = Image::LoadFromMemory(
+          g_WindowMaximizeIcon, sizeof(g_WindowMaximizeIcon));
+      m_IconMaximize = maximize_image;
+    }
+    {
+      std::shared_ptr<Image> restore_image = Image::LoadFromMemory(
+          g_WindowRestoreIcon, sizeof(g_WindowRestoreIcon));
+      m_IconRestore = restore_image;
+    }
 
     return {};
   }
-
-  constexpr const char *Application::SetupGLVersion() {
+  const char *Application::SetupGLVersion() {
 #if defined(IMGUI_IMPL_OPENGL_ES2)
     // GL ES 2.0 + GLSL 100
     const char *glsl_version = "#version 100";

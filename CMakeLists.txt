@@ -34,7 +34,9 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 message("${Blue}Using toolchain file: ${Green}${CMAKE_TOOLCHAIN_FILE}")
 find_package(ZLIB REQUIRED)
+find_package(GLEW REQUIRED)
 find_package(OpenGL REQUIRED)
+
 find_package(CURL REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(msgpack-cxx CONFIG REQUIRED)
@@ -43,6 +45,7 @@ find_package(WebP CONFIG REQUIRED)
 find_package(zoe CONFIG REQUIRED)
 if (WIN32)
     find_package(unofficial-wintoast REQUIRED)
+    find_package(Vulkan REQUIRED)
 endif ()
 
 if (UNIX)
@@ -242,7 +245,7 @@ if (WIN32)
     target_sources(Updater PRIVATE
             "${CMAKE_CURRENT_BINARY_DIR}/resources.rc"
     )
-
+    
     if (MSVC)
         set_target_properties(Updater PROPERTIES
                 LINK_FLAGS "/MANIFEST:NO"
@@ -271,10 +274,11 @@ endif ()
 message("${Blue}Configuring Linker")
 if (WIN32)
     set(ZOE_LIB zoe::zoe)
+    set(WIN_LIBS wbemuuid ole32 oleaut32)
 else ()
     set(ZOE_LIB zoe::zoe-static)
 endif ()
-target_link_libraries(InfinityLauncher PRIVATE tray WebP::webp WebP::webpdecoder ${ZOE_LIB} WebP::webpdemux OpenGL::GL glfw Boxer CURL::libcurl OpenSSL::SSL OpenSSL::Crypto unofficial::minizip::minizip ZLIB::ZLIB msgpack-cxx ${TOAST_LIB})
+target_link_libraries(InfinityLauncher PRIVATE tray WebP::webp WebP::webpdecoder ${ZOE_LIB} WebP::webpdemux GLEW::GLEW OpenGL::GL glfw Boxer CURL::libcurl OpenSSL::SSL OpenSSL::Crypto unofficial::minizip::minizip ZLIB::ZLIB msgpack-cxx ${TOAST_LIB} ${WIN_LIBS})
 
 add_custom_target(InfinityLauncherDist)
 add_dependencies(InfinityLauncherDist

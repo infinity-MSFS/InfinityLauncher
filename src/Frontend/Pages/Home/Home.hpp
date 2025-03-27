@@ -6,6 +6,7 @@
 #include <utility>
 #include <vector>
 
+
 #include "Backend/Image/Image.hpp"
 
 namespace Infinity {

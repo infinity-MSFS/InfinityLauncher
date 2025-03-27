@@ -1,6 +1,8 @@
 
 #pragma once
 
+#include "GL/glew.h"
+
 #include <GL/gl.h>
 #include <memory>
 #include <string>
@@ -9,7 +11,6 @@
 
 #include "curl/curl.h"
 #include "imgui.h"
-#include "vulkan/vulkan.h"
 
 struct GLFWwindow;
 
