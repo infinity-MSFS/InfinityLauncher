@@ -14,16 +14,13 @@
 namespace Infinity {
 
   namespace Utils {
-    size_t WriteImageCallback(void *contents, size_t size, size_t nmemb,
-                              void *userp) {
+    size_t WriteImageCallback(void *contents, size_t size, size_t nmemb, void *userp) {
       auto *buffer = static_cast<std::vector<uint8_t> *>(userp);
-      buffer->insert(buffer->end(), static_cast<uint8_t *>(contents),
-                     static_cast<uint8_t *>(contents) + size * nmemb);
+      buffer->insert(buffer->end(), static_cast<uint8_t *>(contents), static_cast<uint8_t *>(contents) + size * nmemb);
       return size * nmemb;
     }
 
-    const std::string FALLBACK_URL =
-        "https://1000logos.net/wp-content/uploads/2021/06/Discord-logo.png";
+    const std::string FALLBACK_URL = "https://1000logos.net/wp-content/uploads/2021/06/Discord-logo.png";
   }  // namespace Utils
 
   class Image::Impl {
@@ -89,8 +86,7 @@ public:
   }
 
 
-  std::shared_ptr<Image> Image::Create(uint32_t width, uint32_t height,
-                                       Format format, const void *data) {
+  std::shared_ptr<Image> Image::Create(uint32_t width, uint32_t height, Format format, const void *data) {
     auto image = std::make_shared<Image>();
     image->m_Width = width;
     image->m_Height = height;
@@ -99,16 +95,14 @@ public:
     return image;
   }
 
-  std::shared_ptr<Image> Image::LoadFromMemory(const void *data,
-                                               size_t dataSize) {
+  std::shared_ptr<Image> Image::LoadFromMemory(const void *data, size_t dataSize) {
     if (!data || dataSize == 0) {
       std::cerr << "Invalid memory data for image loading" << std::endl;
       return nullptr;
     }
 
     uint32_t width, height;
-    void *decodedData = DecodeImage(static_cast<const uint8_t *>(data),
-                                    dataSize, width, height);
+    void *decodedData = DecodeImage(static_cast<const uint8_t *>(data), dataSize, width, height);
 
     if (!decodedData) {
       return nullptr;
@@ -119,9 +113,8 @@ public:
     image->m_Height = height;
     image->m_Format = Format::RGBA8;
 
-    image->m_Impl->pixel_data.assign(
-        static_cast<uint8_t *>(decodedData),
-        static_cast<uint8_t *>(decodedData) + (width * height * 4));
+    image->m_Impl->pixel_data.assign(static_cast<uint8_t *>(decodedData),
+                                     static_cast<uint8_t *>(decodedData) + (width * height * 4));
 
     stbi_image_free(decodedData);
 
@@ -148,21 +141,18 @@ public:
 
       return LoadFromBinary(buffer);
     } catch (const std::exception &e) {
-      std::cerr << "Failed to load image from URL: " << url << " : " << e.what()
-                << std::endl;
+      std::cerr << "Failed to load image from URL: " << url << " : " << e.what() << std::endl;
       return nullptr;
     }
   }
 
-  std::shared_ptr<Image> Image::LoadFromBinary(
-      const std::vector<uint8_t> &binaryData) {
+  std::shared_ptr<Image> Image::LoadFromBinary(const std::vector<uint8_t> &binaryData) {
     if (binaryData.empty()) {
       return nullptr;
     }
 
     uint32_t width, height;
-    void *decodedData =
-        DecodeImage(binaryData.data(), binaryData.size(), width, height);
+    void *decodedData = DecodeImage(binaryData.data(), binaryData.size(), width, height);
 
     if (!decodedData) {
       return nullptr;
@@ -173,9 +163,8 @@ public:
     image->m_Height = height;
     image->m_Format = Format::RGBA8;
 
-    image->m_Impl->pixel_data.assign(
-        static_cast<uint8_t *>(decodedData),
-        static_cast<uint8_t *>(decodedData) + (width * height * 4));
+    image->m_Impl->pixel_data.assign(static_cast<uint8_t *>(decodedData),
+                                     static_cast<uint8_t *>(decodedData) + (width * height * 4));
 
     stbi_image_free(decodedData);
 
@@ -208,21 +197,18 @@ public:
     curl_easy_cleanup(curl);
 
     if (res != CURLE_OK) {
-      std::cerr << "Failed to download image: " << curl_easy_strerror(res)
-                << std::endl;
+      std::cerr << "Failed to download image: " << curl_easy_strerror(res) << std::endl;
       return {};
     }
 
     return buffer;
   }
 
-  void *Image::DecodeImage(const uint8_t *data, size_t dataSize,
-                           uint32_t &outWidth, uint32_t &outHeight) {
+  void *Image::DecodeImage(const uint8_t *data, size_t dataSize, uint32_t &outWidth, uint32_t &outHeight) {
     // Try to decode with stb_image first
     int width, height, channels;
     uint8_t *decodedData =
-        stbi_load_from_memory(data, static_cast<int>(dataSize), &width, &height,
-                              &channels, STBI_rgb_alpha);
+        stbi_load_from_memory(data, static_cast<int>(dataSize), &width, &height, &channels, STBI_rgb_alpha);
 
     if (decodedData) {
       outWidth = static_cast<uint32_t>(width);
@@ -244,8 +230,7 @@ public:
       }
     }
 
-    std::cerr << "Failed to decode image data: " << stbi_failure_reason()
-              << std::endl;
+    std::cerr << "Failed to decode image data: " << stbi_failure_reason() << std::endl;
     return nullptr;
   }
 
@@ -287,20 +272,16 @@ public:
     GLenum internalFormat = GetGLInternalFormat(m_Format);
     GLenum type = GetGLDataType(m_Format);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, m_Width, m_Height, 0, format,
-                 type, data);
+    glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, m_Width, m_Height, 0, format, type, data);
 
     // Store ImGui texture ID
-    m_Impl->imguiTextureId =
-        reinterpret_cast<void *>(static_cast<uintptr_t>(m_Impl->textureId));
-    std::cout << "Allocated texture with ID: " << m_Impl->textureId
-              << std::endl;
+    m_Impl->imguiTextureId = reinterpret_cast<void *>(static_cast<uintptr_t>(m_Impl->textureId));
+    std::cout << "Allocated texture with ID: " << m_Impl->textureId << std::endl;
 
     // Check for errors
     GLenum err = glGetError();
     if (err != GL_NO_ERROR) {
-      std::cerr << "OpenGL error during texture allocation: " << err
-                << std::endl;
+      std::cerr << "OpenGL error during texture allocation: " << err << std::endl;
     }
   }
 
@@ -312,8 +293,7 @@ public:
     GLenum format = GetGLFormat(m_Format);
     GLenum type = GetGLDataType(m_Format);
 
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_Width, m_Height, format, type,
-                    data);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_Width, m_Height, format, type, data);
   }
 
   void Image::Resize(uint32_t width, uint32_t height) {
@@ -334,9 +314,7 @@ public:
 
   void *Image::GetImGuiTextureID() const { return m_Impl->imguiTextureId; }
 
-  float &Image::GetAnimationProgress(ImGuiID id) {
-    return s_AnimationProgress[id];
-  }
+  float &Image::GetAnimationProgress(ImGuiID id) { return s_AnimationProgress[id]; }
 
   uint32_t Image::GetGLFormat(Format format) {
     switch (format) {
@@ -385,24 +363,19 @@ public:
     }
   }
 
-  void Image::RenderImage(const std::unique_ptr<Image> &image, const ImVec2 pos,
-                          const float scale) {
+  void Image::RenderImage(const std::unique_ptr<Image> &image, const ImVec2 pos, const float scale) {
     if (!image) return;
     ImGui::GetWindowDrawList()->AddImage(image->GetImGuiTextureID(), pos,
-                                         {pos.x + image->GetWidth() * scale,
-                                          pos.y + image->GetHeight() * scale});
+                                         {pos.x + image->GetWidth() * scale, pos.y + image->GetHeight() * scale});
   }
 
-  void Image::RenderImage(const std::shared_ptr<Image> &image, const ImVec2 pos,
-                          const float scale) {
+  void Image::RenderImage(const std::shared_ptr<Image> &image, const ImVec2 pos, const float scale) {
     if (!image) return;
     ImGui::GetWindowDrawList()->AddImage(image->GetImGuiTextureID(), pos,
-                                         {pos.x + image->GetWidth() * scale,
-                                          pos.y + image->GetHeight() * scale});
+                                         {pos.x + image->GetWidth() * scale, pos.y + image->GetHeight() * scale});
   }
 
-  void Image::RenderImage(const std::unique_ptr<Image> &image, const ImVec2 pos,
-                          const ImVec2 size) {
+  void Image::RenderImage(const std::unique_ptr<Image> &image, const ImVec2 pos, const ImVec2 size) {
     if (!image) return;
 
     const float imgWidth = image->GetWidth();
@@ -420,15 +393,13 @@ public:
     const float aspect_shown = rescaled_image_size.x / size.x;
     const float uv_x = 1.0f / aspect_shown;
 
-    ImGui::GetWindowDrawList()->AddImage(
-        (void *) (intptr_t) image->GetTextureID(), pos,
-        {pos.x + size.x, pos.y + size.y}, {0.5f - uv_x / 2.0f, 0.0f},
-        {0.5f + uv_x / 2.0f, 1.0f});
+    ImGui::GetWindowDrawList()->AddImage((void *) (intptr_t) image->GetTextureID(), pos,
+                                         {pos.x + size.x, pos.y + size.y}, {0.5f - uv_x / 2.0f, 0.0f},
+                                         {0.5f + uv_x / 2.0f, 1.0f});
   }
 
 
-  void Image::RenderImage(const std::shared_ptr<Image> &image, const ImVec2 pos,
-                          const ImVec2 size) {
+  void Image::RenderImage(const std::shared_ptr<Image> &image, const ImVec2 pos, const ImVec2 size) {
     if (!image) return;
 
     const float imgWidth = image->GetWidth();
@@ -446,15 +417,13 @@ public:
     const float aspect_shown = rescaled_image_size.x / size.x;
     const float uv_x = 1.0f / aspect_shown;
 
-    ImGui::GetWindowDrawList()->AddImage(
-        (void *) (intptr_t) image->GetTextureID(), pos,
-        {pos.x + size.x, pos.y + size.y}, {0.5f - uv_x / 2.0f, 0.0f},
-        {0.5f + uv_x / 2.0f, 1.0f});
+    ImGui::GetWindowDrawList()->AddImage((void *) (intptr_t) image->GetTextureID(), pos,
+                                         {pos.x + size.x, pos.y + size.y}, {0.5f - uv_x / 2.0f, 0.0f},
+                                         {0.5f + uv_x / 2.0f, 1.0f});
   }
 
 
-  void Image::RenderHomeImage(const std::unique_ptr<Image> &image,
-                              const ImVec2 pos, const ImVec2 size,
+  void Image::RenderHomeImage(const std::unique_ptr<Image> &image, const ImVec2 pos, const ImVec2 size,
                               bool is_hovered) {
     if (!image) return;
 
@@ -487,23 +456,15 @@ public:
 
 #ifdef WIN32
     if (is_hovered) {
-      s_AnimationProgress[id] = min(
-          1.0f,
-          s_AnimationProgress[id] + ImGui::GetIO().DeltaTime * animation_speed);
+      s_AnimationProgress[id] = min(1.0f, s_AnimationProgress[id] + ImGui::GetIO().DeltaTime * animation_speed);
     } else {
-      s_AnimationProgress[id] = max(
-          0.0f,
-          s_AnimationProgress[id] - ImGui::GetIO().DeltaTime * animation_speed);
+      s_AnimationProgress[id] = max(0.0f, s_AnimationProgress[id] - ImGui::GetIO().DeltaTime * animation_speed);
     }
 #else
     if (is_hovered) {
-      s_AnimationProgress[id] = std::min(
-          1.0f,
-          s_AnimationProgress[id] + ImGui::GetIO().DeltaTime * animation_speed);
+      s_AnimationProgress[id] = std::min(1.0f, s_AnimationProgress[id] + ImGui::GetIO().DeltaTime * animation_speed);
     } else {
-      s_AnimationProgress[id] = std::max(
-          0.0f,
-          s_AnimationProgress[id] - ImGui::GetIO().DeltaTime * animation_speed);
+      s_AnimationProgress[id] = std::max(0.0f, s_AnimationProgress[id] - ImGui::GetIO().DeltaTime * animation_speed);
     }
 #endif
 
@@ -527,10 +488,8 @@ public:
       float base_uv_y_end = (i + 1) * uv_segment_height;
 
       float uv_y_center = 0.5f;
-      float uv_y_start =
-          uv_y_center + (base_uv_y_start - uv_y_center) * (1.0f + zoom_amount);
-      float uv_y_end =
-          uv_y_center + (base_uv_y_end - uv_y_center) * (1.0f + zoom_amount);
+      float uv_y_start = uv_y_center + (base_uv_y_start - uv_y_center) * (1.0f + zoom_amount);
+      float uv_y_end = uv_y_center + (base_uv_y_end - uv_y_center) * (1.0f + zoom_amount);
 
       float base_alpha = (float) i / segments;
 
@@ -542,16 +501,13 @@ public:
 #endif
       ImVec4 tint_color(1.0f, 1.0f, 1.0f, alpha);
 
-      draw_list->AddImage((void *) (intptr_t) image->GetTextureID(),
-                          ImVec2(pos.x, y_start), ImVec2(pos.x + size.x, y_end),
-                          ImVec2(uv_left, uv_y_start),
-                          ImVec2(uv_right, uv_y_end),
+      draw_list->AddImage((void *) (intptr_t) image->GetTextureID(), ImVec2(pos.x, y_start),
+                          ImVec2(pos.x + size.x, y_end), ImVec2(uv_left, uv_y_start), ImVec2(uv_right, uv_y_end),
                           ImGui::ColorConvertFloat4ToU32(tint_color));
     }
   }
 
-  void Image::RenderHomeImage(const std::shared_ptr<Image> &image,
-                              const ImVec2 pos, const ImVec2 size,
+  void Image::RenderHomeImage(const std::shared_ptr<Image> &image, const ImVec2 pos, const ImVec2 size,
                               bool is_hovered) {
     if (!image) return;
 
@@ -584,23 +540,15 @@ public:
 
 #ifdef WIN32
     if (is_hovered) {
-      s_AnimationProgress[id] = min(
-          1.0f,
-          s_AnimationProgress[id] + ImGui::GetIO().DeltaTime * animation_speed);
+      s_AnimationProgress[id] = min(1.0f, s_AnimationProgress[id] + ImGui::GetIO().DeltaTime * animation_speed);
     } else {
-      s_AnimationProgress[id] = max(
-          0.0f,
-          s_AnimationProgress[id] - ImGui::GetIO().DeltaTime * animation_speed);
+      s_AnimationProgress[id] = max(0.0f, s_AnimationProgress[id] - ImGui::GetIO().DeltaTime * animation_speed);
     }
 #else
     if (is_hovered) {
-      s_AnimationProgress[id] = std::min(
-          1.0f,
-          s_AnimationProgress[id] + ImGui::GetIO().DeltaTime * animation_speed);
+      s_AnimationProgress[id] = std::min(1.0f, s_AnimationProgress[id] + ImGui::GetIO().DeltaTime * animation_speed);
     } else {
-      s_AnimationProgress[id] = std::max(
-          0.0f,
-          s_AnimationProgress[id] - ImGui::GetIO().DeltaTime * animation_speed);
+      s_AnimationProgress[id] = std::max(0.0f, s_AnimationProgress[id] - ImGui::GetIO().DeltaTime * animation_speed);
     }
 #endif
 
@@ -623,10 +571,8 @@ public:
       float base_uv_y_end = (i + 1) * uv_segment_height;
 
       float uv_y_center = 0.5f;
-      float uv_y_start =
-          uv_y_center + (base_uv_y_start - uv_y_center) * (1.0f + zoom_amount);
-      float uv_y_end =
-          uv_y_center + (base_uv_y_end - uv_y_center) * (1.0f + zoom_amount);
+      float uv_y_start = uv_y_center + (base_uv_y_start - uv_y_center) * (1.0f + zoom_amount);
+      float uv_y_end = uv_y_center + (base_uv_y_end - uv_y_center) * (1.0f + zoom_amount);
 
       float base_alpha = (float) i / segments;
 
@@ -639,16 +585,13 @@ public:
 
       ImVec4 tint_color(1.0f, 1.0f, 1.0f, alpha);
 
-      draw_list->AddImage((void *) (intptr_t) image->GetTextureID(),
-                          ImVec2(pos.x, y_start), ImVec2(pos.x + size.x, y_end),
-                          ImVec2(uv_left, uv_y_start),
-                          ImVec2(uv_right, uv_y_end),
+      draw_list->AddImage((void *) (intptr_t) image->GetTextureID(), ImVec2(pos.x, y_start),
+                          ImVec2(pos.x + size.x, y_end), ImVec2(uv_left, uv_y_start), ImVec2(uv_right, uv_y_end),
                           ImGui::ColorConvertFloat4ToU32(tint_color));
     }
   }
 
-  void Image::RenderImage(const std::shared_ptr<Image> &image, ImVec2 pos,
-                          ImVec2 size, float opacity) {
+  void Image::RenderImage(const std::shared_ptr<Image> &image, ImVec2 pos, ImVec2 size, float opacity) {
     if (!image) return;
 
     const float imgWidth = image->GetWidth();
@@ -678,10 +621,9 @@ public:
     ImDrawList *draw_list = ImGui::GetWindowDrawList();
 
     ImVec4 tint_color(1.0f, 1.0f, 1.0f, opacity);
-    draw_list->AddImage(
-        (void *) (intptr_t) image->GetTextureID(), ImVec2(pos.x, pos.y),
-        ImVec2(pos.x + size.x, pos.y + size.y), ImVec2(uvLeft, uvTop),
-        ImVec2(uvRight, uvBottom), ImGui::ColorConvertFloat4ToU32(tint_color));
+    draw_list->AddImage((void *) (intptr_t) image->GetTextureID(), ImVec2(pos.x, pos.y),
+                        ImVec2(pos.x + size.x, pos.y + size.y), ImVec2(uvLeft, uvTop), ImVec2(uvRight, uvBottom),
+                        ImGui::ColorConvertFloat4ToU32(tint_color));
   }
 
 }  // namespace Infinity

@@ -38,7 +38,7 @@ message("${Blue}Using toolchain file: ${Green}${CMAKE_TOOLCHAIN_FILE}")
 find_package(ZLIB REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(OpenGL REQUIRED)
-
+find_package(NanoSVG CONFIG REQUIRED)
 find_package(CURL REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(msgpack-cxx CONFIG REQUIRED)
@@ -184,6 +184,8 @@ add_executable(InfinityLauncher
         src/Frontend/Pages/Project/Project.hpp
         src/Frontend/Markdown/Markdown.cpp
         src/Frontend/Markdown/Markdown.hpp
+        src/Backend/Image/SvgImage.cpp
+        src/Backend/Image/SvgImage.hpp
 
 
 )
@@ -283,7 +285,7 @@ if (WIN32)
 else ()
     set(ZOE_LIB zoe::zoe-static)
 endif ()
-target_link_libraries(InfinityLauncher PRIVATE tray WebP::webp WebP::webpdecoder ${ZOE_LIB} WebP::webpdemux GLEW::GLEW OpenGL::GL glfw Boxer CURL::libcurl OpenSSL::SSL OpenSSL::Crypto unofficial::minizip::minizip ZLIB::ZLIB msgpack-cxx ${TOAST_LIB} ${WIN_LIBS})
+target_link_libraries(InfinityLauncher PRIVATE tray WebP::webp WebP::webpdecoder ${ZOE_LIB} NanoSVG::nanosvg NanoSVG::nanosvgrast WebP::webpdemux GLEW::GLEW OpenGL::GL glfw Boxer CURL::libcurl OpenSSL::SSL OpenSSL::Crypto unofficial::minizip::minizip ZLIB::ZLIB msgpack-cxx ${TOAST_LIB} ${WIN_LIBS})
 
 add_custom_target(InfinityLauncherDist)
 add_dependencies(InfinityLauncherDist
