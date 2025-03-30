@@ -1,28 +1,29 @@
-function(add_inline_to_headers)
-    cmake_parse_arguments(PARSE_ARGV 0 ARG "" "" "HEADERS")
-
-    foreach (header ${ARG_HEADERS})
-        file(READ ${header} CONTENT)
-
-        string(REGEX REPLACE "(^|\n)unsigned" "\\1inline unsigned" MODIFIED_CONTENT "${CONTENT}")
-
-        file(WRITE ${header} "${MODIFIED_CONTENT}")
-    endforeach ()
-endfunction()
-
 function(load_keys)
+    # Build Bin2Header first
+    message("${Blue}Building Bin2Header tool${ColorReset}")
+
+    # First ensure Bin2Header is built before proceeding
+    add_custom_command(
+            OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/Bin2Header${CMAKE_EXECUTABLE_SUFFIX}"
+            COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --target Bin2Header
+            COMMENT "Building Bin2Header tool"
+    )
+
+    # Create a custom target that depends on the Bin2Header executable
+    add_custom_target(EnsureBin2HeaderExists
+            DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/Bin2Header${CMAKE_EXECUTABLE_SUFFIX}"
+    )
+
+    # Set the converter path to the built Bin2Header executable
+    set(CONVERTER "${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/Bin2Header${CMAKE_EXECUTABLE_SUFFIX}")
+
     set(KEY_PAIRS
             "client_key"
     )
 
     set(GENERATED_HEADERS "")
 
-    if (WIN32)
-        set(CONVERTER "${CMAKE_CURRENT_SOURCE_DIR}/keys/bin2header.exe")
-    else ()
-        find_program(XXD_EXECUTABLE xxd REQUIRED)
-        set(CONVERTER ${XXD_EXECUTABLE})
-    endif ()
+    file(MAKE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/keys/include")
 
     foreach (key_name ${KEY_PAIRS})
         set(KEY_BIN "${CMAKE_CURRENT_SOURCE_DIR}/keys/${key_name}.bin")
@@ -33,39 +34,20 @@ function(load_keys)
             continue()
         endif ()
 
-        file(MAKE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/keys/include")
+        add_custom_command(
+                OUTPUT "${KEY_HEADER}"
+                COMMAND "${CONVERTER}" -o "${KEY_HEADER}" -n "${key_name}" "${KEY_BIN}"
+                DEPENDS EnsureBin2HeaderExists "${KEY_BIN}"
+                COMMENT "Generating header for ${key_name}"
+                VERBATIM
+        )
 
-        if (WIN32)
-            execute_process(
-                    COMMAND "${CONVERTER}" -o "${KEY_HEADER}" -n "${key_name}" "${KEY_BIN}"
-                    RESULT_VARIABLE convert_result
-                    ERROR_VARIABLE convert_error
-                    OUTPUT_VARIABLE convert_output
-            )
-        else ()
-            execute_process(
-                    COMMAND ${CONVERTER} -n "${key_name}" -i "${KEY_BIN}"
-                    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-                    RESULT_VARIABLE convert_result
-                    ERROR_VARIABLE convert_error
-                    OUTPUT_VARIABLE convert_output
-            )
-            if (convert_result EQUAL 0)
-                file(WRITE "${KEY_HEADER}" "${convert_output}")
-            endif ()
-            execute_process(
-                    COMMAND /bin/sh -c "sed -i '1s/^/#pragma once\\n/' ${KEY_HEADER} && sed -i 's/^unsigned /inline unsigned /' ${KEY_HEADER}"
-            )
-
-        endif ()
-
-        if (convert_result EQUAL 0)
-            list(APPEND GENERATED_HEADERS "${KEY_HEADER}")
-            message("${Blue}Successfully processed: ${Green}${key_name}${ColorReset}")
-        else ()
-            message(WARNING "Failed to process ${key_name}: ${convert_error}")
-        endif ()
+        list(APPEND GENERATED_HEADERS "${KEY_HEADER}")
     endforeach ()
+
+    add_custom_target(GenerateKeyHeaders ALL DEPENDS ${GENERATED_HEADERS})
+
+    set_property(GLOBAL PROPERTY KEYS_LOADED TRUE)
 
     list(LENGTH GENERATED_HEADERS num_generated)
     list(LENGTH KEY_PAIRS total_keys)

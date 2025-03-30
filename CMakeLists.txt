@@ -22,8 +22,6 @@ else ()
 endif ()
 
 
-load_keys()
-
 project(InfinityLauncher)
 
 cmake_policy(SET CMP0167 NEW)
@@ -31,6 +29,10 @@ cmake_policy(SET CMP0167 NEW)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+
+add_executable(Bin2Header src-bin2header/main.cpp)
+load_keys()
+
 
 message("${Blue}Using toolchain file: ${Green}${CMAKE_TOOLCHAIN_FILE}")
 find_package(ZLIB REQUIRED)
@@ -186,9 +188,12 @@ add_executable(InfinityLauncher
 
 )
 
+add_dependencies(InfinityLauncher GenerateKeyHeaders)
+
 
 message("${Blue}Gathering Updater Source Files")
 add_executable(Updater src-updater/main.cpp)
+
 
 message("${Blue}Gathering ImGui Source Files")
 file(GLOB IMGUI_SOURCES
@@ -245,7 +250,7 @@ if (WIN32)
     target_sources(Updater PRIVATE
             "${CMAKE_CURRENT_BINARY_DIR}/resources.rc"
     )
-    
+
     if (MSVC)
         set_target_properties(Updater PROPERTIES
                 LINK_FLAGS "/MANIFEST:NO"

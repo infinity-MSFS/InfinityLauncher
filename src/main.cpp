@@ -238,9 +238,6 @@ class PageRenderLayer final : public Infinity::Layer {
         Infinity::Utils::Router::getInstance().value()->setPage(0);
 
         pages_registered = true;
-        // ImGui::Begin("Main State");
-        // RenderGroupDataState(statePtr->state);
-        // ImGui::End();
       }
     }
 
@@ -306,14 +303,13 @@ class PageRenderLayer final : public Infinity::Layer {
 
 
 namespace Infinity {
-  int Main(const int argc, char **argv) {
+  void Main(const int argc, char **argv) {
     while (g_ApplicationRunning) {
       const auto app = Application::CreateApplication(
           argc, argv, std::make_unique<PageRenderLayer>());
       app->Run();
       g_ApplicationRunning = false;
     }
-    return 0;
   }
 }  // namespace Infinity
 
