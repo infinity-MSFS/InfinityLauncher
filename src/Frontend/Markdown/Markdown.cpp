@@ -4,21 +4,20 @@
 
 namespace ImGui {
   TextRegion::TextRegion()
-      : indent_x(0.0f) {}
+      : indent_x(0.0f)
+      , indent_count(0) {}
   TextRegion::~TextRegion() { ResetIndent(); }
 
-  void TextRegion::RenderTextWrapped(const char *text, const char *text_end,
-                                     bool indent_to_here) {
+  void TextRegion::RenderTextWrapped(const char *text, const char *text_end, bool indent_to_here) {
     const float scale = GetIO().FontGlobalScale;
     float width_left = GetContentRegionAvail().x;
-    const char *end_line =
-        GetFont()->CalcWordWrapPositionA(scale, text, text_end, width_left);
+    const char *end_line = GetFont()->CalcWordWrapPositionA(scale, text, text_end, width_left);
     TextUnformatted(text, end_line);
     if (indent_to_here) {
-      if (const float indent = GetContentRegionAvail().x - width_left;
-          indent != 0.0f) {
+      if (const float indent = GetContentRegionAvail().x - width_left; indent != 0.0f) {
         Indent();
         indent_x += indent;
+        indent_count++;
       }
     }
     width_left = GetContentRegionAvail().x;
@@ -27,8 +26,7 @@ namespace ImGui {
       if (*text == ' ') {
         ++text;
       }
-      end_line =
-          GetFont()->CalcWordWrapPositionA(scale, text, text_end, width_left);
+      end_line = GetFont()->CalcWordWrapPositionA(scale, text, text_end, width_left);
       if (text == end_line) {
         end_line++;
       }
@@ -36,24 +34,22 @@ namespace ImGui {
     }
   }
 
-  void TextRegion::RenderListTextWrapped(const char *text,
-                                         const char *text_end) {
+  void TextRegion::RenderListTextWrapped(const char *text, const char *text_end) {
     Bullet();
     SameLine();
     RenderTextWrapped(text, text_end, true);
   }
 
   void TextRegion::ResetIndent() {
-    if (indent_x > 0.0f) {
-      Unindent(indent_x);
+    for (int i = 0; i < indent_count; i++) {
+      Unindent();
     }
     indent_x = 0.0f;
+    indent_count = 0;
   }
 
-  bool TextRegion::RenderLinkText(const char *text, const char *text_end,
-                                  const Link &link, const char *markdown,
-                                  const MarkdownConfig &markdown_config,
-                                  const char **link_hover_start) {
+  bool TextRegion::RenderLinkText(const char *text, const char *text_end, const Link &link, const char *markdown,
+                                  const MarkdownConfig &markdown_config, const char **link_hover_start) {
     MarkdownFormatInfo format_info;
     format_info.config = &markdown_config;
     format_info.type = MarkdownFormatType::LINK;
@@ -66,66 +62,53 @@ namespace ImGui {
     if (this_item_hovered) {
       *link_hover_start = markdown + link.text.start;
     }
-    bool hovered = this_item_hovered ||
-        (*link_hover_start == (markdown + link.text.start));
+    bool hovered = this_item_hovered || (*link_hover_start == (markdown + link.text.start));
 
     format_info.item_hovered = hovered;
     markdown_config.format_callback(format_info, false);
 
     if (hovered) {
       if (IsMouseReleased(0) && markdown_config.link_callback) {
-        markdown_config.link_callback(
-            {markdown + link.text.start, link.text.size(),
-             markdown + link.url.start, link.url.size(),
-             markdown_config.user_data, false});
+        markdown_config.link_callback({markdown + link.text.start, link.text.size(), markdown + link.url.start,
+                                       link.url.size(), markdown_config.user_data, false});
       }
       if (markdown_config.tooltip_callback) {
-        markdown_config.tooltip_callback(
-            {{markdown + link.text.start, link.text.size(),
-              markdown + link.url.start, link.url.size(),
-              markdown_config.user_data, false},
-             markdown_config.link_icon});
+        markdown_config.tooltip_callback({{markdown + link.text.start, link.text.size(), markdown + link.url.start,
+                                           link.url.size(), markdown_config.user_data, false},
+                                          markdown_config.link_icon});
       }
     }
     return this_item_hovered;
   }
 
   bool IsCharInWord(char c) {
-    return c != ' ' && c != '.' && c != ',' && c != ';' && c != '!' &&
-        c != '?' && c != '\"';
+    return c != ' ' && c != '.' && c != ',' && c != ';' && c != '!' && c != '?' && c != '\"';
   }
 
-  void TextRegion::RenderLinkTextWrapped(const char *text, const char *text_end,
-                                         const Link &link, const char *markdown,
-                                         const MarkdownConfig &markdown_config,
-                                         const char **link_hover_start,
+  void TextRegion::RenderLinkTextWrapped(const char *text, const char *text_end, const Link &link, const char *markdown,
+                                         const MarkdownConfig &markdown_config, const char **link_hover_start,
                                          bool indent_to_here) {
     float scale = GetIO().FontGlobalScale;
     float width_left = GetContentRegionAvail().x;
     const char *end_line = text;
     if (width_left > 0.0f) {
-      end_line =
-          GetFont()->CalcWordWrapPositionA(scale, text, text_end, width_left);
+      end_line = GetFont()->CalcWordWrapPositionA(scale, text, text_end, width_left);
     }
     if (end_line > text && end_line < text_end) {
       if (IsCharInWord(*end_line)) {
-        float width_next_line =
-            width_left + GetCursorScreenPos().x - GetWindowPos().x;
-        const char *end_next_line = GetFont()->CalcWordWrapPositionA(
-            scale, end_line, text_end, width_next_line);
-        if (end_next_line == text_end ||
-            (end_next_line <= text_end && !IsCharInWord(*end_next_line))) {
+        float width_next_line = width_left + GetCursorScreenPos().x - GetWindowPos().x;
+        const char *end_next_line = GetFont()->CalcWordWrapPositionA(scale, end_line, text_end, width_next_line);
+        if (end_next_line == text_end || (end_next_line <= text_end && !IsCharInWord(*end_next_line))) {
           end_line = text;
         }
       }
     }
-    bool hovered = RenderLinkText(text, end_line, link, markdown,
-                                  markdown_config, link_hover_start);
+    bool hovered = RenderLinkText(text, end_line, link, markdown, markdown_config, link_hover_start);
     if (indent_to_here) {
-      if (const float indent = GetContentRegionAvail().x - width_left;
-          indent != 0.0f) {
+      if (const float indent = GetContentRegionAvail().x - width_left; indent != 0.0f) {
         Indent();
         indent_x += indent;
+        indent_count++;
       }
     }
     width_left = GetContentRegionAvail().x;
@@ -134,13 +117,11 @@ namespace ImGui {
       if (*text == ' ') {
         ++text;
       }
-      end_line =
-          GetFont()->CalcWordWrapPositionA(scale, text, text_end, width_left);
+      end_line = GetFont()->CalcWordWrapPositionA(scale, text, text_end, width_left);
       if (text == end_line) {
         end_line++;
       }
-      bool this_line_hovered = RenderLinkText(
-          text, end_line, link, markdown, markdown_config, link_hover_start);
+      bool this_line_hovered = RenderLinkText(text, end_line, link, markdown, markdown_config, link_hover_start);
       hovered = hovered || this_line_hovered;
     }
     if (!hovered && *link_hover_start == markdown + link.text.start) {
@@ -155,8 +136,7 @@ namespace ImGui {
     GetWindowDrawList()->AddLine(min, max, col, 1.0f);
   }
 
-  void RenderLine(const char *markdown, Line &line, TextRegion &text_region,
-                  const MarkdownConfig &markdown_config) {
+  void RenderLine(const char *markdown, Line &line, TextRegion &text_region, const MarkdownConfig &markdown_config) {
     int indent_start = 0;
     if (line.is_unordered_list) {
       indent_start = 1;
@@ -201,23 +181,19 @@ namespace ImGui {
   }
 
 
-  void DefaultMarkdownFormalCallback(
-      const MarkdownFormatInfo &markdown_format_info, bool start) {
+  void DefaultMarkdownFormalCallback(const MarkdownFormatInfo &markdown_format_info, bool start) {
     switch (markdown_format_info.type) {
       case MarkdownFormatType::NORMAL_TEXT:
         break;
       case MarkdownFormatType::EMPHASIS: {
         if (markdown_format_info.level == 1) {
           if (start) {
-            PushStyleColor(ImGuiCol_Text,
-                           GetStyle().Colors[ImGuiCol_TextDisabled]);
+            PushStyleColor(ImGuiCol_Text, GetStyle().Colors[ImGuiCol_TextDisabled]);
           } else {
             PopStyleColor();
           }
         } else {
-          auto [font, seperator] =
-              markdown_format_info.config
-                  ->heading_formats[MarkdownConfig::NUM_HEADINGS - 1];
+          auto [font, seperator] = markdown_format_info.config->heading_formats[MarkdownConfig::NUM_HEADINGS - 1];
           if (start) {
             if (font) {
               PushFont(font);
@@ -233,13 +209,9 @@ namespace ImGui {
       case MarkdownFormatType::HEADING: {
         MarkdownHeadingFormat heading_format{};
         if (markdown_format_info.level < MarkdownConfig::NUM_HEADINGS) {
-          heading_format =
-              markdown_format_info.config
-                  ->heading_formats[MarkdownConfig::NUM_HEADINGS - 1];
+          heading_format = markdown_format_info.config->heading_formats[MarkdownConfig::NUM_HEADINGS - 1];
         } else {
-          heading_format =
-              markdown_format_info.config
-                  ->heading_formats[markdown_format_info.level - 1];
+          heading_format = markdown_format_info.config->heading_formats[markdown_format_info.level - 1];
         }
         if (start) {
           if (heading_format.font) {
@@ -263,8 +235,7 @@ namespace ImGui {
         break;
       case MarkdownFormatType::LINK: {
         if (start) {
-          PushStyleColor(ImGuiCol_Text,
-                         GetStyle().Colors[ImGuiCol_ButtonHovered]);
+          PushStyleColor(ImGuiCol_Text, GetStyle().Colors[ImGuiCol_ButtonHovered]);
         } else {
           PopStyleColor();
           if (markdown_format_info.item_hovered) {
@@ -278,8 +249,7 @@ namespace ImGui {
     }
   }
 
-  void MarkdownRenderer(const char *markdown, size_t markdown_length,
-                        const MarkdownConfig &markdown_config) {
+  void MarkdownRenderer(const char *markdown, size_t markdown_length, const MarkdownConfig &markdown_config) {
     static const char *linkHoverStart = nullptr;
     ImGuiStyle &style = ImGui::GetStyle();
     Line line;
@@ -303,8 +273,7 @@ namespace ImGui {
           line.is_leading_space = false;
           line.last_render_position = i - 1;
           if ((c == '-') && (line.leading_space_count >= 2)) {
-            if ((static_cast<int>(markdown_length) > i + 1) &&
-                (markdown[i + 1] == ' ')) {
+            if ((static_cast<int>(markdown_length) > i + 1) && (markdown[i + 1] == ' ')) {
               line.is_unordered_list = true;
               ++i;
               ++line.last_render_position;
@@ -314,8 +283,7 @@ namespace ImGui {
             line.heading_count++;
             bool bContinueChecking = true;
             int j = i;
-            while (++j < static_cast<int>(markdown_length) &&
-                   bContinueChecking) {
+            while (++j < static_cast<int>(markdown_length) && bContinueChecking) {
               c = markdown[j];
               switch (c) {
                 case '#':
@@ -381,10 +349,9 @@ namespace ImGui {
             if (link.is_image) {
               // dont draw images
             } else {
-              textRegion.RenderLinkTextWrapped(
-                  markdown + link.text.start,
-                  markdown + link.text.start + link.text.size(), link, markdown,
-                  markdown_config, &linkHoverStart, false);
+              textRegion.RenderLinkTextWrapped(markdown + link.text.start,
+                                               markdown + link.text.start + link.text.size(), link, markdown,
+                                               markdown_config, &linkHoverStart, false);
             }
             ImGui::SameLine(0.0f, 0.0f);
             link = Link();
@@ -398,11 +365,8 @@ namespace ImGui {
           if (link.state == Link::NO_LINK && !line.is_heading) {
             int next = i + 1;
             int prev = i - 1;
-            if ((c == '*' || c == '_') &&
-                (i == line.line_start || markdown[prev] == ' ' ||
-                 markdown[prev] == '\t') &&
-                static_cast<int>(markdown_length) > next &&
-                markdown[next] != ' ' && markdown[next] != '\n' &&
+            if ((c == '*' || c == '_') && (i == line.line_start || markdown[prev] == ' ' || markdown[prev] == '\t') &&
+                static_cast<int>(markdown_length) > next && markdown[next] != ' ' && markdown[next] != '\n' &&
                 markdown[next] != '\t') {
               em.state = Emphasis::LEFT;
               em.sym = c;
@@ -430,8 +394,7 @@ namespace ImGui {
           }
         case Emphasis::RIGHT:
           if (em.sym == c) {
-            if (line.emphasis_count < 3 &&
-                (i - em.text.stop + 1 == line.emphasis_count)) {
+            if (line.emphasis_count < 3 && (i - em.text.stop + 1 == line.emphasis_count)) {
               int line_end = em.text.start - line.emphasis_count;
               if (line_end > line.line_start) {
                 line.line_end = line_end;
@@ -468,8 +431,7 @@ namespace ImGui {
 
       if (c == '\n') {
         line.line_end = i;
-        if (em.state == Emphasis::MIDDLE && line.emphasis_count >= 3 &&
-            (line.line_start + line.emphasis_count) == i) {
+        if (em.state == Emphasis::MIDDLE && line.emphasis_count >= 3 && (line.line_start + line.emphasis_count) == i) {
           ImGui::Separator();
         } else {
           RenderLine(markdown, line, textRegion, markdown_config);
@@ -490,9 +452,7 @@ namespace ImGui {
     if (em.state == Emphasis::LEFT && line.emphasis_count >= 3) {
       ImGui::Separator();
     } else {
-      if (markdown_length &&
-          line.line_start < static_cast<int>(markdown_length) &&
-          markdown[line.line_start] != 0) {
+      if (markdown_length && line.line_start < static_cast<int>(markdown_length) && markdown[line.line_start] != 0) {
         line.line_end = static_cast<int>(markdown_length);
         if (0 == markdown[line.line_end - 1]) {
           --line.line_end;
@@ -516,9 +476,7 @@ namespace Infinity {
                    {Application::GetFont("h3"), true}},
                   nullptr}) {}
 
-  void Markdown::Render(const std::string &text) const {
-    ImGui::MarkdownRenderer(text.c_str(), text.size(), m_Config);
-  }
+  void Markdown::Render(const std::string &text) const { ImGui::MarkdownRenderer(text.c_str(), text.size(), m_Config); }
 
 
   void Markdown::LinkCallback(ImGui::MarkdownLinkCallbackData data) {

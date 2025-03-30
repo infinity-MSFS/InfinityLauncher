@@ -249,7 +249,7 @@ namespace Infinity {
     ImGui::GetWindowDrawList()->AddText({45.0f, ImGui::GetWindowHeight() / 3.0f + 10.0f + 5.0f},
                                         ImGui::GetColorU32(ImVec4(1.0f, 1.0f, 1.0f, 0.6f)), "Not Installed");
     if (ImGui::Button("TestSVG")) {
-      auto svg = SVGImage::LoadFromURL("https://www.svgrepo.com/show/765/library.svg");
+      auto svg = SVGImage::LoadFromURL("https://www.svgrepo.com/show/475580/airplane.svg");
       m_SVGImage = svg;
     }
 

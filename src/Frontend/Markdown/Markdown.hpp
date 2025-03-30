@@ -50,21 +50,17 @@ namespace ImGui {
   typedef void MarkdownLinkCallback(MarkdownLinkCallbackData data);
   typedef void MarkdownTooltipCallback(MarkdownTooltipCallbackData data);
 
-  inline void DefaultMarkdownTooltipCallback(
-      const MarkdownTooltipCallbackData &data_) {
+  inline void DefaultMarkdownTooltipCallback(const MarkdownTooltipCallbackData &data_) {
     if (data_.link_data.is_image) {
       SetTooltip("%.*s", data_.link_data.link_length, data_.link_data.link);
     } else {
-      SetTooltip("%s Open in browser\n%.*s", data_.link_icon,
-                 data_.link_data.link_length, data_.link_data.link);
+      SetTooltip("%s Open in browser\n%.*s", data_.link_icon, data_.link_data.link_length, data_.link_data.link);
     }
   }
 
-  typedef void MarkdownFormalCallback(
-      const MarkdownFormatInfo &markdown_format_info, bool start);
+  typedef void MarkdownFormalCallback(const MarkdownFormatInfo &markdown_format_info, bool start);
 
-  inline void DefaultMarkdownFormalCallback(
-      const MarkdownFormatInfo &markdown_format_info, bool start);
+  inline void DefaultMarkdownFormalCallback(const MarkdownFormatInfo &markdown_format_info, bool start);
 
   struct MarkdownHeadingFormat {
     ImFont *font;
@@ -77,40 +73,33 @@ namespace ImGui {
     MarkdownLinkCallback *link_callback = nullptr;
     MarkdownTooltipCallback *tooltip_callback = nullptr;
     const char *link_icon = "";
-    MarkdownHeadingFormat heading_formats[NUM_HEADINGS] = {
-        {nullptr, true}, {nullptr, true}, {nullptr, true}};
+    MarkdownHeadingFormat heading_formats[NUM_HEADINGS] = {{nullptr, true}, {nullptr, true}, {nullptr, true}};
     void *user_data = nullptr;
     MarkdownFormalCallback *format_callback = DefaultMarkdownFormalCallback;
   };
 
-  void MarkdownRenderer(const char *markdown, size_t markdown_length,
-                        const MarkdownConfig &markdown_config);
+  void MarkdownRenderer(const char *markdown, size_t markdown_length, const MarkdownConfig &markdown_config);
 
   struct TextRegion;
   struct Line;
   inline void UnderLine(ImColor col);
-  inline void RenderLine(const char *markdown, Line &line,
-                         TextRegion &text_region,
+  inline void RenderLine(const char *markdown, Line &line, TextRegion &text_region,
                          const MarkdownConfig &markdown_config);
 
   struct TextRegion {
 private:
     float indent_x;
+    int indent_count;
 
 public:
     TextRegion();
     ~TextRegion();
-    void RenderTextWrapped(const char *text, const char *text_end,
-                           bool indent_to_here = false);
+    void RenderTextWrapped(const char *text, const char *text_end, bool indent_to_here = false);
     void RenderListTextWrapped(const char *text, const char *text_end);
-    static bool RenderLinkText(const char *text, const char *text_end,
-                               const Link &link, const char *markdown,
-                               const MarkdownConfig &markdown_config,
-                               const char **link_hover_start);
-    void RenderLinkTextWrapped(const char *text, const char *text_end,
-                               const Link &link, const char *markdown,
-                               const MarkdownConfig &markdown_config,
-                               const char **link_hover_start,
+    static bool RenderLinkText(const char *text, const char *text_end, const Link &link, const char *markdown,
+                               const MarkdownConfig &markdown_config, const char **link_hover_start);
+    void RenderLinkTextWrapped(const char *text, const char *text_end, const Link &link, const char *markdown,
+                               const MarkdownConfig &markdown_config, const char **link_hover_start,
                                bool indent_to_here = false);
     void ResetIndent();
   };
