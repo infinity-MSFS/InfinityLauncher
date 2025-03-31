@@ -186,6 +186,10 @@ add_executable(InfinityLauncher
         src/Frontend/Markdown/Markdown.hpp
         src/Backend/Image/SvgImage.cpp
         src/Backend/Image/SvgImage.hpp
+        src/Frontend/Background/Meteors.cpp
+        src/Frontend/Background/Meteors.hpp
+        src/Frontend/Pages/Betas/Betas.cpp
+        src/Frontend/Pages/Betas/Betas.hpp
 
 
 )

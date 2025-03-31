@@ -25,6 +25,8 @@ public:
 
     static std::shared_ptr<SVGImage> LoadFromURL(const std::string& url, float dpi = 96.0f);
 
+    [[nodiscard]] std::shared_ptr<SVGImage> Clone() const;
+
     bool Rasterize(uint32_t width, uint32_t height);
 
     bool Rasterize(float scale = 1.0f);
@@ -35,6 +37,10 @@ public:
     static void RenderSVG(const std::shared_ptr<SVGImage>& svg, ImVec2 pos, float scale);
     static void RenderSVG(const std::shared_ptr<SVGImage>& image, ImVec2 pos, ImVec2 size);
     static void RenderSVG(const std::shared_ptr<SVGImage>& image, ImVec2 pos, ImVec2 size, float opacity);
+
+    /// @summary Change the color of the SVG image.
+    /// @param color color in #RRGGBB format
+    void ChangeColor(const std::string& color);
 
 
 private:

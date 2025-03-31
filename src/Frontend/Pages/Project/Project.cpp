@@ -250,6 +250,7 @@ namespace Infinity {
                                         ImGui::GetColorU32(ImVec4(1.0f, 1.0f, 1.0f, 0.6f)), "Not Installed");
     if (ImGui::Button("TestSVG")) {
       auto svg = SVGImage::LoadFromURL("https://www.svgrepo.com/show/475580/airplane.svg");
+      svg->ChangeColor("#FFFFFF");
       m_SVGImage = svg;
     }
 

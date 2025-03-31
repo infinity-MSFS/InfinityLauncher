@@ -34,8 +34,7 @@ public:
     explicit Application(const ApplicationSpecifications &specifications);
     ~Application();
 
-    static std::unique_ptr<Application> CreateApplication(
-        int argc, char **argv, std::unique_ptr<Layer> layer);
+    static std::unique_ptr<Application> CreateApplication(int argc, char **argv, std::unique_ptr<Layer> layer);
 
     template<typename T>
     void PushLayer() {
@@ -53,15 +52,11 @@ public:
 
     void Close();
 
-    [[nodiscard]] std::shared_ptr<Image> GetAppLogo() {
-      return m_AppHeaderIcon;
-    }
+    [[nodiscard]] std::shared_ptr<Image> GetAppLogo() { return m_AppHeaderIcon; }
 
     [[nodiscard]] bool IsMaximized() const;
 
-    [[nodiscard]] std::shared_ptr<Image> GetIcon() const {
-      return m_AppHeaderIcon;
-    }
+    [[nodiscard]] std::shared_ptr<Image> GetIcon() const { return m_AppHeaderIcon; }
 
     [[nodiscard]] static float GetTime();
 
@@ -80,12 +75,12 @@ public:
 
     [[nodiscard]] bool IsTitleBarHovered() const { return m_TitlebarHovered; }
 
+
 private:
     std::expected<void, Errors::Error> Init();
     static const char *SetupGLVersion();
     std::expected<void, Errors::Error> Shutdown();
-    static void SetWindowIcon(GLFWwindow *window, const unsigned char *data,
-                              int size);
+    static void SetWindowIcon(GLFWwindow *window, const unsigned char *data, int size);
 
     void DrawTitleBar(float &out_title_bar_height);
     void DrawMenubar() const;
