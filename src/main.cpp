@@ -144,7 +144,7 @@ class PageRenderLayer final : public Infinity::Layer {
               {"#1271FF1C", "#DD4AFF1C", "#1271FF02", "#DD4AFF02", "#64DCFF02", "#C8323202", "#B4B43202"}}},
             {3,
              {[] {
-                Betas betas;
+                Infinity::Betas betas;
                 betas.Render();
 
                 ImGui::Text("Beta");
@@ -257,11 +257,6 @@ class PageRenderLayer final : public Infinity::Layer {
 
 
       router.value()->RenderCurrentPage();
-      if (ImGui::Button("HWID")) {
-        HWID hwidgen;
-        auto hwid = hwidgen.GetHWID();
-        std::cout << "HWID: " << hwid << std::endl;
-      }
     };
 #endif
   }

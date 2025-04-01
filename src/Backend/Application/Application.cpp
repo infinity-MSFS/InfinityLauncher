@@ -91,10 +91,11 @@ namespace Infinity {
     }
 
     // glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+#ifdef WIN32
     if (m_Specification.custom_titlebar) {
       glfwWindowHint(GLFW_TITLEBAR, GLFW_FALSE);
     }
-
+#endif
     const auto version = SetupGLVersion();
 
     m_Window = glfwCreateWindow(static_cast<int>(m_Specification.window_size.first),
@@ -110,14 +111,17 @@ namespace Infinity {
     glfwSwapInterval(0);
 
     glfwSetWindowUserPointer(m_Window, this);
+
+#ifdef WIN32
     glfwSetTitlebarHitTestCallback(m_Window, [](GLFWwindow *window, int x, int y, int *hit) {
       const auto *app = static_cast<Application *>(glfwGetWindowUserPointer(window));
       *hit = app->IsTitleBarHovered();
     });
-
+#endif
 
     GLenum err = glewInit();
     if (err != GLEW_OK) {
+      std::cout << "Failed to initialize GLEW: " << glewGetErrorString(err) << std::endl;
       return std::unexpected(Errors::Error(Errors::ErrorType::Fatal, "Failed to initialize GLEW"));
     }
 

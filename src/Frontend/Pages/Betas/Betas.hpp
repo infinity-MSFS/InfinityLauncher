@@ -1,12 +1,18 @@
 #pragma once
 #include "Frontend/Background/Meteors.hpp"
 
-class Betas {
-  public:
-  Betas() {}
-  ~Betas() = default;
+namespace Infinity {
+  class Betas {
+public:
+    Betas() {}
+    ~Betas() = default;
 
-  void Render() { ImGui::Text("Betas"); }
+    void Render() {
+      Meteors::GetInstance()->Update();
+      Meteors::GetInstance()->Render();
+    }
 
-  private:
-};
+private:
+  };
+
+}  // namespace Infinity

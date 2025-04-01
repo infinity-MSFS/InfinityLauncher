@@ -1,9 +1,12 @@
 #include "Hwid.hpp"
 
-#include <intrin.h>
+
 #ifdef WIN32
 #include <atlbase.h>
 #include <atlconv.h>
+#include <intrin.h>
+#else
+#include <x86intrin.h>
 #endif
 
 
@@ -59,29 +62,25 @@ std::string HWID::GetMotherboardSerial() {
     return "Unknown";
   }
 
-  hres =
-      CoInitializeSecurity(NULL, -1, NULL, NULL, RPC_C_AUTHN_LEVEL_DEFAULT,
-                           RPC_C_IMP_LEVEL_IMPERSONATE, NULL, EOAC_NONE, NULL);
+  hres = CoInitializeSecurity(NULL, -1, NULL, NULL, RPC_C_AUTHN_LEVEL_DEFAULT, RPC_C_IMP_LEVEL_IMPERSONATE, NULL,
+                              EOAC_NONE, NULL);
   if (FAILED(hres)) {
     return "Unknown";
   }
 
-  hres = CoCreateInstance(CLSID_WbemLocator, 0, CLSCTX_INPROC_SERVER,
-                          IID_IWbemLocator, (LPVOID *) &pLoc);
+  hres = CoCreateInstance(CLSID_WbemLocator, 0, CLSCTX_INPROC_SERVER, IID_IWbemLocator, (LPVOID *) &pLoc);
   if (FAILED(hres)) {
     return "Unknown";
   }
 
-  hres = pLoc->ConnectServer(bstr_t(L"ROOT\\CIMV2"), NULL, NULL, 0, NULL, 0, 0,
-                             &pSvc);
+  hres = pLoc->ConnectServer(bstr_t(L"ROOT\\CIMV2"), NULL, NULL, 0, NULL, 0, 0, &pSvc);
   if (FAILED(hres)) {
     return "Unknown";
   }
 
   IEnumWbemClassObject *pEnumerator = nullptr;
   hres = pSvc->ExecQuery(bstr_t("WQL"), bstr_t("SELECT * FROM Win32_BaseBoard"),
-                         WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
-                         NULL, &pEnumerator);
+                         WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY, NULL, &pEnumerator);
   if (FAILED(hres)) {
     return "Unknown";
   }
@@ -129,23 +128,19 @@ std::string HWID::GetGPUInfo() {
     return "Unknown";
   }
 
-  hres = CoCreateInstance(CLSID_WbemLocator, 0, CLSCTX_INPROC_SERVER,
-                          IID_IWbemLocator, (LPVOID *) &pLoc);
+  hres = CoCreateInstance(CLSID_WbemLocator, 0, CLSCTX_INPROC_SERVER, IID_IWbemLocator, (LPVOID *) &pLoc);
   if (FAILED(hres)) {
     return "Unknown";
   }
 
-  hres = pLoc->ConnectServer(bstr_t(L"ROOT\\CIMV2"), NULL, NULL, 0, NULL, 0, 0,
-                             &pSvc);
+  hres = pLoc->ConnectServer(bstr_t(L"ROOT\\CIMV2"), NULL, NULL, 0, NULL, 0, 0, &pSvc);
   if (FAILED(hres)) {
     return "Unknown";
   }
 
   IEnumWbemClassObject *pEnumerator = nullptr;
-  hres = pSvc->ExecQuery(bstr_t("WQL"),
-                         bstr_t("SELECT * FROM Win32_VideoController"),
-                         WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
-                         NULL, &pEnumerator);
+  hres = pSvc->ExecQuery(bstr_t("WQL"), bstr_t("SELECT * FROM Win32_VideoController"),
+                         WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY, NULL, &pEnumerator);
   if (FAILED(hres)) {
     return "Unknown";
   }
@@ -201,5 +196,5 @@ std::string HWID::exec(const char *cmd) {
   return result;
 #else
   return "Unknown";
-  #endif
+#endif
 }

@@ -9,7 +9,10 @@
       "name": "vulkan",
       "platform": "windows"
     },
-    "glew",
+    {
+      "name": "glew",
+      "platform": "windows"
+    },
     "curl",
     "minizip",
     "zoe",
