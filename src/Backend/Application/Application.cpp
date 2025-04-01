@@ -35,6 +35,12 @@
 #include "imgui_internal.h"
 #include "stb_image/stb_image.h"
 
+#ifdef WIN32
+#include <Windows.h>
+#include <timeapi.h>
+#pragma comment(lib, "Winmm.lib")
+#endif
+
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1900) && !defined(IMGUI_DISABLE_WIN32_FUNCTIONS)
 #pragma comment(lib, "legacy_stdio_definitions")
@@ -44,9 +50,6 @@
 #define IMGUI_VULKAN_DEBUG_REPORT
 #endif
 
-
-constexpr int FPS_CAP = 144;
-constexpr double FRAME_DURATION = 1.0 / FPS_CAP;
 
 namespace Infinity {
   Application *Application::s_Instance = nullptr;
@@ -244,8 +247,14 @@ namespace Infinity {
 
     system_tray.run();
 
+
+#ifdef WIN32
+    timeBeginPeriod(1);
+#endif
+
+    double last_frame_time = glfwGetTime();
+
     while (!glfwWindowShouldClose(m_Window) && m_Running) {
-      const double start_time = glfwGetTime();
       glfwPollEvents();
       {
         std::scoped_lock lock(m_EventQueueMutex);
@@ -312,12 +321,12 @@ namespace Infinity {
 #endif
       m_LastFrameTime = time;
 
-      const double endTime = glfwGetTime();
 
-      if (const double frameTime = endTime - start_time; frameTime < FRAME_DURATION) {
-        std::this_thread::sleep_for(std::chrono::duration<double>(FRAME_DURATION - frameTime));
-      }
+      CapFPS(last_frame_time);
     }
+#ifdef WIN32
+    timeEndPeriod(1);
+#endif
     return {};
   }
 
@@ -373,6 +382,34 @@ namespace Infinity {
       }
     }
   }
+
+  void Application::CapFPS(double &last_frame_time) const {
+    int fps;
+    if (m_ReduceFPSOnIdle) {
+      if (glfwGetWindowAttrib(m_Window, GLFW_FOCUSED)) {
+        fps = m_FpsCap;
+      } else {
+        fps = 30;
+      }
+    }
+
+    double frame_duration = 1.0 / fps;
+
+    double target_time = last_frame_time + frame_duration;
+    double current_time = glfwGetTime();
+    double wait_time = target_time - current_time;
+
+    if (wait_time > 0.002) {
+      std::this_thread::sleep_for(std::chrono::duration<double>(wait_time - 0.002));
+    }
+
+    while (glfwGetTime() < target_time) {
+      std::this_thread::yield();
+    }
+
+    last_frame_time = target_time;
+  }
+
 
   void Application::ProcessImageQueue() {
     std::vector<std::shared_ptr<Image>> toProcess;

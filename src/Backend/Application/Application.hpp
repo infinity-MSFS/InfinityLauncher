@@ -76,6 +76,17 @@ public:
     [[nodiscard]] bool IsTitleBarHovered() const { return m_TitlebarHovered; }
 
 
+    [[nodiscard]] int GetFPS() const { return m_FpsCap; }
+    [[nodiscard]] bool IsReduceFPSOnIdle() const { return m_ReduceFPSOnIdle; }
+
+    void SetFPS(const unsigned int fps) {
+      if (fps > 0) {
+        m_FpsCap = fps;
+      }
+    }
+
+    void SetReduceFPSOnIdle(const bool reduce) { m_ReduceFPSOnIdle = reduce; }
+
 private:
     std::expected<void, Errors::Error> Init();
     static const char *SetupGLVersion();
@@ -89,6 +100,8 @@ private:
 
     static void ProcessImageQueue();
 
+    void CapFPS(double &last_frame_time) const;
+
 
 private:
     ApplicationSpecifications m_Specification;
@@ -98,6 +111,9 @@ private:
     std::unordered_map<std::string, ImFont *> m_Fonts;
 
     bool m_Running = true;
+
+    int m_FpsCap = 144;
+    bool m_ReduceFPSOnIdle = true;
 
     float m_TimeStep = 0.0f;
     float m_FrameTime = 0.0f;

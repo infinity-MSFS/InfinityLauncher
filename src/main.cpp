@@ -23,6 +23,7 @@
 #include "Frontend/Pages/Downloads/Downloads.hpp"
 #include "Frontend/Pages/Home/Home.hpp"
 #include "Frontend/Pages/Project/Project.hpp"
+#include "Frontend/Pages/Settings/Settings.hpp"
 #include "Frontend/SVG/SVGDrawing.hpp"
 #include "Frontend/Theme/Theme.hpp"
 #include "Util/State/GroupStateManager.hpp"
@@ -131,18 +132,8 @@ class PageRenderLayer final : public Infinity::Layer {
               {"#1271FF1C", "#DD4AFF1C", "#1271FF02", "#DD4AFF02", "#64DCFF02", "#C8323202", "#B4B43202"}}},
             {1,
              {[] {
-                ImGui::Text("Settings");
-                if (ImGui::Button("Update")) {
-                  auto pid_dir = Infinity::Updater::GetConfigDir() + "/pid.infinitypid";
-                  Infinity::Updater::WritePidToFile(pid_dir);
-
-                  auto exe_folder = Infinity::Updater::GetCurrentExecutablePath();
-                  std::string updater_path = exe_folder + "/Updater.exe";
-                  std::string current_exe = exe_folder + "/InfinityLauncher.exe";
-                  std::string new_exe = exe_folder + "/UPDATE_Infinity";
-                  Infinity::Updater::LaunchUpdater(updater_path, new_exe, current_exe, pid_dir);
-                }
-                ImGui::Text("Updated InfinityLauncher :)");
+                Infinity::Settings settings;
+                settings.Render();
               },
               {"#1271FF1C", "#DD4AFF1C", "#1271FF02", "#DD4AFF02", "#64DCFF02", "#C8323202", "#B4B43202"}}},
             {2,
@@ -259,6 +250,10 @@ class PageRenderLayer final : public Infinity::Layer {
         DrawButtonImage(betaIcon, Infinity::UI::Colors::Theme::text, Infinity::UI::Colors::Theme::text_darker,
                         Infinity::UI::Colors::Theme::text_darker, Infinity::GetItemRect());
       }
+
+      ImGui::Begin("FPS Counter");
+      ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
+      ImGui::End();
 
 
       router.value()->RenderCurrentPage();
