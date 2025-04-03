@@ -4,7 +4,10 @@
 
 #include <cmath>
 
+#include "GL/glew.h"
+//
 #include "Frontend/ColorInterpolation/ColorInterpolation.hpp"
+#include "GL/gl.h"
 #include "imgui.h"
 #include "vector"
 
@@ -24,7 +27,6 @@ public:
       return instance;
     }
 
-    Background();
 
     static void SetDotOpacity(float opacity);
 
@@ -49,10 +51,8 @@ public:
       if (state) {
         auto &interpolator = ColorInterpolation::GetInstance();
         interpolator.ChangeGradientColors(
-            HomePagePrimary, HomePageSecondary,
-            {18.0f / 255.0f, 113.0f / 255.f, 1.0f, 0.01f},
-            {221.0f / 255.f, 74.0f / 255.f, 1.0f, 0.01f},
-            {100.0f / 255.f, 220.0f / 255.f, 1.0f, 0.01f},
+            HomePagePrimary, HomePageSecondary, {18.0f / 255.0f, 113.0f / 255.f, 1.0f, 0.01f},
+            {221.0f / 255.f, 74.0f / 255.f, 1.0f, 0.01f}, {100.0f / 255.f, 220.0f / 255.f, 1.0f, 0.01f},
             {200.0f / 255.f, 50.0f / 255.f, 50.0f / 255.f, 0.01f},
             {180.0f / 255.f, 180.0f / 255.f, 50.0f / 255.f, 0.01f}, 1.0f);
         m_HomePage = true;
@@ -61,22 +61,21 @@ public:
       }
     }
 
+    ~Background();
+
 private:
     void UpdateDotOpacity();
 
-    static void RenderBackgroundDotsLayer();
+    void RenderBackgroundDotsLayer();
 
     static void RenderBackgroundGradientLayer();
 
     static void RenderBackgroundBaseLayer();
 
-    static void RenderGradientCircle(ImVec2 center, float radius,
-                                     float maxOpacity, ImU32 color);
+    static void RenderGradientCircle(ImVec2 center, float radius, float maxOpacity, ImU32 color);
 
-    static void InitializeCirclePosition(const int index,
-                                         const ImVec2 position) {
-      if (index >= 0 && index < m_circlePos.size() &&
-          m_circlePos[index].x == 0 && m_circlePos[index].y == 0) {
+    static void InitializeCirclePosition(const int index, const ImVec2 position) {
+      if (index >= 0 && index < m_circlePos.size() && m_circlePos[index].x == 0 && m_circlePos[index].y == 0) {
         m_circlePos[index] = position;
       }
     }
@@ -84,14 +83,20 @@ private:
 
     static void TrySetDefaultPositions();
 
-    static ImVec2 GetCircleCoords(const float radius, const float theta,
-                                  const ImVec2 center) {
+    static ImVec2 GetCircleCoords(const float radius, const float theta, const ImVec2 center) {
       const float radians = (3.141592f / 180.0f) * theta;
       float x = center.x + radius * cosf(radians);
       float y = center.y + radius * sinf(radians);
 
       return {x, y};
     }
+
+    Background();
+
+
+    void InitializeDots();
+    void CleanupDots();
+    GLuint CreateShader(const char *vertex_shader_source, const char *fragment_shader_source);
 
 private:
     static ImVec2 m_windowPos;
@@ -107,6 +112,12 @@ private:
     static bool m_HomePage;
     static float m_dotOpacity;
     static float m_targetDotOpacity;
+
+    static GLuint m_dotVAO;
+    static GLuint m_dotVBO;
+    static GLuint m_dotShader;
+    static int m_dotCount;
+    static bool m_dotsInitialized;
   };
 
 

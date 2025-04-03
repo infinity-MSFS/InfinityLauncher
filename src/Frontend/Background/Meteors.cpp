@@ -1,6 +1,5 @@
 #include "Meteors.hpp"
 
-#pragma once
 #include <cmath>
 #include <ctime>
 #include <imgui.h>
