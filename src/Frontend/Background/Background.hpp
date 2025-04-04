@@ -22,9 +22,9 @@ namespace Infinity {
 
   class Background {
 public:
-    static Background &GetInstance() {
+    static Background *GetInstance() {
       static Background instance;
-      return instance;
+      return &instance;
     }
 
 
@@ -61,14 +61,14 @@ public:
       }
     }
 
-    ~Background();
 
 private:
-    void UpdateDotOpacity();
+    static void UpdateDotOpacity();
 
     void RenderBackgroundDotsLayer();
 
     static void RenderBackgroundGradientLayer();
+
 
     static void RenderBackgroundBaseLayer();
 
@@ -79,7 +79,6 @@ private:
         m_circlePos[index] = position;
       }
     }
-
 
     static void TrySetDefaultPositions();
 
@@ -93,15 +92,11 @@ private:
 
     Background();
 
-
-    void InitializeDots();
-    void CleanupDots();
-    GLuint CreateShader(const char *vertex_shader_source, const char *fragment_shader_source);
+    void CreateDotTexture();
 
 private:
     static ImVec2 m_windowPos;
     static ImVec2 m_windowSize;
-
     static ImVec4 m_primaryColor;
     static ImVec4 m_secondaryColor;
     static ImVec4 m_circleColor1;
@@ -113,11 +108,7 @@ private:
     static float m_dotOpacity;
     static float m_targetDotOpacity;
 
-    static GLuint m_dotVAO;
-    static GLuint m_dotVBO;
-    static GLuint m_dotShader;
-    static int m_dotCount;
-    static bool m_dotsInitialized;
+    ImTextureID m_dotTexture = nullptr;
   };
 
 

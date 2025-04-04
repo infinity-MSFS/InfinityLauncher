@@ -19,11 +19,6 @@ namespace Infinity {
   float Background::m_dotOpacity = 0.3f;
   float Background::m_targetDotOpacity = 0.3f;
 
-  GLuint Background::m_dotVAO = 0;
-  GLuint Background::m_dotVBO = 0;
-  GLuint Background::m_dotShader = 0;
-  int Background::m_dotCount = 0;
-  bool Background::m_dotsInitialized = false;
 
   const std::unordered_map<std::string, ImVec2> defaultCirclePositions = {{"Circle1", ImVec2(100, 100)},
                                                                           {"Circle2", ImVec2(200, 200)},
@@ -31,7 +26,6 @@ namespace Infinity {
                                                                           {"Circle4", ImVec2(400, 400)},
                                                                           {"Circle5", ImVec2(200, 50)}};
 
-  Background::~Background() { CleanupDots(); }
 
   Background::Background() {
     if (m_circlePos.empty()) {
@@ -111,70 +105,72 @@ namespace Infinity {
   }
 
 
-  void Background::RenderBackgroundDotsLayer() {
-    if (!m_dotsInitialized) {
-      InitializeDots();
-    }
+  void Background::CreateDotTexture() {
+    constexpr int texture_size = 15;
+    unsigned char texture_data[texture_size * texture_size * 4] = {0};
 
-    if (!glIsBuffer(m_dotVBO)) {
-      std::cerr << "Error: m_dotVBO is not a valid buffer!" << std::endl;
-    }
-    if (!glIsVertexArray(m_dotVAO)) {
-      std::cerr << "Error: m_dotVAO is not a valid vertex array!" << std::endl;
-    }
+    constexpr float x_center = texture_size / 2.0f;
+    constexpr float y_center = texture_size / 2.0f;
+    constexpr float radius = 1.0f;
+    constexpr float aa_width = 1.0f;
 
-    glUseProgram(m_dotShader);
+    for (int y = 0; y < texture_size; ++y) {
+      for (int x = 0; x < texture_size; ++x) {
+        const float dx = static_cast<float>(x) - x_center + 0.5f;
+        const float dy = static_cast<float>(y) - y_center + 0.5f;
+        float dist = std::sqrt(dx * dx + dy * dy);
 
-    GLint projectionLoc = glGetUniformLocation(m_dotShader, "projection");
-    GLint dotRadiusLoc = glGetUniformLocation(m_dotShader, "dotRadius");
-    GLint dotColorLoc = glGetUniformLocation(m_dotShader, "dotColor");
+        float alpha = 0.0f;
 
-    if (projectionLoc == -1) std::cerr << "Uniform 'projection' not found!" << std::endl;
-    if (dotRadiusLoc == -1) std::cerr << "Uniform 'dotRadius' not found!" << std::endl;
-    if (dotColorLoc == -1) std::cerr << "Uniform 'dotColor' not found!" << std::endl;
+        if (dist <= radius) {
+          alpha = 1.0f;
+        } else if (dist <= radius + aa_width) {
+          float t = (dist - radius) / aa_width;
+          alpha = 1.0f - t;
+        }
 
-    float projection[16] = {2.0f / m_windowSize.x,
-                            0.0f,
-                            0.0f,
-                            0.0f,
-                            0.0f,
-                            2.0f / -m_windowSize.y,
-                            0.0f,
-                            0.0f,
-                            0.0f,
-                            0.0f,
-                            -1.0f,
-                            0.0f,
-                            -1.0f,
-                            1.0f,
-                            0.0f,
-                            1.0f};
-
-    glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, projection);
-    glUniform1f(dotRadiusLoc, 1.0f);
-    glUniform4f(dotColorLoc, 1.0f, 1.0f, 1.0f, m_dotOpacity);
-
-    glBindBuffer(GL_ARRAY_BUFFER, m_dotVBO);
-    std::vector<float> updated_offsets(m_dotCount * 2);
-    const auto offset_pos = ImVec2(m_windowPos.x + 10, m_windowPos.y + 10);
-    const auto dot_count_2D = ImVec2(300, 150);
-    constexpr float spacing = 15.0f;
-
-    int index = 0;
-    for (int y = 0; y < static_cast<int>(dot_count_2D.y); y++) {
-      for (int x = 0; x < static_cast<int>(dot_count_2D.x); x++) {
-        updated_offsets[index++] = offset_pos.x + static_cast<float>(x) * spacing;
-        updated_offsets[index++] = offset_pos.y + static_cast<float>(y) * spacing;
+        if (alpha > 0.0f) {
+          int index = (y * texture_size + x) * 4;
+          texture_data[index + 0] = 255;
+          texture_data[index + 1] = 255;
+          texture_data[index + 2] = 255;
+          texture_data[index + 3] = static_cast<unsigned char>(alpha * m_dotOpacity * 255.0f);
+        }
       }
     }
 
-    glBufferSubData(GL_ARRAY_BUFFER, 0, updated_offsets.size() * sizeof(float), updated_offsets.data());
+    GLuint texture_id;
+    glGenTextures(1, &texture_id);
+    glBindTexture(GL_TEXTURE_2D, texture_id);
 
-    glBindVertexArray(m_dotVAO);
-    glDrawArraysInstanced(GL_TRIANGLE_FAN, 0, 10, m_dotCount);
-    glBindVertexArray(0);
-    ImGui::GetIO().BackendRendererUserData;
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texture_size, texture_size, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture_data);
+
+    m_dotTexture = reinterpret_cast<ImTextureID>(static_cast<intptr_t>(texture_id));
   }
+
+
+  void Background::RenderBackgroundDotsLayer() {
+    if (!m_dotTexture) {
+      CreateDotTexture();
+    }
+
+    const auto offsetPosition = ImVec2(m_windowPos.x + 10, m_windowPos.y + 10);
+    const float windowWidth = ImGui::GetWindowWidth();
+    const float windowHeight = ImGui::GetWindowHeight();
+    const auto color = ImColor(1.0f, 1.0f, 1.0f, m_dotOpacity);
+
+    const ImVec2 uv_min(10.0f / 15.0f, 10.0f / 15.0f);
+    const ImVec2 uv_max(uv_min.x + windowWidth / 15.0f, uv_min.y + windowHeight / 15.0f);
+
+    ImGui::GetWindowDrawList()->AddImage(m_dotTexture, offsetPosition,
+                                         ImVec2(offsetPosition.x + windowWidth, offsetPosition.y + windowHeight),
+                                         uv_min, uv_max, color);
+  }
+
 
   void Background::RenderBackgroundGradientLayer() {
     static float circle1angle = 0.0f;
@@ -226,147 +222,6 @@ namespace Infinity {
     m_circlePos[2] = GetCircleCoords(155.0f, circle3angle, ImVec2(screen_center.x - 200.0f, screen_center.y - 100.0f));
     m_circlePos[3] = GetCircleCoords(409.0f, circle4angle, ImVec2(screen_center.x + 0.0f, screen_center.y + 200.0f));
     m_circlePos[4] = GetCircleCoords(781.0f, circle5angle, ImVec2(screen_center.x - 100.0f, screen_center.y + 0.0f));
-  }
-
-  void Background::InitializeDots() {
-    if (m_dotsInitialized) {
-      return;
-    }
-    const char* vertexShaderSouce = R"(
-#version 330 core
-    layout (location = 0) in vec2 aPos;
-    layout (location = 1) in vec2 aOffset;
-
-    uniform mat4 projection;
-    uniform float dotRadius;
-
-    void main(){
-      vec2 worldPos = aPos * dotRadius + aOffset;
-      gl_Position = projection * vec4(worldPos, 0.0, 1.0);
-    }
-)";
-
-    const char* fragmentShaderSource = R"(
-        #version 330 core
-        out vec4 FragColor;
-
-        uniform vec4 dotColor;
-
-        void main() {
-            // Calculate distance from center (0,0) of this fragment
-            vec2 circCoord = gl_PointCoord * 2.0 - 1.0;
-            float distSq = dot(circCoord, circCoord);
-
-            // Discard fragments outside circle
-            if (distSq > 1.0) discard;
-
-            FragColor = dotColor;
-        }
-    )";
-
-    m_dotShader = CreateShader(vertexShaderSouce, fragmentShaderSource);
-
-    const int segments = 8;
-    std::vector<float> vertices;
-    vertices.reserve((segments + 2) * 2);
-
-    vertices.push_back(0.0f);
-    vertices.push_back(0.0f);
-
-    for (int i = 0; i <= segments; i++) {
-      float angle = 2.0f * M_PI * static_cast<float>(i) / static_cast<float>(segments);
-      vertices.push_back(cos(angle));
-      vertices.push_back(sin(angle));
-    }
-
-    const auto dotCount2D = ImVec2(300, 150);
-    std::vector<float> instanceData;
-    instanceData.reserve(static_cast<size_t>(dotCount2D.x) * static_cast<size_t>(dotCount2D.y) * 2);
-
-    constexpr float spacing = 15.0f;
-    for (int y = 0; y < static_cast<int>(dotCount2D.y); y++) {
-      for (int x = 0; x < static_cast<int>(dotCount2D.x); x++) {
-        instanceData.push_back(static_cast<float>(x) * spacing);
-        instanceData.push_back(static_cast<float>(y) * spacing);
-      }
-    }
-
-    m_dotCount = static_cast<int>(instanceData.size() / 2);
-
-    glGenVertexArrays(1, &m_dotVAO);
-    glBindVertexArray(m_dotVAO);
-
-    GLuint vertexVBO;
-    glGenBuffers(1, &vertexVBO);
-    glBindBuffer(GL_ARRAY_BUFFER, vertexVBO);
-    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*) 0);
-
-    glGenBuffers(1, &m_dotVBO);
-    glBindBuffer(GL_ARRAY_BUFFER, m_dotVBO);
-    glBufferData(GL_ARRAY_BUFFER, instanceData.size() * sizeof(float), instanceData.data(), GL_STATIC_DRAW);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*) 0);
-    glVertexAttribDivisor(1, 1);
-
-    glBindVertexArray(0);
-    m_dotsInitialized = true;
-  }
-
-  void Background::CleanupDots() {
-    if (m_dotsInitialized) {
-      glDeleteVertexArrays(1, &m_dotVAO);
-      glDeleteBuffers(1, &m_dotVBO);
-      glDeleteProgram(m_dotShader);
-      m_dotsInitialized = false;
-    }
-  }
-
-
-  GLuint Background::CreateShader(const char* vertex_shader_source, const char* fragment_shader_source) {
-    GLuint vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertex_shader, 1, &vertex_shader_source, nullptr);
-    glCompileShader(vertex_shader);
-
-    GLint success;
-    GLchar info_log[512];
-    glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &success);
-    if (!success) {
-      glGetShaderInfoLog(vertex_shader, 512, nullptr, info_log);
-      std::cerr << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << info_log << std::endl;
-      return 0;
-    }
-
-    GLuint fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragment_shader, 1, &fragment_shader_source, nullptr);
-    glCompileShader(fragment_shader);
-
-    glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &success);
-    if (!success) {
-      glGetShaderInfoLog(fragment_shader, 512, nullptr, info_log);
-      std::cerr << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << info_log << std::endl;
-      glDeleteShader(vertex_shader);
-      return 0;
-    }
-
-    GLuint shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vertex_shader);
-    glAttachShader(shaderProgram, fragment_shader);
-    glLinkProgram(shaderProgram);
-
-    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-    if (!success) {
-      glGetProgramInfoLog(shaderProgram, 512, nullptr, info_log);
-      std::cerr << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << info_log << std::endl;
-      glDeleteShader(vertex_shader);
-      glDeleteShader(fragment_shader);
-      return 0;
-    }
-    glDeleteShader(vertex_shader);
-    glDeleteShader(fragment_shader);
-
-    return shaderProgram;
   }
 
 
