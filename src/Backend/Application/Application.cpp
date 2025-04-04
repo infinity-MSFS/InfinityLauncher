@@ -20,6 +20,12 @@
 #include <unordered_map>
 #include <utility>
 
+#ifdef INFINITY_X11
+#include <x11/Xlib.h>
+#include <x11/Xatom.h>
+#include <GLFW/glfw3native.h>
+#endif
+
 #include "Assets/Fonts/Roboto-Bold.h"
 #include "Assets/Fonts/Roboto-Italic.h"
 #include "Assets/Fonts/Roboto-Regular.h"
@@ -96,6 +102,10 @@ namespace Infinity {
       glfwWindowHint(GLFW_TITLEBAR, GLFW_FALSE);
     }
 #endif
+#ifdef INFINITY_X11
+  glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
+#endif
+
     const auto version = SetupGLVersion();
 
     m_Window = glfwCreateWindow(static_cast<int>(m_Specification.window_size.first),
@@ -213,6 +223,29 @@ namespace Infinity {
 #endif
 
     return glsl_version;
+  }
+
+  void Application::HandleLinuxTitleDrag(GLFWwindow* window, int mouse_x, int mouse_y) {
+        Display* display = glfwGetX11Display();
+    Window x11Window = glfwGetX11Window(window);
+
+    XEvent xev;
+    memset(&xev, 0, sizeof(xev));
+
+    xev.xclient.type = ClientMessage;
+    xev.xclient.message_type = XInternAtom(display, "_NET_WM_MOVERESIZE", False);
+    xev.xclient.display = display;
+    xev.xclient.window = x11Window;
+    xev.xclient.format = 32;
+    xev.xclient.data.l[0] = mouse_x;
+    xev.xclient.data.l[1] = mouse_y;
+    xev.xclient.data.l[2] = 8;
+    xev.xclient.data.l[3] = 1;
+    xev.xclient.data.l[4] = 0;
+
+    XSendEvent(display, DefaultRootWindow(display), False,
+               SubstructureNotifyMask | SubstructureRedirectMask,
+               &xev);
   }
 
   std::expected<void, Errors::Error> Application::Shutdown() {
@@ -457,7 +490,9 @@ namespace Infinity {
 
     ImGui::SetCursorPos(ImVec2(windowPadding.x + leftButtonAreaWidth, windowPadding.y + title_bar_vertical_offset));
     ImGui::InvisibleButton("##titleBarDragZone", ImVec2(w - buttonsAreaWidth - leftButtonAreaWidth, title_bar_height));
-
+    if(ImGui::IsItemPressed()) {
+      HandleLinuxTitleDrag(m_Window, ImGui::GetMousePos().x, ImGui::GetMousePos().y);
+    }
     m_TitlebarHovered = ImGui::IsItemHovered();
 
     if (isMaximized) {
@@ -550,6 +585,8 @@ namespace Infinity {
         std::make_pair(1240, 680),
         true,
 #ifdef WIN32
+        true,
+#elif INFINITY_X11
         true,
 #else
         false,

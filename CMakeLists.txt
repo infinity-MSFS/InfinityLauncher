@@ -52,6 +52,10 @@ if (WIN32)
     find_package(Vulkan REQUIRED)
 endif ()
 
+if(UNIX) # and x11
+    find_package(X11 REQUIRED)
+
+endif()
 if (UNIX)
     set(GLFW_BUILD_WAYLAND ON)
     find_package(glfw3 CONFIG REQUIRED)
@@ -291,7 +295,7 @@ if (WIN32)
 else ()
     set(ZOE_LIB zoe::zoe-static)
 endif ()
-target_link_libraries(InfinityLauncher PRIVATE tray WebP::webp WebP::webpdecoder ${ZOE_LIB} NanoSVG::nanosvg NanoSVG::nanosvgrast WebP::webpdemux GLEW::GLEW OpenGL::GL glfw Boxer CURL::libcurl OpenSSL::SSL OpenSSL::Crypto unofficial::minizip::minizip ZLIB::ZLIB msgpack-cxx ${TOAST_LIB} ${WIN_LIBS})
+target_link_libraries(InfinityLauncher PRIVATE tray WebP::webp WebP::webpdecoder ${ZOE_LIB} NanoSVG::nanosvg NanoSVG::nanosvgrast WebP::webpdemux GLEW::GLEW OpenGL::GL glfw Boxer CURL::libcurl OpenSSL::SSL OpenSSL::Crypto unofficial::minizip::minizip ZLIB::ZLIB X11::X11 msgpack-cxx ${TOAST_LIB} ${WIN_LIBS})
 
 add_custom_target(InfinityLauncherDist)
 add_dependencies(InfinityLauncherDist

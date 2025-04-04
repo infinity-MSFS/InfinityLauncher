@@ -102,6 +102,10 @@ private:
 
     void CapFPS(double &last_frame_time) const;
 
+#ifndef WIN32
+    void HandleLinuxTitleDrag(GLFWwindow* window, int mouse_x, int mouse_y);
+#endif
+
 
 private:
     ApplicationSpecifications m_Specification;
