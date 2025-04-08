@@ -252,9 +252,9 @@ class PageRenderLayer final : public Infinity::Layer {
                         Infinity::UI::Colors::Theme::text_darker, Infinity::GetItemRect());
       }
 
-      ImGui::Begin("FPS Counter");
-      ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
-      ImGui::End();
+      // ImGui::Begin("FPS Counter");
+      // ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
+      // ImGui::End();
 
 
       router.value()->RenderCurrentPage();
