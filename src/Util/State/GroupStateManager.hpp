@@ -13,6 +13,7 @@
 #include <thread>
 #include <vector>
 
+#include "Backend/HWID/Hwid.hpp"
 #include "Backend/Image/Image.hpp"
 #include "Json/json.hpp"
 #include "State.hpp"
@@ -22,8 +23,14 @@
 #include "zlib.h"
 
 namespace Infinity {
-  inline size_t WriteCallback(char *ptr, size_t size, size_t nmemb,
-                              void *userdata) {
+
+  inline size_t AuthWriteCallback(void *contents, size_t size, size_t nmemb, void *userp) {
+    static_cast<std::string *>(userp)->append(static_cast<char *>(contents), size * nmemb);
+    return size * nmemb;
+  }
+
+
+  inline size_t WriteCallback(char *ptr, size_t size, size_t nmemb, void *userdata) {
     if (!userdata) return 0;
 
     auto *buffer = static_cast<std::vector<uint8_t> *>(userdata);
@@ -78,8 +85,8 @@ public:
     std::optional<std::vector<std::string>> variants;
     std::optional<Package> package;
 
-    MSGPACK_DEFINE(name, version, date, changelog, overview, description,
-                   background, pageBackground, variants, package);
+    MSGPACK_DEFINE(name, version, date, changelog, overview, description, background, pageBackground, variants,
+                   package);
   };
 
   struct Palette {
@@ -90,8 +97,7 @@ public:
     std::string circle3;
     std::string circle4;
     std::string circle5;
-    MSGPACK_DEFINE(primary, secondary, circle1, circle2, circle3, circle4,
-                   circle5);
+    MSGPACK_DEFINE(primary, secondary, circle1, circle2, circle3, circle4, circle5);
   };
 
   struct BetaProject {
@@ -120,11 +126,9 @@ public:
   using GroupMap = std::map<std::string, GroupData>;
   static GroupMap group_data;
 
-  inline std::map<std::string, GroupData> decode_bin(
-      const std::vector<uint8_t> &raw_data) {
+  inline std::map<std::string, GroupData> decode_bin(const std::vector<uint8_t> &raw_data) {
     z_stream strm{};
-    strm.next_in =
-        reinterpret_cast<Bytef *>(const_cast<uint8_t *>(raw_data.data()));
+    strm.next_in = reinterpret_cast<Bytef *>(const_cast<uint8_t *>(raw_data.data()));
     strm.avail_in = static_cast<uInt>(raw_data.size());
 
     if (inflateInit2(&strm, 16 + MAX_WBITS) != Z_OK) {
@@ -146,24 +150,21 @@ public:
       }
 
       size_t decompressed_size = buffer.size() - strm.avail_out;
-      decompressed_data.insert(decompressed_data.end(), buffer.data(),
-                               buffer.data() + decompressed_size);
+      decompressed_data.insert(decompressed_data.end(), buffer.data(), buffer.data() + decompressed_size);
     } while (ret != Z_STREAM_END);
 
     inflateEnd(&strm);
 
     try {
-      msgpack::object_handle oh = msgpack::unpack(
-          reinterpret_cast<const char *>(decompressed_data.data()),
-          decompressed_data.size());
+      msgpack::object_handle oh =
+          msgpack::unpack(reinterpret_cast<const char *>(decompressed_data.data()), decompressed_data.size());
       msgpack::object obj = oh.get();
 
       std::map<std::string, GroupData> group_data;
       obj.convert(group_data);
       return group_data;
     } catch (const std::exception &e) {
-      throw std::runtime_error(
-          std::string("MessagePack deserialization error: ") + e.what());
+      throw std::runtime_error(std::string("MessagePack deserialization error: ") + e.what());
     }
   }
 
@@ -214,6 +215,7 @@ public:
 public:
     GroupDataState state;
     StateImages images;
+    bool beta_auth = false;
 
     MainState(GroupDataState &state)
         : state(state) {}
@@ -231,8 +233,7 @@ public:
       ImGui::Separator();
 
       for (const auto &[groupKey, groupData]: state.groups) {
-        if (ImGui::TreeNode(
-                ("Group: " + groupData.name + " (" + groupKey + ")").c_str())) {
+        if (ImGui::TreeNode(("Group: " + groupData.name + " (" + groupKey + ")").c_str())) {
           ImGui::Text("Logo URL: %s", groupData.logo.c_str());
           ImGui::Text("Path: %s", groupData.path.c_str());
           if (ImGui::TreeNode("Palette")) {
@@ -249,8 +250,7 @@ public:
               ImGui::SameLine();
               ImGui::Text("Primary: %s", groupData.palette.primary.c_str());
 
-              ImGui::ColorButton("Secondary", secondaryColor, 0,
-                                 ImVec2(20, 20));
+              ImGui::ColorButton("Secondary", secondaryColor, 0, ImVec2(20, 20));
               ImGui::SameLine();
               ImGui::Text("Secondary: %s", groupData.palette.secondary.c_str());
 
@@ -274,26 +274,20 @@ public:
               ImGui::SameLine();
               ImGui::Text("Circle5: %s", groupData.palette.circle5.c_str());
             } catch (const std::invalid_argument &e) {
-              ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f),
-                                 "Error with palette colors: %s", e.what());
+              ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Error with palette colors: %s", e.what());
             }
             ImGui::TreePop();
           }
 
-          ImGui::Text(
-              "Hidden: %s",
-              groupData.hide.has_value() && *groupData.hide ? "Yes" : "No");
+          ImGui::Text("Hidden: %s", groupData.hide.has_value() && *groupData.hide ? "Yes" : "No");
 
           if (ImGui::TreeNode("Beta Project")) {
-            ImGui::Text("Background URL: %s",
-                        groupData.beta.background.c_str());
+            ImGui::Text("Background URL: %s", groupData.beta.background.c_str());
 
             auto groupImagesIt = images.groupImages.find(groupKey);
-            if (groupImagesIt != images.groupImages.end() &&
-                groupImagesIt->second.beta.background) {
+            if (groupImagesIt != images.groupImages.end() && groupImagesIt->second.beta.background) {
               ImGui::Text("Background Image:");
-              void *textureId =
-                  groupImagesIt->second.beta.background->GetImGuiTextureID();
+              void *textureId = groupImagesIt->second.beta.background->GetImGuiTextureID();
               if (textureId) {
                 ImGui::Image(textureId, ImVec2(100, 100));
               } else {
@@ -304,14 +298,10 @@ public:
             ImGui::TreePop();
           }
 
-          if (ImGui::TreeNode(("Projects (" +
-                               std::to_string(groupData.projects.size()) + ")")
-                                  .c_str())) {
+          if (ImGui::TreeNode(("Projects (" + std::to_string(groupData.projects.size()) + ")").c_str())) {
             for (size_t i = 0; i < groupData.projects.size(); i++) {
               const auto &project = groupData.projects[i];
-              if (ImGui::TreeNode(("Project: " + project.name + " (" +
-                                   std::to_string(i) + ")")
-                                      .c_str())) {
+              if (ImGui::TreeNode(("Project: " + project.name + " (" + std::to_string(i) + ")").c_str())) {
                 ImGui::Text("Version: %s", project.version.c_str());
                 ImGui::Text("Date: %s", project.date.c_str());
 
@@ -332,20 +322,16 @@ public:
 
                 ImGui::Text("Background URL: %s", project.background.c_str());
                 if (project.pageBackground) {
-                  ImGui::Text("Page Background URL: %s",
-                              project.pageBackground->c_str());
+                  ImGui::Text("Page Background URL: %s", project.pageBackground->c_str());
                 }
 
                 auto groupImagesIt = images.groupImages.find(groupKey);
-                if (groupImagesIt != images.groupImages.end() &&
-                    i < groupImagesIt->second.projectImages.size()) {
-                  const auto &projectImages =
-                      groupImagesIt->second.projectImages[i];
+                if (groupImagesIt != images.groupImages.end() && i < groupImagesIt->second.projectImages.size()) {
+                  const auto &projectImages = groupImagesIt->second.projectImages[i];
 
                   ImGui::Text("Background Image:");
                   if (projectImages.backgroundImage) {
-                    void *textureId =
-                        projectImages.backgroundImage->GetImGuiTextureID();
+                    void *textureId = projectImages.backgroundImage->GetImGuiTextureID();
                     if (textureId) {
                       ImGui::Image(textureId, ImVec2(100, 100));
                     } else {
@@ -355,8 +341,7 @@ public:
 
                   if (projectImages.pageBackgroundImage) {
                     ImGui::Text("Page Background Image:");
-                    auto textureId = (*projectImages.pageBackgroundImage)
-                                         ->GetImGuiTextureID();
+                    auto textureId = (*projectImages.pageBackgroundImage)->GetImGuiTextureID();
                     if (textureId) {
                       ImGui::Image(textureId, ImVec2(100, 100));
                     } else {
@@ -366,10 +351,7 @@ public:
                 }
 
                 if (project.variants && !project.variants->empty()) {
-                  if (ImGui::TreeNode(
-                          ("Variants (" +
-                           std::to_string(project.variants->size()) + ")")
-                              .c_str())) {
+                  if (ImGui::TreeNode(("Variants (" + std::to_string(project.variants->size()) + ")").c_str())) {
                     for (const auto &variant: *project.variants) {
                       ImGui::BulletText("%s", variant.c_str());
                     }
@@ -380,12 +362,9 @@ public:
                 if (project.package) {
                   if (ImGui::TreeNode("Package")) {
                     ImGui::Text("Owner: %s", project.package->owner.c_str());
-                    ImGui::Text("Repo Name: %s",
-                                project.package->repoName.c_str());
-                    ImGui::Text("Version: %s",
-                                project.package->version.c_str());
-                    ImGui::Text("File Name: %s",
-                                project.package->fileName.c_str());
+                    ImGui::Text("Repo Name: %s", project.package->repoName.c_str());
+                    ImGui::Text("Version: %s", project.package->version.c_str());
+                    ImGui::Text("File Name: %s", project.package->fileName.c_str());
                     ImGui::TreePop();
                   }
                 }
@@ -404,38 +383,69 @@ public:
     }
   };
 
+  static bool CheckAuthorization(const std::string &hwid) {
+    if (hwid.empty()) return false;
+
+    std::string url = "http://3.144.20.213:3030/check/" + hwid;
+
+    CURL *curl = curl_easy_init();
+
+    if (!curl) {
+      std::cerr << "curl_easy_init failed" << std::endl;
+      return false;
+    }
+
+    std::string response;
+    curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, AuthWriteCallback);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
+
+    CURLcode res = curl_easy_perform(curl);
+    curl_easy_cleanup(curl);
+
+    if (res != CURLE_OK) {
+      std::cerr << "Authorization Fetch Error: " << curl_easy_strerror(res) << '\n';
+      return false;
+    }
+
+    try {
+      auto json = nlohmann::json::parse(response);
+      return json.value("authorized", false);
+    } catch (const std::exception &e) {
+      std::cerr << "JSON parse error: " << e.what() << '\n';
+    }
+
+    return false;
+  }
+
   inline StateImagesBin FetchAllImages(const GroupDataState &state) {
     StateImagesBin bin;
     std::vector<std::future<void>> futures;
     std::mutex bin_mutex;
 
     for (const auto &[group_key, group_data]: state.groups) {
-      futures.push_back(
-          std::async(std::launch::async, [&, group_key, group_data] {
-            GroupDataImagesBin group_bin;
+      futures.push_back(std::async(std::launch::async, [&, group_key, group_data] {
+        GroupDataImagesBin group_bin;
 
-            group_bin.logo = Image::FetchFromURL(group_data.logo);
+        group_bin.logo = Image::FetchFromURL(group_data.logo);
 
-            group_bin.projectImages.reserve(group_data.projects.size());
-            for (const auto &project: group_data.projects) {
-              ProjectImagesBin project_bin;
-              project_bin.backgroundImage =
-                  Image::FetchFromURL(project.background);
+        group_bin.projectImages.reserve(group_data.projects.size());
+        for (const auto &project: group_data.projects) {
+          ProjectImagesBin project_bin;
+          project_bin.backgroundImage = Image::FetchFromURL(project.background);
 
-              if (project.pageBackground) {
-                project_bin.pageBackgroundImage =
-                    Image::FetchFromURL(*project.pageBackground);
-              }
+          if (project.pageBackground) {
+            project_bin.pageBackgroundImage = Image::FetchFromURL(*project.pageBackground);
+          }
 
-              group_bin.projectImages.push_back(std::move(project_bin));
-            }
-            group_bin.beta.background =
-                Image::FetchFromURL(group_data.beta.background);
-            {
-              std::lock_guard lock(bin_mutex);
-              bin.groupImages[group_key] = std::move(group_bin);
-            }
-          }));
+          group_bin.projectImages.push_back(std::move(project_bin));
+        }
+        group_bin.beta.background = Image::FetchFromURL(group_data.beta.background);
+        {
+          std::lock_guard lock(bin_mutex);
+          bin.groupImages[group_key] = std::move(group_bin);
+        }
+      }));
     }
     for (auto &future: futures) {
       future.get();
@@ -454,19 +464,16 @@ public:
       group_images.projectImages.reserve(group_bin.projectImages.size());
       for (const auto &project_bin: group_bin.projectImages) {
         ProjectImages project_images;
-        project_images.backgroundImage =
-            Image::LoadFromBinary(project_bin.backgroundImage);
+        project_images.backgroundImage = Image::LoadFromBinary(project_bin.backgroundImage);
 
         if (project_bin.pageBackgroundImage) {
-          project_images.pageBackgroundImage =
-              Image::LoadFromBinary(*project_bin.pageBackgroundImage);
+          project_images.pageBackgroundImage = Image::LoadFromBinary(*project_bin.pageBackgroundImage);
         }
 
         group_images.projectImages.push_back(std::move(project_images));
       }
 
-      group_images.beta.background =
-          Image::LoadFromBinary(group_bin.beta.background);
+      group_images.beta.background = Image::LoadFromBinary(group_bin.beta.background);
 
       images.groupImages[group_key] = std::move(group_images);
     }
@@ -478,8 +485,7 @@ public:
     images = CreateVulkanImages(bin);
   }
 
-  inline void fetch_and_decode_groups(
-      std::shared_ptr<MainState> &thread_state_ptr) {
+  inline void fetch_and_decode_groups(std::shared_ptr<MainState> &thread_state_ptr) {
     const auto url =
         "https://github.com/infinity-MSFS/groups/raw/refs/heads/main/"
         "groups.bin";
@@ -500,12 +506,10 @@ public:
     curl_easy_setopt(curl, CURLOPT_USERAGENT, "Infinity-MSFS-Client/1.0");
 
     if (const CURLcode res = curl_easy_perform(curl); res != CURLE_OK) {
-      throw std::runtime_error(std::string("Failed to fetch data: ") +
-                               curl_easy_strerror(res));
+      throw std::runtime_error(std::string("Failed to fetch data: ") + curl_easy_strerror(res));
     }
 
-    std::cout << "Fetched data" << received_data.size() << " bytes"
-              << std::endl;
+    std::cout << "Fetched data" << received_data.size() << " bytes" << std::endl;
 
     long http_code = 0;
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
@@ -520,12 +524,16 @@ public:
     HandleImages(thread_state_ptr->state, images);
     std::cout << "Decoded all images\n";
     thread_state_ptr->images = images;
+
+    // this will simply check if we should render the button to the beta page, all content of the beta page is remote
+    HWID hwid;
+    auto hwid_string = hwid.GetHWID();
+    thread_state_ptr->beta_auth = CheckAuthorization(hwid_string);
   }
 
 
   inline ImVec4 hexToImVec4(const std::string &hexColor) {
-    const std::string hex =
-        (hexColor[0] == '#') ? hexColor.substr(1) : hexColor;
+    const std::string hex = (hexColor[0] == '#') ? hexColor.substr(1) : hexColor;
 
     if (hex.length() != 6 && hex.length() != 8) {
       throw std::invalid_argument("Invalid hex color format");

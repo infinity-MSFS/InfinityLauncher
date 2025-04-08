@@ -45,7 +45,7 @@ std::string HWID::GetCPUInfo() {
     }
   }
 #endif
-  std::cout << "CPU: " << cpuInfo << std::endl;
+  // std::cout << "CPU: " << cpuInfo << std::endl;
   return cpuInfo;
 }
 
@@ -112,7 +112,7 @@ std::string HWID::GetMotherboardSerial() {
   // sure that when whitelisting them, they arent from users with "unknown"
   // hardware
 #endif
-  std::cout << "Serial: " << serial << std::endl;
+  // std::cout << "Serial: " << serial << std::endl;
   return serial;
 }
 
@@ -164,7 +164,7 @@ std::string HWID::GetGPUInfo() {
     gpuInfo.erase(gpuInfo.length() - 1);
   }
 #endif
-  std::cout << "GPU: " << gpuInfo << std::endl;
+  // std::cout << "GPU: " << gpuInfo << std::endl;
   return gpuInfo;
 }
 

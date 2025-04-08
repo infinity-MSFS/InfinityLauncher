@@ -240,7 +240,8 @@ class PageRenderLayer final : public Infinity::Layer {
                         Infinity::UI::Colors::Theme::text_darker, Infinity::GetItemRect());
       }
 
-      {
+      if (auto main_state = state.GetPageState<Infinity::MainState>("main");
+          main_state.has_value() && (*main_state)->beta_auth) {
         constexpr int buttonWidth3 = 24;
         constexpr int buttonHeight3 = 24;
         ImGui::SetCursorPos(ImVec2(78.0f, 8.0f));
