@@ -94,7 +94,7 @@ class PageRenderLayer final : public Infinity::Layer {
     auto bg = Infinity::Background::GetInstance();
     if (auto router = Infinity::Utils::Router::getInstance(); router.has_value()) {
       if (router.value()->getPage() != 3) {
-        bg.RenderBackground();
+        bg->RenderBackground();
       }
     }
 
@@ -118,7 +118,7 @@ class PageRenderLayer final : public Infinity::Layer {
     if (const auto main_state = state.GetPageState<Infinity::MainState>("main");
         main_state.has_value() && !Infinity::Home::DoneLoading()) {
       if (const std::shared_ptr<Infinity::MainState> &statePtr = *main_state; statePtr->state.groups.empty()) {
-        bg.RenderBackground();
+        bg->RenderBackground();
         loading_screen();
         return;
       }
@@ -200,7 +200,7 @@ class PageRenderLayer final : public Infinity::Layer {
     }
 
     if (!Infinity::Home::DoneLoading()) {
-      bg.RenderBackground();
+      bg->RenderBackground();
       loading_screen();
 
       return;

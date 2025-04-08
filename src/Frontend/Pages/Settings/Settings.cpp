@@ -29,7 +29,7 @@ namespace Infinity {
 
     auto fps = Application::Get().value()->GetFPS();
     float fps_limit = fps;
-    ImGui::SliderFloat("FPS Limit", &fps_limit, 60.0f, 240.0f, "%.1f FPS", ImGuiSliderFlags_AlwaysClamp);
+    ImGui::SliderFloat("FPS Limit", &fps_limit, 60.0f, 1000.0f, "%.1f FPS", ImGuiSliderFlags_AlwaysClamp);
     Application::Get().value()->SetFPS(fps_limit);
 
     auto reduce_fps_on_unfocus = Application::Get().value()->IsReduceFPSOnIdle();
