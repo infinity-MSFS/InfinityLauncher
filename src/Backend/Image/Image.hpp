@@ -40,17 +40,17 @@ public:
 
     static std::vector<uint8_t> FetchFromURL(const std::string &url);
 
-    void SetData(const void *data);
+    void SetData(const void *data) const;
     void Resize(uint32_t width, uint32_t height);
-    void Release();
+    void Release() const;
 
 
-    uint32_t GetWidth() const { return m_Width; }
-    uint32_t GetHeight() const { return m_Height; }
-    Format GetFormat() const { return m_Format; }
-    uint32_t GetTextureID() const;
+    [[nodiscard]] uint32_t GetWidth() const { return m_width; }
+    [[nodiscard]] uint32_t GetHeight() const { return m_height; }
+    [[nodiscard]] Format GetFormat() const { return m_format; }
+    [[nodiscard]] uint32_t GetTextureID() const;
 
-    void *GetImGuiTextureID() const;
+    [[nodiscard]] void *GetImGuiTextureID() const;
 
     static void *DecodeImage(const uint8_t *data, size_t dataSize, uint32_t &outWidth, uint32_t &outHeight);
 
@@ -83,11 +83,11 @@ public:
     void CreateGLTexture();
 
 
-    uint32_t m_Width = 0;
-    uint32_t m_Height = 0;
-    Format m_Format = Format::None;
+    uint32_t m_width = 0;
+    uint32_t m_height = 0;
+    Format m_format = Format::None;
 
-    void AllocateMemory(const void *data);
+    void AllocateMemory(const void *data) const;
 
 private:
     // Helper to select the correct OpenGL format based on the Image format
@@ -98,10 +98,10 @@ private:
 
 
     class Impl;
-    std::unique_ptr<Impl> m_Impl;
+    std::unique_ptr<Impl> m_impl;
 
 
-    static std::unordered_map<ImGuiID, float> s_AnimationProgress;
+    static std::unordered_map<ImGuiID, float> s_animation_progress;
   };
 
 

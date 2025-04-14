@@ -1,63 +1,61 @@
 
 #include "Router.hpp"
 
+#include <sstream>
+#include <stdexcept>
+
 #include "Frontend/Background/Background.hpp"
 #include "Frontend/ColorInterpolation/ColorInterpolation.hpp"
 #include "Util/Error/Error.hpp"
 
 
 namespace Infinity::Utils {
-  std::unique_ptr<Router> Router::m_Instance = nullptr;
+  std::unique_ptr<Router> Router::m_instance = nullptr;
 
-  void Router::configure(
-      std::unordered_map<int, std::pair<std::function<void()>, Palette>>
-          page_content) {
-    if (!m_Instance) {
-      m_Instance = std::unique_ptr<Router>(new Router(std::move(page_content)));
+  void Router::configure(std::unordered_map<int, std::pair<std::function<void()>, Palette>> pages) {
+    if (!m_instance) {
+      m_instance = std::unique_ptr<Router>(new Router(std::move(pages)));
     }
     std::cout << "Configuring Router" << std::endl;
   }
 
   std::optional<Router *> Router::getInstance() {
-    if (!m_Instance) {
+    if (!m_instance) {
       return std::nullopt;
     }
-    return m_Instance.get();
+    return m_instance.get();
   }
 
-  std::expected<bool, Errors::Error> Router::setPage(const int pageId) {
-    if (m_PageData.contains(pageId)) {
-      m_CurrentPageID = pageId;
-      Background::SetDotOpacity(pageId < 3 ? 0.3f : 0.1f);
+  std::expected<bool, Errors::Error> Router::setPage(const int page_id) {
+    if (m_page_data.contains(page_id)) {
+      m_current_page_id = page_id;
+      Background::GetInstance()->SetDotOpacity(page_id < 3 ? 0.3f : 0.1f);
       ColorInterpolation::GetInstance().ChangeGradientColors(
-          hexToImVec4(m_PageData[m_CurrentPageID].second.primary),
-          hexToImVec4(m_PageData[m_CurrentPageID].second.secondary),
-          hexToImVec4(m_PageData[m_CurrentPageID].second.circle1),
-          hexToImVec4(m_PageData[m_CurrentPageID].second.circle2),
-          hexToImVec4(m_PageData[m_CurrentPageID].second.circle3),
-          hexToImVec4(m_PageData[m_CurrentPageID].second.circle4),
-          hexToImVec4(m_PageData[m_CurrentPageID].second.circle5), 1.0f);
+          hexToImVec4(m_page_data[m_current_page_id].second.primary),
+          hexToImVec4(m_page_data[m_current_page_id].second.secondary),
+          hexToImVec4(m_page_data[m_current_page_id].second.circle1),
+          hexToImVec4(m_page_data[m_current_page_id].second.circle2),
+          hexToImVec4(m_page_data[m_current_page_id].second.circle3),
+          hexToImVec4(m_page_data[m_current_page_id].second.circle4),
+          hexToImVec4(m_page_data[m_current_page_id].second.circle5), 1.0f);
       return true;
-    } else {
-      std::ostringstream oss;
-      oss << "Error: Attempted to access page ID " << pageId;
-      return std::unexpected(
-          Errors::Error{Errors::ErrorType::Fatal, oss.str()});
     }
+    std::ostringstream oss;
+    oss << "Error: Attempted to access page ID " << page_id;
+    return std::unexpected(Errors::Error{Errors::ErrorType::Fatal, oss.str()});
   }
 
-  int Router::getPage() const { return m_CurrentPageID; }
+  int Router::getPage() const { return m_current_page_id; }
 
   void Router::RenderCurrentPage() {
-    if (m_PageData.contains(m_CurrentPageID)) {
-      m_PageData[m_CurrentPageID].first();
+    if (m_page_data.contains(m_current_page_id)) {
+      m_page_data[m_current_page_id].first();
     } else {
       throw std::runtime_error("Failed to render page: Page does not exist.");
     }
   }
 
-  Router::Router(
-      std::unordered_map<int, std::pair<std::function<void()>, Palette>> pages)
-      : m_CurrentPageID(0)
-      , m_PageData(std::move(pages)) {}
+  Router::Router(std::unordered_map<int, std::pair<std::function<void()>, Palette>> pages)
+      : m_current_page_id(0)
+      , m_page_data(std::move(pages)) {}
 }  // namespace Infinity::Utils

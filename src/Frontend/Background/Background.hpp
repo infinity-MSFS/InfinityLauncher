@@ -17,7 +17,7 @@ namespace Infinity {
   const ImVec4 HomePagePrimary(18.0f / 255.0f, 113.0f / 255.f, 1.0f, 0.11f);
   const ImVec4 HomePageSecondary(221.0f / 255.f, 74.0f / 255.f, 1.0f, 0.11f);
 
-  static std::vector<ImVec2> m_circlePos;
+  static std::vector<ImVec2> s_circle_pos;
 
 
   class Background {
@@ -28,26 +28,26 @@ public:
     }
 
 
-    static void SetDotOpacity(float opacity);
+    void SetDotOpacity(float opacity);
 
     void RenderBackground();
 
-    static void UpdateColorScheme() {
+    void UpdateColorScheme() {
       auto &interpolator = ColorInterpolation::GetInstance();
 
       constexpr auto easing_types = Easing::EasingTypes::EaseInOutCubic;
 
       const auto colors = interpolator.GetCurrentGradientColors(easing_types);
-      m_primaryColor = std::get<0>(colors);
-      m_secondaryColor = std::get<1>(colors);
-      m_circleColor1 = std::get<2>(colors);
-      m_circleColor2 = std::get<3>(colors);
-      m_circleColor3 = std::get<4>(colors);
-      m_circleColor4 = std::get<5>(colors);
-      m_circleColor5 = std::get<6>(colors);
+      m_primary_color = std::get<0>(colors);
+      m_secondary_color = std::get<1>(colors);
+      m_circle_color1 = std::get<2>(colors);
+      m_circle_color2 = std::get<3>(colors);
+      m_circle_color3 = std::get<4>(colors);
+      m_circle_color4 = std::get<5>(colors);
+      m_circle_color5 = std::get<6>(colors);
     }
 
-    static void SetHomePage(bool state) {
+    void SetHomePage(const bool state) {
       if (state) {
         auto &interpolator = ColorInterpolation::GetInstance();
         interpolator.ChangeGradientColors(
@@ -55,32 +55,32 @@ public:
             {221.0f / 255.f, 74.0f / 255.f, 1.0f, 0.01f}, {100.0f / 255.f, 220.0f / 255.f, 1.0f, 0.01f},
             {200.0f / 255.f, 50.0f / 255.f, 50.0f / 255.f, 0.01f},
             {180.0f / 255.f, 180.0f / 255.f, 50.0f / 255.f, 0.01f}, 1.0f);
-        m_HomePage = true;
+        m_home_page = true;
       } else {
-        m_HomePage = state;
+        m_home_page = state;
       }
     }
 
 
 private:
-    static void UpdateDotOpacity();
+    void UpdateDotOpacity();
 
     void RenderBackgroundDotsLayer();
 
-    static void RenderBackgroundGradientLayer();
+    void RenderBackgroundGradientLayer();
 
 
-    static void RenderBackgroundBaseLayer();
+    void RenderBackgroundBaseLayer();
 
-    static void RenderGradientCircle(ImVec2 center, float radius, float maxOpacity, ImU32 color);
+    void RenderGradientCircle(ImVec2 center, float radius, float maxOpacity, ImU32 color);
 
-    static void InitializeCirclePosition(const int index, const ImVec2 position) {
-      if (index >= 0 && index < m_circlePos.size() && m_circlePos[index].x == 0 && m_circlePos[index].y == 0) {
-        m_circlePos[index] = position;
+    void InitializeCirclePosition(const int index, const ImVec2 position) {
+      if (index >= 0 && index < s_circle_pos.size() && s_circle_pos[index].x == 0 && s_circle_pos[index].y == 0) {
+        s_circle_pos[index] = position;
       }
     }
 
-    static void TrySetDefaultPositions();
+    void TrySetDefaultPositions();
 
     static ImVec2 GetCircleCoords(const float radius, const float theta, const ImVec2 center) {
       const float radians = (3.141592f / 180.0f) * theta;
@@ -95,20 +95,19 @@ private:
     void CreateDotTexture();
 
 private:
-    static ImVec2 m_windowPos;
-    static ImVec2 m_windowSize;
-    static ImVec4 m_primaryColor;
-    static ImVec4 m_secondaryColor;
-    static ImVec4 m_circleColor1;
-    static ImVec4 m_circleColor2;
-    static ImVec4 m_circleColor3;
-    static ImVec4 m_circleColor4;
-    static ImVec4 m_circleColor5;
-    static bool m_HomePage;
-    static float m_dotOpacity;
-    static float m_targetDotOpacity;
-
-    ImTextureID m_dotTexture = nullptr;
+    ImVec2 m_window_pos;
+    ImVec2 m_window_size;
+    ImVec4 m_primary_color;
+    ImVec4 m_secondary_color;
+    ImVec4 m_circle_color1;
+    ImVec4 m_circle_color2;
+    ImVec4 m_circle_color3;
+    ImVec4 m_circle_color4;
+    ImVec4 m_circle_color5;
+    bool m_home_page;
+    float m_dot_opacity;
+    float m_target_dot_opacity;
+    ImTextureID m_dot_texture = nullptr;
   };
 
 

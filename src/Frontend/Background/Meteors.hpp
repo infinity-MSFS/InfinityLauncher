@@ -48,8 +48,8 @@ public:
     void Render();
 
 private:
-    std::vector<Meteor> meteors;
-    int count;
+    std::vector<Meteor> m_meteors;
+    int m_count;
 
     explicit Meteors(int count);
   };

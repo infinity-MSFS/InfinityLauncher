@@ -11,12 +11,9 @@ namespace Infinity::UI {
     /// Colours
 
     // Headers
-    colors[ImGuiCol_Header] =
-        ImGui::ColorConvertU32ToFloat4(Colors::Theme::group_header);
-    colors[ImGuiCol_HeaderHovered] =
-        ImGui::ColorConvertU32ToFloat4(Colors::Theme::group_header);
-    colors[ImGuiCol_HeaderActive] =
-        ImGui::ColorConvertU32ToFloat4(Colors::Theme::group_header);
+    colors[ImGuiCol_Header] = ImGui::ColorConvertU32ToFloat4(Colors::Theme::group_header);
+    colors[ImGuiCol_HeaderHovered] = ImGui::ColorConvertU32ToFloat4(Colors::Theme::group_header);
+    colors[ImGuiCol_HeaderActive] = ImGui::ColorConvertU32ToFloat4(Colors::Theme::group_header);
 
     // Buttons
     colors[ImGuiCol_Button] = ImColor(56, 56, 56, 200);
@@ -25,24 +22,19 @@ namespace Infinity::UI {
 
     // Frame BG
     colors[ImGuiCol_FrameBg] = ImColor(0, 0, 0);
-    colors[ImGuiCol_FrameBgHovered] =
-        ImGui::ColorConvertU32ToFloat4(Colors::Theme::property_field);
+    colors[ImGuiCol_FrameBgHovered] = ImGui::ColorConvertU32ToFloat4(Colors::Theme::property_field);
     colors[ImGuiCol_FrameBgActive] = ImColor(0, 0, 0);
 
     // Tabs
-    colors[ImGuiCol_Tab] =
-        ImGui::ColorConvertU32ToFloat4(Colors::Theme::title_bar);
+    colors[ImGuiCol_Tab] = ImGui::ColorConvertU32ToFloat4(Colors::Theme::title_bar);
     colors[ImGuiCol_TabHovered] = ImColor(255, 225, 135, 30);
     colors[ImGuiCol_TabActive] = ImColor(255, 225, 135, 60);
-    colors[ImGuiCol_TabUnfocused] =
-        ImGui::ColorConvertU32ToFloat4(Colors::Theme::title_bar);
+    colors[ImGuiCol_TabUnfocused] = ImGui::ColorConvertU32ToFloat4(Colors::Theme::title_bar);
     colors[ImGuiCol_TabUnfocusedActive] = colors[ImGuiCol_TabHovered];
 
     // Title
-    colors[ImGuiCol_TitleBg] =
-        ImGui::ColorConvertU32ToFloat4(Colors::Theme::title_bar);
-    colors[ImGuiCol_TitleBgActive] =
-        ImGui::ColorConvertU32ToFloat4(Colors::Theme::title_bar);
+    colors[ImGuiCol_TitleBg] = ImGui::ColorConvertU32ToFloat4(Colors::Theme::title_bar);
+    colors[ImGuiCol_TitleBgActive] = ImGui::ColorConvertU32ToFloat4(Colors::Theme::title_bar);
     colors[ImGuiCol_TitleBgCollapsed] = ImVec4{0.15f, 0.1505f, 0.151f, 1.0f};
 
     // Resize Grip
@@ -67,14 +59,11 @@ namespace Infinity::UI {
     colors[ImGuiCol_Text] = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
 
     // Checkbox
-    colors[ImGuiCol_CheckMark] =
-        ImGui::ColorConvertU32ToFloat4(Colors::Theme::text);
+    colors[ImGuiCol_CheckMark] = ImGui::ColorConvertU32ToFloat4(Colors::Theme::text);
 
     // Separator
-    colors[ImGuiCol_Separator] =
-        ImGui::ColorConvertU32ToFloat4(Colors::Theme::background_dark);
-    colors[ImGuiCol_SeparatorActive] =
-        ImGui::ColorConvertU32ToFloat4(Colors::Theme::highlight);
+    colors[ImGuiCol_Separator] = ImGui::ColorConvertU32ToFloat4(Colors::Theme::background_dark);
+    colors[ImGuiCol_SeparatorActive] = ImGui::ColorConvertU32ToFloat4(Colors::Theme::highlight);
     colors[ImGuiCol_SeparatorHovered] = ImColor(39, 185, 242, 150);
 
     // Window Background
@@ -84,10 +73,8 @@ namespace Infinity::UI {
     colors[ImGuiCol_Border] = ImColor(0, 0, 0);
 
     // Tables
-    colors[ImGuiCol_TableHeaderBg] =
-        ImGui::ColorConvertU32ToFloat4(Colors::Theme::group_header);
-    colors[ImGuiCol_TableBorderLight] =
-        ImGui::ColorConvertU32ToFloat4(Colors::Theme::background_dark);
+    colors[ImGuiCol_TableHeaderBg] = ImGui::ColorConvertU32ToFloat4(Colors::Theme::group_header);
+    colors[ImGuiCol_TableBorderLight] = ImGui::ColorConvertU32ToFloat4(Colors::Theme::background_dark);
 
     // Menubar
     colors[ImGuiCol_MenuBarBg] = ImVec4{0.0f, 0.0f, 0.0f, 0.0f};

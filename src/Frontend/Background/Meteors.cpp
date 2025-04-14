@@ -8,7 +8,7 @@
 #include <vector>
 
 namespace Infinity {
-  void Meteor::Respawn(ImVec2 screen_size) {
+  void Meteor::Respawn(const ImVec2 screen_size) {
     std::uniform_real_distribution pos_dist(-500.0f, 500.0f);
 
     if (RandomRange(0.0f, 1.0f) > 0.5f) {
@@ -25,7 +25,7 @@ namespace Infinity {
     end_color = ImColor(200, 200, 255, 0);
   }
 
-  void Meteor::Update(ImVec2 screen_size) {
+  void Meteor::Update(const ImVec2 screen_size) {
     position.x += speed;
     position.y += speed;
 
@@ -55,13 +55,13 @@ namespace Infinity {
 
   void Meteors::Update() {
     ImVec2 screen_size = ImGui::GetWindowSize();
-    for (auto& meteor: meteors) {
+    for (auto& meteor: m_meteors) {
       meteor.Update(screen_size);
     }
   }
 
   void Meteors::Render() {
-    for (const auto& meteor: meteors) {
+    for (const auto& meteor: m_meteors) {
       meteor.Render();
     }
   }
@@ -71,11 +71,11 @@ namespace Infinity {
   int count;
 
   Meteors::Meteors(const int count)
-      : count(count) {
+      : m_count(count) {
     std::srand(static_cast<unsigned>(std::time(nullptr)));
     ImVec2 screen_size = ImGui::GetIO().DisplaySize;
-    meteors.reserve(count);
-    for (int i = 0; i < count; i++) {
+    meteors.reserve(m_count);
+    for (int i = 0; i < m_count; i++) {
       meteors.emplace_back(screen_size);
     }
   };

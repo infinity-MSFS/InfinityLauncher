@@ -39,12 +39,12 @@ public:
     template<typename T>
     void PushLayer() {
       static_assert(std::is_base_of_v<Layer, T>, "T must derive from Layer");
-      m_Layer = std::make_shared<T>();
-      m_Layer->OnAttach();
+      m_layer = std::make_shared<T>();
+      m_layer->OnAttach();
     }
 
     void PushLayer(const std::shared_ptr<Layer> &layer) {
-      m_Layer = layer;
+      m_layer = layer;
       layer->OnAttach();
     }
 
@@ -52,11 +52,11 @@ public:
 
     void Close();
 
-    [[nodiscard]] std::shared_ptr<Image> GetAppLogo() { return m_AppHeaderIcon; }
+    [[nodiscard]] std::shared_ptr<Image> GetAppLogo() { return m_app_header_icon; }
 
     [[nodiscard]] bool IsMaximized() const;
 
-    [[nodiscard]] std::shared_ptr<Image> GetIcon() const { return m_AppHeaderIcon; }
+    [[nodiscard]] std::shared_ptr<Image> GetIcon() const { return m_app_header_icon; }
 
     [[nodiscard]] static float GetTime();
 
@@ -64,28 +64,28 @@ public:
 
     template<typename F>
     void QueueEvent(F &&func) {
-      m_EventQueue.push(func);
+      m_event_queue.push(func);
     }
 
     static void SetWindowTitle(const std::string &title);
 
     static std::optional<Application *> Get();
 
-    ApplicationSpecifications GetSpecifications() { return m_Specification; }
+    ApplicationSpecifications GetSpecifications() { return m_specification; }
 
-    [[nodiscard]] bool IsTitleBarHovered() const { return m_TitlebarHovered; }
+    [[nodiscard]] bool IsTitleBarHovered() const { return m_titlebar_hovered; }
 
 
-    [[nodiscard]] int GetFPS() const { return m_FpsCap; }
-    [[nodiscard]] bool IsReduceFPSOnIdle() const { return m_ReduceFPSOnIdle; }
+    [[nodiscard]] unsigned int GetFPS() const { return m_fps_cap; }
+    [[nodiscard]] bool IsReduceFPSOnIdle() const { return m_reduce_fps_on_idle; }
 
     void SetFPS(const unsigned int fps) {
       if (fps > 0) {
-        m_FpsCap = fps;
+        m_fps_cap = fps;
       }
     }
 
-    void SetReduceFPSOnIdle(const bool reduce) { m_ReduceFPSOnIdle = reduce; }
+    void SetReduceFPSOnIdle(const bool reduce) { m_reduce_fps_on_idle = reduce; }
 
 private:
     std::expected<void, Errors::Error> Init();
@@ -104,28 +104,28 @@ private:
 
 
 private:
-    ApplicationSpecifications m_Specification;
-    static Application *s_Instance;
-    GLFWwindow *m_Window;
+    ApplicationSpecifications m_specification;
+    static Application *s_instance;
+    GLFWwindow *m_window;
 
     std::unordered_map<std::string, ImFont *> m_Fonts;
 
-    bool m_Running = true;
+    bool m_running = true;
 
-    int m_FpsCap = 144;
-    bool m_ReduceFPSOnIdle = true;
+    unsigned int m_fps_cap = 144;
+    bool m_reduce_fps_on_idle = true;
 
-    float m_TimeStep = 0.0f;
-    float m_FrameTime = 0.0f;
-    float m_LastFrameTime = 0.0f;
+    float m_time_step = 0.0f;
+    float m_frame_time = 0.0f;
+    float m_last_frame_time = 0.0f;
 
-    bool m_TitlebarHovered = false;
+    bool m_titlebar_hovered = false;
 
-    std::shared_ptr<Layer> m_Layer;
-    std::function<void()> m_MenubarCallback;
+    std::shared_ptr<Layer> m_layer;
+    std::function<void()> m_menubar_callback;
 
-    std::mutex m_EventQueueMutex;
-    std::queue<std::function<void()>> m_EventQueue;
+    std::mutex m_event_queue_mutex;
+    std::queue<std::function<void()>> m_event_queue;
 
     struct ImageStore {
       GLuint texture_id;
@@ -133,14 +133,14 @@ private:
       int height;
     };
 
-    std::shared_ptr<Image> m_AppHeaderIcon;
-    std::shared_ptr<Image> m_IconClose;
-    std::shared_ptr<Image> m_IconMinimize;
-    std::shared_ptr<Image> m_IconMaximize;
-    std::shared_ptr<Image> m_IconRestore;
+    std::shared_ptr<Image> m_app_header_icon;
+    std::shared_ptr<Image> m_icon_close;
+    std::shared_ptr<Image> m_icon_minimize;
+    std::shared_ptr<Image> m_icon_maximize;
+    std::shared_ptr<Image> m_icon_restore;
 
-    std::vector<std::shared_ptr<Image>> m_TextureCreationQueue;
-    std::mutex m_TextureCreationQueueMutex;
+    std::vector<std::shared_ptr<Image>> m_texture_creation_queue;
+    std::mutex m_texture_creation_queue_mutex;
   };
 
 

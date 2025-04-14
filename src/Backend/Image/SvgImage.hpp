@@ -31,8 +31,8 @@ public:
 
     bool Rasterize(float scale = 1.0f);
 
-    [[nodiscard]] float GetOriginalWidth() const { return m_OriginalWidth; }
-    [[nodiscard]] float GetOriginalHeight() const { return m_OriginalHeight; }
+    [[nodiscard]] float GetOriginalWidth() const { return m_original_width; }
+    [[nodiscard]] float GetOriginalHeight() const { return m_original_height; }
 
     static void RenderSVG(const std::shared_ptr<SVGImage>& svg, ImVec2 pos, float scale);
     static void RenderSVG(const std::shared_ptr<SVGImage>& image, ImVec2 pos, ImVec2 size);
@@ -46,11 +46,11 @@ public:
 private:
     static NSVGimage* ParseSVGFromMemory(const void* data, size_t data_size, float dpi);
 
-    std::vector<uint8_t> RasterizeSVG(uint32_t width, uint32_t height);
+    std::vector<uint8_t> RasterizeSVG(uint32_t width, uint32_t height) const;
 
-    NSVGimage* m_SVGImage = nullptr;
+    NSVGimage* m_svg_image = nullptr;
 
-    float m_OriginalWidth = 0.0f;
-    float m_OriginalHeight = 0.0f;
+    float m_original_width = 0.0f;
+    float m_original_height = 0.0f;
   };
 }  // namespace Infinity

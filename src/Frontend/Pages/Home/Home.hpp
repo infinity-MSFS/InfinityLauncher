@@ -6,7 +6,6 @@
 #include <utility>
 #include <vector>
 
-
 #include "Backend/Image/Image.hpp"
 
 namespace Infinity {
@@ -17,9 +16,8 @@ namespace Infinity {
     std::shared_ptr<Image> logo;
     int page_id;
 
-    HomeProjectButtonStruct(const std::string &name,
-                            std::shared_ptr<Image> image,
-                            std::shared_ptr<Image> logo, const int page_id)
+    HomeProjectButtonStruct(const std::string &name, std::shared_ptr<Image> image, std::shared_ptr<Image> logo,
+                            const int page_id)
         : name(name)
         , image(std::move(image))
         , logo(std::move(logo))
@@ -30,14 +28,12 @@ namespace Infinity {
 public:
     static Home *GetInstance();
 
-    static void SetExpectedProjects(const unsigned int project_quantity) {
-      m_ExpectedProjects = project_quantity;
-    };
+    static void SetExpectedProjects(const unsigned int project_quantity) { m_ExpectedProjects = project_quantity; };
     static bool DoneLoading() { return m_DoneLoading; };
     static void SetLoaded(const bool loaded) { m_DoneLoading = loaded; }
 
-    void RegisterProject(const std::string &name, std::shared_ptr<Image> image,
-                         std::shared_ptr<Image> logo, int page_id);
+    void RegisterProject(const std::string &name, std::shared_ptr<Image> image, std::shared_ptr<Image> logo,
+                         int page_id);
     void UnregisterProject(const std::string &name);
     void RegisterProject(const std::vector<HomeProjectButtonStruct> &projects);
     void UnregisterProject(const std::vector<std::string> &projects);

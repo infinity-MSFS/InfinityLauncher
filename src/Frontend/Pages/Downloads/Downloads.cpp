@@ -10,12 +10,11 @@
 Downloads::Downloads() {}
 
 void Downloads::Render() {
-  ImGui::BeginChild("Downloads", ImGui::GetContentRegionAvail(), false,
-                    ImGuiWindowFlags_NoBackground);
+  ImGui::BeginChild("Downloads", ImGui::GetContentRegionAvail(), false, ImGuiWindowFlags_NoBackground);
 
   if (ImGui::Button("Download")) {
-    Infinity::Downloads::GetInstance().StartDownload(
-        "https://link.testfile.org/500MB", "/home/cameron/Downloads/test.file");
+    Infinity::Downloads::GetInstance().StartDownload("https://link.testfile.org/500MB",
+                                                     "/home/cameron/Downloads/test.file");
   }
 
   ImGui::Text("Downloads");
@@ -27,12 +26,8 @@ void Downloads::Render() {
   for (auto& download: *downloads) {
     ImGui::Text("Download ID: %d", download.first);
     if (download.second.error == -1 || download.second.error == 0) {
-      AnimatedProgressBar(download.second.progress, download.second.completed,
-                          false, 0.1f);
-      ImGui::Text("Progress: %.2f%%",
-                  download.second.completed
-                      ? 100.0f
-                      : download.second.progress * 100.0f);
+      AnimatedProgressBar(download.second.progress, download.second.completed, false, 0.1f);
+      ImGui::Text("Progress: %.2f%%", download.second.completed ? 100.0f : download.second.progress * 100.0f);
       auto speed = download.second.speed;
       if (speed > 1024 * 1024) {
         float speedMB = speed / (1024.0f * 1024.0f);
@@ -75,8 +70,7 @@ void Downloads::Render() {
   ImGui::EndChild();
 }
 
-void Downloads::AnimatedProgressBar(float& progress, bool completed,
-                                    bool show_percentage, float smoothness) {
+void Downloads::AnimatedProgressBar(float& progress, bool completed, bool show_percentage, float smoothness) {
   static float display_progress = 0.0f;
   ImGuiIO& io = ImGui::GetIO();
   float target_progress = completed ? 1.0f : progress;
@@ -84,8 +78,7 @@ void Downloads::AnimatedProgressBar(float& progress, bool completed,
   display_progress = fmaxf(0.0f, fminf(display_progress, 1.0f));
 
   ImVec2 bar_size = ImVec2(ImGui::GetContentRegionAvail().x, 20.0f);
-  ImVec4 bar_color = completed ? ImVec4(0.2f, 1.0f, 0.2f, 1.0f)
-                               : ImVec4(0.2f, 0.6f, 1.0f, 1.0f);
+  ImVec4 bar_color = completed ? ImVec4(0.2f, 1.0f, 0.2f, 1.0f) : ImVec4(0.2f, 0.6f, 1.0f, 1.0f);
   ImVec4 bg_color = ImVec4(0.2f, 0.2f, 0.2f, 0.8f);
 
   ImVec2 pos = ImGui::GetCursorScreenPos();
@@ -107,8 +100,7 @@ void Downloads::AnimatedProgressBar(float& progress, bool completed,
     }
     if (text) {
       ImVec2 textSize = ImGui::CalcTextSize(text);
-      ImVec2 textPos = ImVec2(pos.x + (bar_size.x - textSize.x) * 0.5f,
-                              pos.y + (bar_size.y - textSize.y) * 0.5f);
+      ImVec2 textPos = ImVec2(pos.x + (bar_size.x - textSize.x) * 0.5f, pos.y + (bar_size.y - textSize.y) * 0.5f);
       draw_list->AddText(textPos, IM_COL32(255, 255, 255, 255), text);
     }
   }

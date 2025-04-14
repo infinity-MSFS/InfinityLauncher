@@ -111,7 +111,7 @@ class PageRenderLayer final : public Infinity::Layer {
                                active_index);
     };
 
-    Infinity::Background::UpdateColorScheme();
+    bg->UpdateColorScheme();
 
     auto &state = Infinity::State::GetInstance();
 

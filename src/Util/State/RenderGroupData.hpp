@@ -15,8 +15,7 @@ namespace Infinity {
 
   // Helper function to render std::optional fields
   template<typename T>
-  void RenderOptionalField(const std::string &fieldName,
-                           const std::optional<T> &fieldValue) {
+  void RenderOptionalField(const std::string &fieldName, const std::optional<T> &fieldValue) {
     if (fieldValue) {
       ImGui::Text("%s: %s", fieldName.c_str(), fieldValue->c_str());
     } else {

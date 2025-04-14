@@ -8,11 +8,11 @@ namespace Infinity {
       return false;
     }
 
-    m_Buffer.resize(CHUNK_SIZE);
+    m_buffer.resize(CHUNK_SIZE);
     int bytes_read;
 
-    while ((bytes_read = gzread(file, m_Buffer.data(), CHUNK_SIZE)) > 0) {
-      output_file.write(reinterpret_cast<char *>(m_Buffer.data()), bytes_read);
+    while ((bytes_read = gzread(file, m_buffer.data(), CHUNK_SIZE)) > 0) {
+      output_file.write(reinterpret_cast<char *>(m_buffer.data()), bytes_read);
       if (output_file.bad()) {
         output_file.close();
         return false;
@@ -23,7 +23,7 @@ namespace Infinity {
   }
 
   ZipExtractor::ZipExtractor(const std::string &zip_file_path)
-      : m_Path(zip_file_path) {
+      : m_path(zip_file_path) {
     if (!std::filesystem::exists(zip_file_path)) {
       Errors::Error(Errors::ErrorType::Warning,
                     "ZipExtractor::ZipExtractor(const std::string "
@@ -36,12 +36,12 @@ namespace Infinity {
   bool ZipExtractor::Extract(const std::string &output_file_path) {
     std::filesystem::create_directory(output_file_path);
 
-    const gzFile file = gzopen(m_Path.c_str(), "rb");
+    gzFile file = gzopen(m_path.c_str(), "rb");
     if (!file) {
       return false;
     }
 
-    std::string extract_path = std::filesystem::path(m_Path).string();
+    std::string extract_path = std::filesystem::path(m_path).string();
     const bool success = ExtractFile(file, output_file_path);
 
     gzclose(file);
@@ -50,16 +50,14 @@ namespace Infinity {
 
   bool ZipExtractor::RemoveArchive() const {
     try {
-      return std::filesystem::remove(m_Path);
+      return std::filesystem::remove(m_path);
     } catch (const std::filesystem::filesystem_error &e) {
-      Errors::Error(Errors::ErrorType::Warning,
-                    "Failed to delete archive" + m_Path)
-          .Dispatch();
+      Errors::Error(Errors::ErrorType::Warning, "Failed to delete archive" + m_path).Dispatch();
       return false;
     }
   }
 
-  std::string ZipExtractor::GetArchivePath() const { return m_Path; }
+  std::string ZipExtractor::GetArchivePath() const { return m_path; }
 
 
 }  // namespace Infinity

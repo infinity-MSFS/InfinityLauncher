@@ -40,12 +40,14 @@ class HWID {
   std::string GetHWID();
 
   private:
-  std::string GetCPUInfo();
-  std::string GetMotherboardSerial();
-  std::string GetGPUInfo();
+  static std::string GetCPUInfo();
+  static std::string GetMotherboardSerial();
+  static std::string GetGPUInfo();
 
-  std::string Hash(const std::string& input);
+  static std::string Hash(const std::string& input);
 
-  std::string exec(
-      const char* cmd);  // helper to execute shell commands (Linux only)
+  static std::string exec(const char* cmd);  // helper to execute shell commands (Linux only)
+
+
+  // TODO: maybe store hwid in a singleton to avoid repeated system calls
 };

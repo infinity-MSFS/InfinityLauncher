@@ -16,44 +16,40 @@
 #include <GLFW/glfw3.h>
 
 namespace Infinity {
-  SVGImage::SVGImage()
-      : Image()
-      , m_SVGImage(nullptr)
-      , m_OriginalWidth(0.0f)
-      , m_OriginalHeight(0.0f) {}
+  SVGImage::SVGImage() {}
 
   SVGImage::~SVGImage() {
-    if (m_SVGImage) {
-      nsvgDelete(m_SVGImage);
-      m_SVGImage = nullptr;
+    if (m_svg_image) {
+      nsvgDelete(m_svg_image);
+      m_svg_image = nullptr;
     }
   }
 
   SVGImage::SVGImage(SVGImage&& other) noexcept
       : Image(std::move(other))
-      , m_SVGImage(other.m_SVGImage)
-      , m_OriginalWidth(other.m_OriginalWidth)
-      , m_OriginalHeight(other.m_OriginalHeight) {
-    other.m_SVGImage = nullptr;
-    other.m_OriginalWidth = 0.0f;
-    other.m_OriginalHeight = 0.0f;
+      , m_svg_image(other.m_svg_image)
+      , m_original_width(other.m_original_width)
+      , m_original_height(other.m_original_height) {
+    other.m_svg_image = nullptr;
+    other.m_original_width = 0.0f;
+    other.m_original_height = 0.0f;
   }
 
   SVGImage& SVGImage::operator=(SVGImage&& other) noexcept {
     if (this != &other) {
       Image::operator=(std::move(other));
 
-      if (m_SVGImage) {
-        nsvgDelete(m_SVGImage);
+      if (m_svg_image) {
+        nsvgDelete(m_svg_image);
       }
 
-      m_SVGImage = other.m_SVGImage;
-      m_OriginalWidth = other.m_OriginalWidth;
-      m_OriginalHeight = other.m_OriginalHeight;
+      m_svg_image = other.m_svg_image;
+      m_original_width = other.m_original_width;
+      m_original_height = other.m_original_height;
 
-      other.m_SVGImage = nullptr;
-      other.m_OriginalWidth = 0.0f;
-      other.m_OriginalHeight = 0.0f;
+      other.m_svg_image = nullptr;
+      other.m_original_width = 0.0f;
+      other.m_original_height = 0.0f;
     }
     return *this;
   }
@@ -66,9 +62,9 @@ namespace Infinity {
     }
 
     auto image = std::make_shared<SVGImage>();
-    image->m_SVGImage = svg_image;
-    image->m_OriginalWidth = svg_image->width;
-    image->m_OriginalHeight = svg_image->height;
+    image->m_svg_image = svg_image;
+    image->m_original_width = svg_image->width;
+    image->m_original_height = svg_image->height;
 
     image->Rasterize(1.0f);
 
@@ -83,9 +79,9 @@ namespace Infinity {
     }
 
     auto image = std::make_shared<SVGImage>();
-    image->m_SVGImage = svg_image;
-    image->m_OriginalWidth = svg_image->width;
-    image->m_OriginalHeight = svg_image->height;
+    image->m_svg_image = svg_image;
+    image->m_original_width = svg_image->width;
+    image->m_original_height = svg_image->height;
 
     image->Rasterize(1.0f);
 
@@ -119,7 +115,7 @@ namespace Infinity {
   }
 
   bool SVGImage::Rasterize(uint32_t width, uint32_t height) {
-    if (!m_SVGImage) {
+    if (!m_svg_image) {
       std::cerr << "SVGImage is null, cannot rasterize" << std::endl;
       return false;
     }
@@ -130,9 +126,9 @@ namespace Infinity {
       return false;
     }
 
-    m_Width = width;
-    m_Height = height;
-    m_Format = Format::RGBA8;
+    m_width = width;
+    m_height = height;
+    m_format = Format::RGBA8;
 
 
     AllocateMemory(pixels.data());
@@ -141,19 +137,19 @@ namespace Infinity {
   }
 
   bool SVGImage::Rasterize(float scale) {
-    if (!m_SVGImage) {
+    if (!m_svg_image) {
       std::cerr << "SVGImage is null, cannot rasterize" << std::endl;
       return false;
     }
 
-    uint32_t width = static_cast<uint32_t>(m_OriginalWidth * scale);
-    uint32_t height = static_cast<uint32_t>(m_OriginalHeight * scale);
+    auto width = static_cast<uint32_t>(m_original_width * scale);
+    auto height = static_cast<uint32_t>(m_original_height * scale);
 
     return Rasterize(width, height);
   }
 
-  std::vector<uint8_t> SVGImage::RasterizeSVG(uint32_t width, uint32_t height) {
-    if (!m_SVGImage) {
+  std::vector<uint8_t> SVGImage::RasterizeSVG(const uint32_t width, const uint32_t height) const {
+    if (!m_svg_image) {
       return {};
     }
 
@@ -165,15 +161,15 @@ namespace Infinity {
 
     std::vector<uint8_t> pixels(width * height * 4, 0);
 
-    float scale_x = width / m_SVGImage->width;
-    float scale_y = height / m_SVGImage->height;
+    float scale_x = width / m_svg_image->width;
+    float scale_y = height / m_svg_image->height;
 #ifdef WIN32
     float scale = min(scale_x, scale_y);
 #else
     float scale = std::min(scale_x, scale_y);
 #endif
 
-    nsvgRasterize(rast, m_SVGImage, 0, 0, scale, pixels.data(), width, height, width * 4);
+    nsvgRasterize(rast, m_svg_image, 0, 0, scale, pixels.data(), width, height, width * 4);
 
     nsvgDeleteRasterizer(rast);
 
@@ -183,25 +179,25 @@ namespace Infinity {
 
   // a really shitty deep copy method (this will leak if it fails)
   std::shared_ptr<SVGImage> SVGImage::Clone() const {
-    if (!m_SVGImage) {
+    if (!m_svg_image) {
       return nullptr;
     }
 
     auto clone = std::make_shared<SVGImage>();
 
-    auto cloned_svg =
-        std::unique_ptr<NSVGimage, decltype(&nsvgDelete)>((NSVGimage*) calloc(1, sizeof(NSVGimage)), nsvgDelete);
+    auto cloned_svg = std::unique_ptr<NSVGimage, decltype(&nsvgDelete)>(
+        static_cast<NSVGimage*>(calloc(1, sizeof(NSVGimage))), nsvgDelete);
 
     if (!cloned_svg) {
       return nullptr;
     }
 
-    cloned_svg->width = m_SVGImage->width;
-    cloned_svg->height = m_SVGImage->height;
+    cloned_svg->width = m_svg_image->width;
+    cloned_svg->height = m_svg_image->height;
 
     NSVGshape* lastShape = nullptr;
 
-    for (NSVGshape* shape = m_SVGImage->shapes; shape != nullptr; shape = shape->next) {
+    for (NSVGshape* shape = m_svg_image->shapes; shape != nullptr; shape = shape->next) {
       struct ShapeDeleter {
         void operator()(NSVGshape* shape) const {
           if (!shape) return;
@@ -283,12 +279,12 @@ namespace Infinity {
       lastShape = rawShapePtr;
     }
 
-    clone->m_SVGImage = cloned_svg.release();
-    clone->m_OriginalWidth = m_OriginalWidth;
-    clone->m_OriginalHeight = m_OriginalHeight;
+    clone->m_svg_image = cloned_svg.release();
+    clone->m_original_width = m_original_height;
+    clone->m_original_height = m_original_height;
 
-    if (m_Width > 0 && m_Height > 0) {
-      clone->Rasterize(m_Width, m_Height);
+    if (m_width > 0 && m_height > 0) {
+      clone->Rasterize(m_width, m_height);
     } else {
       clone->Rasterize(1.0f);
     }
@@ -324,7 +320,7 @@ namespace Infinity {
 
 
   void SVGImage::ChangeColor(const std::string& color) {
-    if (m_SVGImage) return;
+    if (m_svg_image) return;
 
     if (color.empty() || (color[0] != '#' && color.length() != 7)) {
       std::cerr << "Invalid color format. Expected #RRGGBB\n";
@@ -333,7 +329,7 @@ namespace Infinity {
     int r, g, b;
     sscanf(color.c_str(), "%02x%02x%02x", &r, &g, &b);
 
-    for (NSVGshape* shape = m_SVGImage->shapes; shape != nullptr; shape = shape->next) {
+    for (NSVGshape* shape = m_svg_image->shapes; shape != nullptr; shape = shape->next) {
       if (shape->fill.type != NSVG_PAINT_NONE) {
         shape->fill.color = (r << 16) | (g << 8) | b | (255 << 24);
       }

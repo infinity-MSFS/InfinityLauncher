@@ -11,42 +11,41 @@
 
 
 std::string HWID::GetHWID() {
-  std::string hwid = GetCPUInfo() + GetMotherboardSerial() + GetGPUInfo();
+  const std::string hwid = GetCPUInfo() + GetMotherboardSerial() + GetGPUInfo();
   return Hash(hwid);
 }
 
 std::string HWID::GetCPUInfo() {
-  std::string cpuInfo;
+  std::string cpu_info;
 #if defined(_WIN32)
-  int cpuInfoRegs[4] = {0};
-  __cpuid(cpuInfoRegs, 0);
+  int cpu_info_regs[4] = {0};
+  __cpuid(cpu_info_regs, 0);
   std::stringstream ss;
   for (int i = 0; i < 4; ++i) {
-    ss << std::hex << cpuInfoRegs[i];
+    ss << std::hex << cpu_info_regs[i];
   }
-  cpuInfo = ss.str();
+  cpu_info = ss.str();
 #elif defined(__linux__)
-  std::ifstream cpuFile("/proc/cpuinfo");
-  if (!cpuFile) {
-    cpuInfo = "Unknown";
+  std::ifstream cpu_file("/proc/cpuinfo");
+  if (!cpu_file) {
+    cpu_info = "Unknown";
   } else {
     std::string line;
-    while (std::getline(cpuFile, line)) {
+    while (std::getline(cpu_file, line)) {
       if (line.find("model name") != std::string::npos) {
         size_t colonPos = line.find(':');
         if (colonPos != std::string::npos) {
-          cpuInfo = line.substr(colonPos + 1);
-          size_t start = cpuInfo.find_first_not_of(" \t");
-          size_t end = cpuInfo.find_last_not_of(" \t");
-          cpuInfo = cpuInfo.substr(start, end - start + 1);
+          cpu_info = line.substr(colonPos + 1);
+          size_t start = cpu_info.find_first_not_of(" \t");
+          size_t end = cpu_info.find_last_not_of(" \t");
+          cpu_info = cpu_info.substr(start, end - start + 1);
         }
         break;
       }
     }
   }
 #endif
-  // std::cout << "CPU: " << cpuInfo << std::endl;
-  return cpuInfo;
+  return cpu_info;
 }
 
 
@@ -98,9 +97,9 @@ std::string HWID::GetMotherboardSerial() {
     pclsObj->Release();
   }
 #elif defined(__linux__)
-  std::ifstream serialFile("/var/run/motherboard-serial");
-  if (serialFile.is_open()) {
-    std::getline(serialFile, serial);
+  std::ifstream serial_file("/var/run/motherboard-serial");
+  if (serial_file.is_open()) {
+    std::getline(serial_file, serial);
     if (serial.empty()) {
       serial = "Unknown";
     }
@@ -112,15 +111,14 @@ std::string HWID::GetMotherboardSerial() {
   // sure that when whitelisting them, they arent from users with "unknown"
   // hardware
 #endif
-  // std::cout << "Serial: " << serial << std::endl;
   return serial;
 }
 
 std::string HWID::GetGPUInfo() {
-  std::string gpuInfo;
+  std::string gpu_info;
 #if defined(_WIN32)
-  IWbemLocator *pLoc = nullptr;
-  IWbemServices *pSvc = nullptr;
+  IWbemLocator *p_loc = nullptr;
+  IWbemServices *p_svc = nullptr;
   HRESULT hres;
 
   hres = CoInitializeEx(0, COINIT_MULTITHREADED);
@@ -128,44 +126,43 @@ std::string HWID::GetGPUInfo() {
     return "Unknown";
   }
 
-  hres = CoCreateInstance(CLSID_WbemLocator, 0, CLSCTX_INPROC_SERVER, IID_IWbemLocator, (LPVOID *) &pLoc);
+  hres = CoCreateInstance(CLSID_WbemLocator, 0, CLSCTX_INPROC_SERVER, IID_IWbemLocator, (LPVOID *) &p_loc);
   if (FAILED(hres)) {
     return "Unknown";
   }
 
-  hres = pLoc->ConnectServer(bstr_t(L"ROOT\\CIMV2"), NULL, NULL, 0, NULL, 0, 0, &pSvc);
+  hres = p_loc->ConnectServer(bstr_t(L"ROOT\\CIMV2"), NULL, NULL, 0, NULL, 0, 0, &p_svc);
   if (FAILED(hres)) {
     return "Unknown";
   }
 
-  IEnumWbemClassObject *pEnumerator = nullptr;
-  hres = pSvc->ExecQuery(bstr_t("WQL"), bstr_t("SELECT * FROM Win32_VideoController"),
-                         WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY, NULL, &pEnumerator);
+  IEnumWbemClassObject *p_enumerator = nullptr;
+  hres = p_svc->ExecQuery(bstr_t("WQL"), bstr_t("SELECT * FROM Win32_VideoController"),
+                          WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY, NULL, &p_enumerator);
   if (FAILED(hres)) {
     return "Unknown";
   }
 
-  IWbemClassObject *pclsObj = nullptr;
-  ULONG uReturn = 0;
-  while (pEnumerator) {
-    hres = pEnumerator->Next(WBEM_INFINITE, 1, &pclsObj, &uReturn);
-    if (0 == uReturn) break;
+  IWbemClassObject *pcls_obj = nullptr;
+  ULONG u_return = 0;
+  while (p_enumerator) {
+    hres = p_enumerator->Next(WBEM_INFINITE, 1, &pcls_obj, &u_return);
+    if (0 == u_return) break;
 
-    VARIANT vtProp;
-    hres = pclsObj->Get(L"Name", 0, &vtProp, 0, 0);
-    gpuInfo = vtProp.bstrVal ? CW2A(vtProp.bstrVal) : "Unknown";
-    VariantClear(&vtProp);
-    pclsObj->Release();
+    VARIANT variant_prop;
+    hres = pcls_obj->Get(L"Name", 0, &variant_prop, 0, 0);
+    gpu_info = variant_prop.bstrVal ? CW2A(variant_prop.bstrVal) : "Unknown";
+    VariantClear(&variant_prop);
+    pcls_obj->Release();
   }
 #elif defined(__linux__)
-  gpuInfo = exec("lspci | grep VGA");
+  gpu_info = exec("lspci | grep VGA");
 
-  if (!gpuInfo.empty() && gpuInfo[gpuInfo.length() - 1] == '\n') {
-    gpuInfo.erase(gpuInfo.length() - 1);
+  if (!gpu_info.empty() && gpu_info[gpu_info.length() - 1] == '\n') {
+    gpu_info.erase(gpu_info.length() - 1);
   }
 #endif
-  // std::cout << "GPU: " << gpuInfo << std::endl;
-  return gpuInfo;
+  return gpu_info;
 }
 
 std::string HWID::Hash(const std::string &input) {
@@ -185,8 +182,8 @@ std::string HWID::Hash(const std::string &input) {
 
 std::string HWID::exec(const char *cmd) {
 #if defined(__linux__)
-  std::array<char, 128> buffer;
-  std::string result = "";
+  std::array<char, 128> buffer{};
+  std::string result;
   FILE *pipe = popen(cmd, "r");
   if (!pipe) return "Unknown";
   while (fgets(buffer.data(), buffer.size(), pipe) != nullptr) {

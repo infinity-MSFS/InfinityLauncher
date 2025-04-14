@@ -8,6 +8,6 @@
 namespace Infinity {
   class Image;
 
-  extern std::mutex g_TextureQueueMutex;
-  extern std::vector<std::shared_ptr<Image>> g_TextureCreationQueue;
+  extern std::mutex g_texture_queue_mutex;
+  extern std::vector<std::shared_ptr<Image>> g_texture_creation_queue;
 }  // namespace Infinity

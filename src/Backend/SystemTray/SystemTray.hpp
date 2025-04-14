@@ -7,7 +7,6 @@
 #include <tray.hpp>
 
 #include "GL/glew.h"
-
 #include "GLFW/glfw3.h"
 
 class SystemTray {
@@ -25,10 +24,10 @@ class SystemTray {
   void handle_show_home();
 
 
-  std::string m_IconPath;
-  Tray::Tray m_Tray;
-  std::unique_ptr<std::thread> m_TrayThread;
-  std::atomic<bool> m_ShouldExit{false};
+  std::string m_icon_path;
+  Tray::Tray m_tray;
+  std::unique_ptr<std::thread> m_tray_thread;
+  std::atomic<bool> m_should_exit{false};
 
   GLFWwindow *m_GlfwWindow;
 };

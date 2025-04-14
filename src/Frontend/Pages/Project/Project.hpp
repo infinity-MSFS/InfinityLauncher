@@ -12,8 +12,7 @@ namespace Infinity {
 
   class AircraftSelectButton {
 public:
-    AircraftSelectButton(std::string name, int32_t id,
-                         const std::shared_ptr<uint8_t> &selected_aircraft);
+    AircraftSelectButton(std::string name, int32_t id, const std::shared_ptr<uint8_t> &selected_aircraft);
     void Render(ImVec2 size, ImVec2 pos);
 
     static bool Button(const char *label, ImVec2 size, bool active);
@@ -30,9 +29,8 @@ private:
 
   class AircraftSelectButtonBar {
 public:
-    explicit AircraftSelectButtonBar(
-        const std::vector<AircraftSelectButton> &aircraft_select_buttons,
-        const std::shared_ptr<uint8_t> &selected_aircraft);
+    explicit AircraftSelectButtonBar(const std::vector<AircraftSelectButton> &aircraft_select_buttons,
+                                     const std::shared_ptr<uint8_t> &selected_aircraft);
     void Render();
 
 private:
@@ -42,10 +40,9 @@ private:
 
   class TopRegion {
 public:
-    explicit TopRegion(
-        const std::shared_ptr<GroupData> &group_data,
-        const std::shared_ptr<GroupDataImages> &group_data_images,
-        const std::shared_ptr<uint8_t> &selected_aircraft);
+    explicit TopRegion(const std::shared_ptr<GroupData> &group_data,
+                       const std::shared_ptr<GroupDataImages> &group_data_images,
+                       const std::shared_ptr<uint8_t> &selected_aircraft);
     void Render();
 
 private:
@@ -64,10 +61,8 @@ public:
       uint8_t page;
     };
 
-    explicit ContentRegionButton(const std::string &name, int8_t id,
-                                 const std::shared_ptr<uint8_t> &selected_page);
-    explicit ContentRegionButton(const Button &button,
-                                 const std::shared_ptr<uint8_t> &selected_page);
+    explicit ContentRegionButton(const std::string &name, int8_t id, const std::shared_ptr<uint8_t> &selected_page);
+    explicit ContentRegionButton(const Button &button, const std::shared_ptr<uint8_t> &selected_page);
 
     void Render(ImVec2 size, ImVec2 pos);
 
@@ -81,9 +76,8 @@ private:
 
   class ContentRegionButtonBar {
 public:
-    explicit ContentRegionButtonBar(
-        std::vector<ContentRegionButton> buttons,
-        const std::shared_ptr<uint8_t> &selected_page);
+    explicit ContentRegionButtonBar(std::vector<ContentRegionButton> buttons,
+                                    const std::shared_ptr<uint8_t> &selected_page);
     void Render();
 
 private:
@@ -93,8 +87,7 @@ private:
 
   class ContentRegion {
 public:
-    explicit ContentRegion(const std::shared_ptr<GroupData> &group_data,
-                           const std::shared_ptr<uint8_t> &selected_page,
+    explicit ContentRegion(const std::shared_ptr<GroupData> &group_data, const std::shared_ptr<uint8_t> &selected_page,
                            const std::shared_ptr<uint8_t> &selected_aircraft);
     void Render();
 

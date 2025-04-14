@@ -20,7 +20,8 @@ namespace Infinity {
       return size * nmemb;
     }
 
-    const std::string FALLBACK_URL = "https://1000logos.net/wp-content/uploads/2021/06/Discord-logo.png";
+    const std::string FALLBACK_URL =
+        "https://cdn.jsdelivr.net/gh/infinity-MSFS/assets@master/delta/h60_background.webp";
   }  // namespace Utils
 
   class Image::Impl {
@@ -40,36 +41,34 @@ public:
     }
   };
 
-  // Static member initialization
-  std::unordered_map<ImGuiID, float> Image::s_AnimationProgress;
+  std::unordered_map<ImGuiID, float> Image::s_animation_progress;
 
-  // Image implementation
   Image::Image()
-      : m_Impl(std::make_unique<Impl>()) {}
+      : m_impl(std::make_unique<Impl>()) {}
 
   Image::~Image() { Release(); }
 
   Image::Image(Image &&other) noexcept
-      : m_Impl(std::move(other.m_Impl))
-      , m_Width(other.m_Width)
-      , m_Height(other.m_Height)
-      , m_Format(other.m_Format) {
-    other.m_Width = 0;
-    other.m_Height = 0;
-    other.m_Format = Format::None;
+      : m_width(other.m_width)
+      , m_height(other.m_height)
+      , m_format(other.m_format)
+      , m_impl(std::move(other.m_impl)) {
+    other.m_width = 0;
+    other.m_height = 0;
+    other.m_format = Format::None;
   }
 
   Image &Image::operator=(Image &&other) noexcept {
     if (this != &other) {
       Release();
-      m_Impl = std::move(other.m_Impl);
-      m_Width = other.m_Width;
-      m_Height = other.m_Height;
-      m_Format = other.m_Format;
+      m_impl = std::move(other.m_impl);
+      m_width = other.m_width;
+      m_height = other.m_height;
+      m_format = other.m_format;
 
-      other.m_Width = 0;
-      other.m_Height = 0;
-      other.m_Format = Format::None;
+      other.m_width = 0;
+      other.m_height = 0;
+      other.m_format = Format::None;
     }
     return *this;
   }
@@ -79,18 +78,18 @@ public:
       std::cerr << "Error: GLFW context is not set!" << std::endl;
       return;
     }
-    if (m_Impl->textureId == 0 && !m_Impl->pixel_data.empty()) {
-      AllocateMemory(m_Impl->pixel_data.data());
-      m_Impl->pixel_data.clear();
+    if (m_impl->textureId == 0 && !m_impl->pixel_data.empty()) {
+      AllocateMemory(m_impl->pixel_data.data());
+      m_impl->pixel_data.clear();
     }
   }
 
 
   std::shared_ptr<Image> Image::Create(uint32_t width, uint32_t height, Format format, const void *data) {
     auto image = std::make_shared<Image>();
-    image->m_Width = width;
-    image->m_Height = height;
-    image->m_Format = format;
+    image->m_width = width;
+    image->m_height = height;
+    image->m_format = format;
     image->AllocateMemory(data);
     return image;
   }
@@ -109,18 +108,18 @@ public:
     }
 
     auto image = std::make_shared<Image>();
-    image->m_Width = width;
-    image->m_Height = height;
-    image->m_Format = Format::RGBA8;
+    image->m_width = width;
+    image->m_height = height;
+    image->m_format = Format::RGBA8;
 
-    image->m_Impl->pixel_data.assign(static_cast<uint8_t *>(decodedData),
+    image->m_impl->pixel_data.assign(static_cast<uint8_t *>(decodedData),
                                      static_cast<uint8_t *>(decodedData) + (width * height * 4));
 
     stbi_image_free(decodedData);
 
     {
-      std::lock_guard<std::mutex> lock(g_TextureQueueMutex);
-      g_TextureCreationQueue.push_back(image);
+      std::lock_guard<std::mutex> lock(g_texture_queue_mutex);
+      g_texture_creation_queue.push_back(image);
     }
 
     return image;
@@ -134,7 +133,7 @@ public:
         return LoadFromURL(Utils::FALLBACK_URL);
       }
 
-      std::vector<uint8_t> buffer = FetchFromURL(url);
+      const std::vector<uint8_t> buffer = FetchFromURL(url);
       if (buffer.empty()) {
         return nullptr;
       }
@@ -159,32 +158,30 @@ public:
     }
 
     auto image = std::make_shared<Image>();
-    image->m_Width = width;
-    image->m_Height = height;
-    image->m_Format = Format::RGBA8;
+    image->m_width = width;
+    image->m_height = height;
+    image->m_format = Format::RGBA8;
 
-    image->m_Impl->pixel_data.assign(static_cast<uint8_t *>(decodedData),
-                                     static_cast<uint8_t *>(decodedData) + (width * height * 4));
+    image->m_impl->pixel_data.assign(static_cast<uint8_t *>(decodedData),
+                                     static_cast<uint8_t *>(decodedData) + width * height * 4);
 
     stbi_image_free(decodedData);
 
     {
-      std::lock_guard<std::mutex> lock(g_TextureQueueMutex);
-      g_TextureCreationQueue.push_back(image);
+      std::lock_guard lock(g_texture_queue_mutex);
+      g_texture_creation_queue.push_back(image);
     }
 
     return image;
   }
 
   std::vector<uint8_t> Image::FetchFromURL(const std::string &url) {
-    // Initialize curl
     CURL *curl = curl_easy_init();
     if (!curl) {
       std::cerr << "curl_easy_init failed" << std::endl;
       return {};
     }
 
-    // Setup curl
     std::vector<uint8_t> buffer;
     curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, Utils::WriteImageCallback);
@@ -192,8 +189,7 @@ public:
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
 
-    // Perform the request
-    CURLcode res = curl_easy_perform(curl);
+    const CURLcode res = curl_easy_perform(curl);
     curl_easy_cleanup(curl);
 
     if (res != CURLE_OK) {
@@ -204,8 +200,7 @@ public:
     return buffer;
   }
 
-  void *Image::DecodeImage(const uint8_t *data, size_t dataSize, uint32_t &outWidth, uint32_t &outHeight) {
-    // Try to decode with stb_image first
+  void *Image::DecodeImage(const uint8_t *data, const size_t dataSize, uint32_t &outWidth, uint32_t &outHeight) {
     int width, height, channels;
     uint8_t *decodedData =
         stbi_load_from_memory(data, static_cast<int>(dataSize), &width, &height, &channels, STBI_rgb_alpha);
@@ -216,16 +211,14 @@ public:
       return decodedData;
     }
 
-    // If stb_image failed, try WebP
-    width = 0;  // Reset in case stb_image modified these
+    width = 0;
     height = 0;
 
     if (WebPGetInfo(data, dataSize, &width, &height)) {
       outWidth = static_cast<uint32_t>(width);
       outHeight = static_cast<uint32_t>(height);
-      uint8_t *webpData = WebPDecodeRGBA(data, dataSize, &width, &height);
 
-      if (webpData) {
+      if (uint8_t *webpData = WebPDecodeRGBA(data, dataSize, &width, &height)) {
         return webpData;
       }
     }
@@ -234,89 +227,79 @@ public:
     return nullptr;
   }
 
-  void Image::AllocateMemory(const void *data) {
+  void Image::AllocateMemory(const void *data) const {
     if (!glfwGetCurrentContext()) {
       std::cerr << "glfwGetCurrentContext failed" << std::endl;
       return;
     }
 
-    // If we already have a texture, release it
-    if (m_Impl->textureId) {
+    if (m_impl->textureId) {
       Release();
     }
 
-    // Generate a new texture
-    glGenTextures(1, &m_Impl->textureId);
-    if (m_Impl->textureId == 0) {
+    glGenTextures(1, &m_impl->textureId);
+    if (m_impl->textureId == 0) {
       std::cerr << "glGenTextures failed!" << std::endl;
-      GLenum err = glGetError();
-      if (err != GL_NO_ERROR) {
+      if (const GLenum err = glGetError(); err != GL_NO_ERROR) {
         std::cerr << "OpenGL error: " << err << std::endl;
       }
       return;
     }
-    glBindTexture(GL_TEXTURE_2D, m_Impl->textureId);
+    glBindTexture(GL_TEXTURE_2D, m_impl->textureId);
 
-    // Set texture parameters
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-    // Set pixel storage alignment
     glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 
-    // Upload texture data
-    GLenum format = GetGLFormat(m_Format);
-    GLenum internalFormat = GetGLInternalFormat(m_Format);
-    GLenum type = GetGLDataType(m_Format);
+    const GLenum format = GetGLFormat(m_format);
+    const GLenum internal_format = GetGLInternalFormat(m_format);
+    const GLenum type = GetGLDataType(m_format);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, m_Width, m_Height, 0, format, type, data);
+    glTexImage2D(GL_TEXTURE_2D, 0, static_cast<GLint>(internal_format), static_cast<int>(m_width),
+                 static_cast<int>(m_height), 0, format, type, data);
 
-    // Store ImGui texture ID
-    m_Impl->imguiTextureId = reinterpret_cast<void *>(static_cast<uintptr_t>(m_Impl->textureId));
-    std::cout << "Allocated texture with ID: " << m_Impl->textureId << std::endl;
+    m_impl->imguiTextureId = reinterpret_cast<void *>(static_cast<uintptr_t>(m_impl->textureId));
+    std::cout << "Allocated texture with ID: " << m_impl->textureId << std::endl;
 
-    // Check for errors
-    GLenum err = glGetError();
-    if (err != GL_NO_ERROR) {
+    if (const GLenum err = glGetError(); err != GL_NO_ERROR) {
       std::cerr << "OpenGL error during texture allocation: " << err << std::endl;
     }
   }
 
-  void Image::SetData(const void *data) {
-    if (!data || !m_Impl->textureId) return;
+  void Image::SetData(const void *data) const {
+    if (!data || !m_impl->textureId) return;
 
-    glBindTexture(GL_TEXTURE_2D, m_Impl->textureId);
+    glBindTexture(GL_TEXTURE_2D, m_impl->textureId);
 
-    GLenum format = GetGLFormat(m_Format);
-    GLenum type = GetGLDataType(m_Format);
+    const GLenum format = GetGLFormat(m_format);
+    const GLenum type = GetGLDataType(m_format);
 
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_Width, m_Height, format, type, data);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, static_cast<int>(m_width), static_cast<int>(m_height), format, type, data);
   }
 
-  void Image::Resize(uint32_t width, uint32_t height) {
-    // Skip if dimensions are the same
-    if (m_Impl->textureId && m_Width == width && m_Height == height) return;
+  void Image::Resize(const uint32_t width, const uint32_t height) {
+    if (m_impl->textureId && m_width == width && m_height == height) return;
 
-    m_Width = width;
-    m_Height = height;
+    m_width = width;
+    m_height = height;
 
-    // Reallocate with new dimensions
     Release();
-    AllocateMemory(nullptr);  // Allocate empty texture with new dimensions
+    AllocateMemory(nullptr);
   }
 
-  void Image::Release() { m_Impl->Release(); }
+  void Image::Release() const { m_impl->Release(); }
 
-  uint32_t Image::GetTextureID() const { return m_Impl->textureId; }
+  uint32_t Image::GetTextureID() const { return m_impl->textureId; }
 
-  void *Image::GetImGuiTextureID() const { return m_Impl->imguiTextureId; }
+  void *Image::GetImGuiTextureID() const { return m_impl->imguiTextureId; }
 
-  float &Image::GetAnimationProgress(ImGuiID id) { return s_AnimationProgress[id]; }
+  float &Image::GetAnimationProgress(const ImGuiID id) { return s_animation_progress[id]; }
 
-  uint32_t Image::GetGLFormat(Format format) {
+  uint32_t Image::GetGLFormat(const Format format) {
     switch (format) {
       case Format::RGBA8:
       case Format::RGBA32F:
@@ -327,7 +310,7 @@ public:
     }
   }
 
-  uint32_t Image::GetGLInternalFormat(Format format) {
+  uint32_t Image::GetGLInternalFormat(const Format format) {
     switch (format) {
       case Format::RGBA8:
         return GL_RGBA8;
@@ -339,7 +322,7 @@ public:
     }
   }
 
-  uint32_t Image::GetGLDataType(Format format) {
+  uint32_t Image::GetGLDataType(const Format format) {
     switch (format) {
       case Format::RGBA8:
         return GL_UNSIGNED_BYTE;
@@ -351,7 +334,7 @@ public:
     }
   }
 
-  uint32_t Image::GetBytesPerPixel(Format format) {
+  uint32_t Image::GetBytesPerPixel(const Format format) {
     switch (format) {
       case Format::RGBA8:
         return 4;
@@ -378,8 +361,8 @@ public:
   void Image::RenderImage(const std::unique_ptr<Image> &image, const ImVec2 pos, const ImVec2 size) {
     if (!image) return;
 
-    const float imgWidth = image->GetWidth();
-    const float imgHeight = image->GetHeight();
+    const auto imgWidth = static_cast<float>(image->GetWidth());
+    const auto imgHeight = static_cast<float>(image->GetHeight());
 
     auto getProperWidth = [](const ImVec2 &original_size, ImVec2 &new_size) {
       const float aspect_ratio = original_size.x / original_size.y;
@@ -393,7 +376,7 @@ public:
     const float aspect_shown = rescaled_image_size.x / size.x;
     const float uv_x = 1.0f / aspect_shown;
 
-    ImGui::GetWindowDrawList()->AddImage((void *) (intptr_t) image->GetTextureID(), pos,
+    ImGui::GetWindowDrawList()->AddImage(reinterpret_cast<void *>(static_cast<intptr_t>(image->GetTextureID())), pos,
                                          {pos.x + size.x, pos.y + size.y}, {0.5f - uv_x / 2.0f, 0.0f},
                                          {0.5f + uv_x / 2.0f, 1.0f});
   }
@@ -402,8 +385,8 @@ public:
   void Image::RenderImage(const std::shared_ptr<Image> &image, const ImVec2 pos, const ImVec2 size) {
     if (!image) return;
 
-    const float imgWidth = image->GetWidth();
-    const float imgHeight = image->GetHeight();
+    const auto imgWidth = static_cast<float>(image->GetWidth());
+    const auto imgHeight = static_cast<float>(image->GetHeight());
 
     auto getProperWidth = [](const ImVec2 &original_size, ImVec2 &new_size) {
       const float aspect_ratio = original_size.x / original_size.y;
@@ -417,7 +400,7 @@ public:
     const float aspect_shown = rescaled_image_size.x / size.x;
     const float uv_x = 1.0f / aspect_shown;
 
-    ImGui::GetWindowDrawList()->AddImage((void *) (intptr_t) image->GetTextureID(), pos,
+    ImGui::GetWindowDrawList()->AddImage(reinterpret_cast<void *>(static_cast<intptr_t>(image->GetTextureID())), pos,
                                          {pos.x + size.x, pos.y + size.y}, {0.5f - uv_x / 2.0f, 0.0f},
                                          {0.5f + uv_x / 2.0f, 1.0f});
   }
@@ -429,12 +412,12 @@ public:
 
     ImGuiID id = ImGui::GetID(std::to_string(pos.x + pos.y).c_str());
 
-    if (s_AnimationProgress.find(id) == s_AnimationProgress.end()) {
-      s_AnimationProgress[id] = 0.0f;
+    if (!s_animation_progress.contains(id)) {
+      s_animation_progress[id] = 0.0f;
     }
 
-    const float imgWidth = image->GetWidth();
-    const float imgHeight = image->GetHeight();
+    const auto imgWidth = static_cast<float>(image->GetWidth());
+    const auto imgHeight = static_cast<float>(image->GetHeight());
 
     auto getProperWidth = [](const ImVec2 &original_size, ImVec2 &new_size) {
       const float aspect_ratio = original_size.x / original_size.y;
@@ -462,9 +445,9 @@ public:
     }
 #else
     if (is_hovered) {
-      s_AnimationProgress[id] = std::min(1.0f, s_AnimationProgress[id] + ImGui::GetIO().DeltaTime * animation_speed);
+      s_animation_progress[id] = std::min(1.0f, s_animation_progress[id] + ImGui::GetIO().DeltaTime * animation_speed);
     } else {
-      s_AnimationProgress[id] = std::max(0.0f, s_AnimationProgress[id] - ImGui::GetIO().DeltaTime * animation_speed);
+      s_animation_progress[id] = std::max(0.0f, s_animation_progress[id] - ImGui::GetIO().DeltaTime * animation_speed);
     }
 #endif
 
@@ -474,7 +457,7 @@ public:
     const float segment_height = size.y / segments;
     const float uv_segment_height = 1.0f / segments;
 
-    float zoom_amount = zoom_factor * s_AnimationProgress[id];
+    float zoom_amount = zoom_factor * s_animation_progress[id];
     float uv_x = base_uv_x * (1.0f + zoom_amount);
 
     const float uv_left = 0.5f - uv_x / 2.0f;
@@ -493,7 +476,7 @@ public:
 
       float base_alpha = (float) i / segments;
 
-      float hover_boost = hover_opacity_boost * s_AnimationProgress[id];
+      float hover_boost = hover_opacity_boost * s_animation_progress[id];
 #ifdef WIN32
       float alpha = min(1.0f, base_alpha + hover_boost);
 #else
@@ -513,8 +496,8 @@ public:
 
     ImGuiID id = ImGui::GetID(std::to_string(pos.x + pos.y).c_str());
 
-    if (s_AnimationProgress.find(id) == s_AnimationProgress.end()) {
-      s_AnimationProgress[id] = 0.0f;
+    if (s_animation_progress.find(id) == s_animation_progress.end()) {
+      s_animation_progress[id] = 0.0f;
     }
 
     const float imgWidth = image->GetWidth();
@@ -546,9 +529,9 @@ public:
     }
 #else
     if (is_hovered) {
-      s_AnimationProgress[id] = std::min(1.0f, s_AnimationProgress[id] + ImGui::GetIO().DeltaTime * animation_speed);
+      s_animation_progress[id] = std::min(1.0f, s_animation_progress[id] + ImGui::GetIO().DeltaTime * animation_speed);
     } else {
-      s_AnimationProgress[id] = std::max(0.0f, s_AnimationProgress[id] - ImGui::GetIO().DeltaTime * animation_speed);
+      s_animation_progress[id] = std::max(0.0f, s_animation_progress[id] - ImGui::GetIO().DeltaTime * animation_speed);
     }
 #endif
 
@@ -557,7 +540,7 @@ public:
     const float segment_height = size.y / segments;
     const float uv_segment_height = 1.0f / segments;
 
-    float zoom_amount = zoom_factor * s_AnimationProgress[id];
+    float zoom_amount = zoom_factor * s_animation_progress[id];
     float uv_x = base_uv_x * (1.0f + zoom_amount);
 
     const float uv_left = 0.5f - uv_x / 2.0f;
@@ -576,7 +559,7 @@ public:
 
       float base_alpha = (float) i / segments;
 
-      float hover_boost = hover_opacity_boost * s_AnimationProgress[id];
+      float hover_boost = hover_opacity_boost * s_animation_progress[id];
 #ifdef WIN32
       float alpha = min(1.0f, base_alpha + hover_boost);
 #else

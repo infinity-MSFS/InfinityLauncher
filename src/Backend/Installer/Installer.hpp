@@ -28,8 +28,7 @@ public:
      * GetActiveDownloadFromEnum() and then using that ID to pass to the
      * downloader singleton
      */
-    void PushDownload(const std::string &url,
-                      const Groups::GroupVariants &download_spec);
+    void PushDownload(const std::string &url, const Groups::GroupVariants &download_spec);
 
 
     /**
@@ -37,17 +36,15 @@ public:
      * @param download_variant
      * @return `int id` if exists else nullopt
      */
-    std::optional<int> GetActiveDownloadFromEnum(
-        const Groups::GroupVariants &download_variant);
+    std::optional<int> GetActiveDownloadFromEnum(const Groups::GroupVariants &download_variant);
 
 private:
     static void StartUnzipWatcher(int id, const std::string &file_path);
 
 private:
-    static Installer *m_Instance;
-    std::string m_DownloadDir;
-    std::map<int, Groups::GroupVariants>
-        m_GlobalDownloads;  // <int id, GroupVariants name>
-    std::mutex m_GlobalDownloadsMutex;
+    static Installer *m_instance;
+    std::string m_download_dir;
+    std::map<int, Groups::GroupVariants> m_global_downloads;  // <int id, GroupVariants name>
+    std::mutex m_global_downloads_mutex;
   };
 }  // namespace Infinity

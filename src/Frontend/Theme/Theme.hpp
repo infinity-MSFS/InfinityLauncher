@@ -44,26 +44,21 @@ namespace Infinity::UI {
 
   namespace Colors {
     inline float Convert_sRGB_FromLinear(const float theLinearValue) {
-      return theLinearValue <= 0.0031308f
-          ? theLinearValue * 12.92f
-          : std::powf(theLinearValue, 1.0f / 2.2f) * 1.055f - 0.055f;
+      return theLinearValue <= 0.0031308f ? theLinearValue * 12.92f
+                                          : std::powf(theLinearValue, 1.0f / 2.2f) * 1.055f - 0.055f;
     }
 
     inline float Convert_sRGB_ToLinear(const float theRGBValue) {
-      return theRGBValue <= 0.04045f
-          ? theRGBValue / 12.92f
-          : std::powf((theRGBValue + 0.055f) / 1.055f, 2.2f);
+      return theRGBValue <= 0.04045f ? theRGBValue / 12.92f : std::powf((theRGBValue + 0.055f) / 1.055f, 2.2f);
     }
 
     inline ImVec4 ConvertFromSRGB(ImVec4 colour) {
-      return {Convert_sRGB_FromLinear(colour.x),
-              Convert_sRGB_FromLinear(colour.y),
-              Convert_sRGB_FromLinear(colour.z), colour.w};
+      return {Convert_sRGB_FromLinear(colour.x), Convert_sRGB_FromLinear(colour.y), Convert_sRGB_FromLinear(colour.z),
+              colour.w};
     }
 
     inline ImVec4 ConvertToSRGB(ImVec4 colour) {
-      return {std::powf(colour.x, 2.2f), std::powf(colour.y, 2.2f),
-              std::powf(colour.z, 2.2f), colour.w};
+      return {std::powf(colour.x, 2.2f), std::powf(colour.y, 2.2f), std::powf(colour.z, 2.2f), colour.w};
     }
 
     // inline ImU32 ColorWithValue(const ImColor &color, const float value) {

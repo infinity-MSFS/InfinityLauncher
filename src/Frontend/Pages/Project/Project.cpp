@@ -32,17 +32,22 @@ namespace Infinity {
         constexpr float top_padding = 0.0f;
 #endif
 
-        if (!m_StateImages->projectImages.empty() && m_StateImages->projectImages[0].pageBackgroundImage.has_value()) {
-          Image::RenderImage(m_StateImages->projectImages[0].pageBackgroundImage.value(), {0.0f, top_padding},
-                             {ImGui::GetWindowWidth(), ImGui::GetWindowHeight() / 3.0f}, 0.3f);
-          m_TopRegion.Render();
-          m_ContentRegion.Render();
-        } else if (m_StateImages->projectImages[0].backgroundImage) {
-          Image::RenderImage(m_StateImages->projectImages[0].backgroundImage, {0.0f, top_padding},
-                             {ImGui::GetWindowWidth(), ImGui::GetWindowHeight() / 3.0f}, 0.3f);
-          m_TopRegion.Render();
-          m_ContentRegion.Render();
-        }
+        // if (!m_StateImages->projectImages.empty() && m_StateImages->projectImages[0].pageBackgroundImage.has_value())
+        // {
+        //   Image::RenderImage(m_StateImages->projectImages[0].pageBackgroundImage.value(), {0.0f, top_padding},
+        //                      {ImGui::GetWindowWidth(), ImGui::GetWindowHeight() / 3.0f}, 0.3f);
+        //   m_TopRegion.Render();
+        //   m_ContentRegion.Render();
+        // } else if (m_StateImages->projectImages[0].backgroundImage) {
+        //   Image::RenderImage(m_StateImages->projectImages[0].backgroundImage, {0.0f, top_padding},
+        //                      {ImGui::GetWindowWidth(), ImGui::GetWindowHeight() / 3.0f}, 0.3f);
+        //   m_TopRegion.Render();
+        //   m_ContentRegion.Render();
+        // }
+        Image::RenderImage(m_StateImages->projectImages[*m_SelectedAircraft].backgroundImage, {0.0f, top_padding},
+                           {ImGui::GetWindowWidth(), ImGui::GetWindowHeight() / 3.0f}, 0.3f);
+        m_TopRegion.Render();
+        m_ContentRegion.Render();
       }
     }
   }

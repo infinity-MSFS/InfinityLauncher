@@ -20,8 +20,8 @@ private:
     bool ExtractFile(gzFile file, const std::string &output_path);
 
 private:
-    std::string m_Path;
-    std::vector<uint8_t> m_Buffer;
+    std::string m_path;
+    std::vector<uint8_t> m_buffer;
     static constexpr size_t CHUNK_SIZE = 8192;
   };
 }  // namespace Infinity

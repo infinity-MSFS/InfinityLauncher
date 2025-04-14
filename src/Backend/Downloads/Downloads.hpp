@@ -63,8 +63,8 @@ public:
 
 private:
     Downloads()
-        : m_NextDownloadID(1)
-        , m_ThreadNumber(19) {}
+        : m_next_download_id(1)
+        , m_thread_number(19) {}
 
     ~Downloads() { Cleanup(); }
 
@@ -72,11 +72,11 @@ private:
     void Init(int thread_number = 10);
 
 private:
-    std::map<int, DownloadData> m_DownloadsMap;
-    static Downloads *m_Instance;
-    static std::mutex m_DownloadsMutex;
-    std::mutex m_Mutex;
-    int m_NextDownloadID;
-    int m_ThreadNumber;
+    std::map<int, DownloadData> m_downloads_map;
+    static Downloads *m_instance;
+    static std::mutex m_downloads_mutex;
+    std::mutex m_mutex;
+    int m_next_download_id;
+    int m_thread_number;
   };
 }  // namespace Infinity
