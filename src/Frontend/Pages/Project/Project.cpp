@@ -6,6 +6,7 @@
 
 #include "Backend/Image/Image.hpp"
 #include "Backend/Image/SvgImage.hpp"
+#include "Backend/Notifications/Notifications.hpp"
 #include "Frontend/Markdown/Markdown.hpp"
 #include "Util/State/State.hpp"
 
@@ -244,8 +245,6 @@ namespace Infinity {
     m_ButtonBar = ContentRegionButtonBar({overview_button, description_button, changelog_button}, m_SelectedPage);
   }
 
-  static std::shared_ptr<SVGImage> m_SVGImage = nullptr;
-
   void ContentRegion::RenderInstalledWidget() {
     ImGui::GetWindowDrawList()->AddRectFilled({40.0f, ImGui::GetWindowHeight() / 3.0f + 10.0f},
                                               {200.0f, ImGui::GetWindowHeight() / 3.0f + 40.0f},
@@ -253,15 +252,6 @@ namespace Infinity {
 
     ImGui::GetWindowDrawList()->AddText({45.0f, ImGui::GetWindowHeight() / 3.0f + 10.0f + 5.0f},
                                         ImGui::GetColorU32(ImVec4(1.0f, 1.0f, 1.0f, 0.6f)), "Not Installed");
-    if (ImGui::Button("TestSVG")) {
-      auto svg = SVGImage::LoadFromURL("https://www.svgrepo.com/show/475580/airplane.svg");
-      svg->ChangeColor("#FFFFFF");
-      m_SVGImage = svg;
-    }
-
-    if (m_SVGImage) {
-      SVGImage::RenderSVG(m_SVGImage, {40.0f, ImGui::GetWindowHeight() / 3.0f + 10.0f}, 1.0f);
-    }
   }
 
   bool ContentRegion::RenderDownloadButton(const char *label, ImVec2 size, ImVec2 pos) {

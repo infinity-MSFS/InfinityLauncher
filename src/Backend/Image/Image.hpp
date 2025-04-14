@@ -36,7 +36,8 @@ public:
 
     static std::shared_ptr<Image> LoadFromURL(const std::string &url);
 
-    static std::shared_ptr<Image> LoadFromBinary(const std::vector<uint8_t> &binaryData);
+    static std::shared_ptr<Image> LoadFromBinary(const std::vector<uint8_t> &binaryData,
+                                                 const std::string &url_ref = "None");
 
     static std::vector<uint8_t> FetchFromURL(const std::string &url);
 
@@ -52,7 +53,8 @@ public:
 
     [[nodiscard]] void *GetImGuiTextureID() const;
 
-    static void *DecodeImage(const uint8_t *data, size_t dataSize, uint32_t &outWidth, uint32_t &outHeight);
+    static std::vector<uint8_t> DecodeImage(const uint8_t *data, size_t dataSize, uint32_t &outWidth,
+                                            uint32_t &outHeight, const std::string &url_ref = "None");
 
 
     /// <summary>

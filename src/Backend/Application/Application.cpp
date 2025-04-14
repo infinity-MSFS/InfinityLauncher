@@ -33,6 +33,7 @@
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
 #include "imgui_internal.h"
+#define STB_IMAGE_IMPLEMENTATION
 #include "stb_image/stb_image.h"
 
 #ifdef WIN32

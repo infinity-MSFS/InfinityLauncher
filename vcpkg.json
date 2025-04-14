@@ -18,6 +18,8 @@
     "zoe",
     "libwebp",
     "nanosvg",
+    "libjpeg-turbo",
+    "libpng",
     {
       "name": "wintoast",
       "platform": "windows"

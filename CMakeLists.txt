@@ -47,12 +47,17 @@ find_package(msgpack-cxx CONFIG REQUIRED)
 find_package(unofficial-minizip CONFIG REQUIRED)
 find_package(WebP CONFIG REQUIRED)
 find_package(zoe CONFIG REQUIRED)
+find_package(JPEG REQUIRED)
+find_package(PNG REQUIRED)
+find_package(libjpeg-turbo CONFIG REQUIRED)
 if (WIN32)
     find_package(unofficial-wintoast REQUIRED)
     find_package(Vulkan REQUIRED)
 endif ()
 
 if (UNIX)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(LIBNOTIFY REQUIRED libnotify)
     set(GLFW_BUILD_WAYLAND ON)
     find_package(glfw3 CONFIG REQUIRED)
 
@@ -75,11 +80,7 @@ FetchContent_Declare(Traypp GIT_REPOSITORY https://github.com/Soundux/traypp.git
 FetchContent_Declare(Boxer GIT_REPOSITORY https://github.com/aaronmjacobs/Boxer.git)
 FetchContent_Declare(Infinity GIT_REPOSITORY https://github.com/infinity-MSFS/InfinityLauncherDependencies.git)
 if (UNIX)
-    find_package(PkgConfig REQUIRED)
-    pkg_check_modules(DBUS REQUIRED dbus-1)
-    FetchContent_Declare(MiniKDENotify GIT_REPOSITORY https://github.com/rikka-gh/MiniKDENotify.git)
-
-    FetchContent_MakeAvailable(Boxer Infinity MiniKDENotify Traypp)
+    FetchContent_MakeAvailable(Boxer Infinity Traypp)
 else ()
     FetchContent_MakeAvailable(GLFW Boxer Infinity Traypp)
 endif ()
@@ -91,9 +92,7 @@ if (WIN32)
 endif ()
 message("${Blue}Fetched:${Green}Boxer ${Blue}set to:${Green}${boxer_SOURCE_DIR}${ColorReset}")
 message("${Blue}Fetched:${Green}InfinityDeps ${Blue}set to:${Green}${infinity_SOURCE_DIR}${ColorReset}")
-if (UNIX)
-    message("${Blue}Fetched:${Green}MiniKdeNotify ${Blue}set to:${Green}${minikdenotify_SOURCE_DIR}${ColorReset}")
-endif ()
+
 
 if (NOT INFINITY_USE_X11 AND NOT INFINITY_USE_WAYLAND AND UNIX)
     set(INFINITY_USE_WAYLAND ON)
@@ -159,6 +158,8 @@ add_executable(InfinityLauncher
         src/Assets/Fonts/IcontsFontAwesome5.h
         src/Backend/HWID/Hwid.cpp
         src/Backend/HWID/Hwid.hpp
+        src/Backend/Image/SvgImage.cpp
+        src/Backend/Image/SvgImage.hpp
 
         # -- Util Source Files --
         src/Util/Easing/Easing.hpp
@@ -186,12 +187,12 @@ add_executable(InfinityLauncher
         src/Frontend/Pages/Project/Project.hpp
         src/Frontend/Markdown/Markdown.cpp
         src/Frontend/Markdown/Markdown.hpp
-        src/Backend/Image/SvgImage.cpp
-        src/Backend/Image/SvgImage.hpp
         src/Frontend/Background/Meteors.cpp
         src/Frontend/Background/Meteors.hpp
         src/Frontend/Pages/Betas/Betas.cpp
         src/Frontend/Pages/Betas/Betas.hpp
+        src/Backend/Notifications/Notifications.cpp
+        src/Backend/Notifications/Notifications.hpp
 
 
 )
@@ -228,9 +229,8 @@ if (UNIX)
             ${infinity_SOURCE_DIR}/src/imgui
             ${CMAKE_CURRENT_BINARY_DIR}/vcpkg_installed/${VCPKG_TRIPLET}/include
             ${MINIZIP_INCLUDE_DIR}
-            ${minikdenotify_SOURCE_DIR}/include
             keys/include
-            ${DBUS_INCLUDE_DIRS}
+            ${LIBNOTIFY_INCLUDE_DIRS}
     )
 else ()
     target_include_directories(InfinityLauncher PRIVATE
@@ -289,9 +289,9 @@ if (WIN32)
     set(ZOE_LIB zoe::zoe)
     set(WIN_LIBS wbemuuid ole32 oleaut32)
 else ()
-    set(ZOE_LIB zoe::zoe-static)
+    set(ZOE_LIB zoe::zoe-static ${LIBNOTIFY_LIBRARIES})
 endif ()
-target_link_libraries(InfinityLauncher PRIVATE tray WebP::webp WebP::webpdecoder ${ZOE_LIB} NanoSVG::nanosvg NanoSVG::nanosvgrast WebP::webpdemux GLEW::GLEW OpenGL::GL glfw Boxer CURL::libcurl OpenSSL::SSL OpenSSL::Crypto unofficial::minizip::minizip ZLIB::ZLIB msgpack-cxx ${TOAST_LIB} ${WIN_LIBS})
+target_link_libraries(InfinityLauncher PRIVATE tray WebP::webp WebP::webpdecoder PNG::PNG JPEG::JPEG $<IF:$<TARGET_EXISTS:libjpeg-turbo::turbojpeg>,libjpeg-turbo::turbojpeg,libjpeg-turbo::turbojpeg-static> ${ZOE_LIB} NanoSVG::nanosvg NanoSVG::nanosvgrast WebP::webpdemux GLEW::GLEW OpenGL::GL glfw Boxer CURL::libcurl OpenSSL::SSL OpenSSL::Crypto unofficial::minizip::minizip ZLIB::ZLIB msgpack-cxx ${TOAST_LIB} ${WIN_LIBS})
 
 add_custom_target(InfinityLauncherDist)
 add_dependencies(InfinityLauncherDist

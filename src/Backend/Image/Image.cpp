@@ -1,15 +1,15 @@
 #include "Image.hpp"
 
+#include <GLFW/glfw3.h>
 #include <algorithm>
 #include <curl/curl.h>
 #include <iostream>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include <GLFW/glfw3.h>
-
 #include "Backend/TextureQueue/TextureQueue.hpp"
-#include "stb_image/stb_image.h"
+#include "png.h"
+#include "turbojpeg.h"
 #include "webp/decode.h"
+#include "webp/demux.h"
 
 namespace Infinity {
 
@@ -101,9 +101,9 @@ public:
     }
 
     uint32_t width, height;
-    void *decodedData = DecodeImage(static_cast<const uint8_t *>(data), dataSize, width, height);
+    std::vector<uint8_t> decodedData = DecodeImage(static_cast<const uint8_t *>(data), dataSize, width, height);
 
-    if (!decodedData) {
+    if (decodedData.empty()) {
       return nullptr;
     }
 
@@ -112,11 +112,7 @@ public:
     image->m_height = height;
     image->m_format = Format::RGBA8;
 
-    image->m_impl->pixel_data.assign(static_cast<uint8_t *>(decodedData),
-                                     static_cast<uint8_t *>(decodedData) + (width * height * 4));
-
-    stbi_image_free(decodedData);
-
+    image->m_impl->pixel_data = std::move(decodedData);
     {
       std::lock_guard<std::mutex> lock(g_texture_queue_mutex);
       g_texture_creation_queue.push_back(image);
@@ -138,22 +134,22 @@ public:
         return nullptr;
       }
 
-      return LoadFromBinary(buffer);
+      return LoadFromBinary(buffer, url);
     } catch (const std::exception &e) {
       std::cerr << "Failed to load image from URL: " << url << " : " << e.what() << std::endl;
       return nullptr;
     }
   }
 
-  std::shared_ptr<Image> Image::LoadFromBinary(const std::vector<uint8_t> &binaryData) {
+  std::shared_ptr<Image> Image::LoadFromBinary(const std::vector<uint8_t> &binaryData, const std::string &url_ref) {
     if (binaryData.empty()) {
       return nullptr;
     }
 
     uint32_t width, height;
-    void *decodedData = DecodeImage(binaryData.data(), binaryData.size(), width, height);
+    std::vector<uint8_t> decodedData = DecodeImage(binaryData.data(), binaryData.size(), width, height, url_ref);
 
-    if (!decodedData) {
+    if (decodedData.empty()) {
       return nullptr;
     }
 
@@ -162,10 +158,8 @@ public:
     image->m_height = height;
     image->m_format = Format::RGBA8;
 
-    image->m_impl->pixel_data.assign(static_cast<uint8_t *>(decodedData),
-                                     static_cast<uint8_t *>(decodedData) + width * height * 4);
+    image->m_impl->pixel_data = std::move(decodedData);
 
-    stbi_image_free(decodedData);
 
     {
       std::lock_guard lock(g_texture_queue_mutex);
@@ -200,31 +194,80 @@ public:
     return buffer;
   }
 
-  void *Image::DecodeImage(const uint8_t *data, const size_t dataSize, uint32_t &outWidth, uint32_t &outHeight) {
-    int width, height, channels;
-    uint8_t *decodedData =
-        stbi_load_from_memory(data, static_cast<int>(dataSize), &width, &height, &channels, STBI_rgb_alpha);
+  std::vector<uint8_t> Image::DecodeImage(const uint8_t *data, size_t dataSize, uint32_t &outWidth, uint32_t &outHeight,
+                                          const std::string &url_ref) {
+    auto is_jpeg = [](const uint8_t *d) { return d[0] == 0xFF && d[1] == 0xD8 && d[2] == 0xFF; };
 
-    if (decodedData) {
-      outWidth = static_cast<uint32_t>(width);
-      outHeight = static_cast<uint32_t>(height);
-      return decodedData;
+    auto is_png = [](const uint8_t *d) { return memcmp(d, "\x89PNG\r\n\x1A\n", 8) == 0; };
+
+    auto decode_jpeg = [&](const uint8_t *d, size_t size) -> std::vector<uint8_t> {
+      tjhandle handle = tjInitDecompress();
+      if (!handle) return {};
+
+      int width, height, subsamp, colorspace;
+      if (tjDecompressHeader3(handle, d, size, &width, &height, &subsamp, &colorspace) != 0) {
+        tjDestroy(handle);
+        return {};
+      }
+
+      std::vector<uint8_t> buffer(width * height * 4);  // RGBA
+
+      if (tjDecompress2(handle, d, size, buffer.data(), width, 0, height, TJPF_RGBA, TJFLAG_FASTDCT) != 0) {
+        tjDestroy(handle);
+        return {};
+      }
+
+      tjDestroy(handle);
+      outWidth = width;
+      outHeight = height;
+      return buffer;
+    };
+
+    auto decode_png = [&](const uint8_t *d, size_t size) -> std::vector<uint8_t> {
+      png_image image{};
+      image.version = PNG_IMAGE_VERSION;
+
+      if (!png_image_begin_read_from_memory(&image, d, size)) {
+        return {};
+      }
+
+      image.format = PNG_FORMAT_RGBA;
+      std::vector<uint8_t> buffer(PNG_IMAGE_SIZE(image));
+      if (buffer.empty()) return {};
+
+      if (!png_image_finish_read(&image, nullptr, buffer.data(), 0, nullptr)) {
+        return {};
+      }
+
+      outWidth = image.width;
+      outHeight = image.height;
+      return buffer;
+    };
+
+    if (dataSize >= 3 && is_jpeg(data)) {
+      auto result = decode_jpeg(data, dataSize);
+      if (!result.empty()) return result;
     }
 
-    width = 0;
-    height = 0;
+    if (dataSize >= 8 && is_png(data)) {
+      auto result = decode_png(data, dataSize);
+      if (!result.empty()) return result;
+    }
 
+    int width = 0, height = 0;
     if (WebPGetInfo(data, dataSize, &width, &height)) {
-      outWidth = static_cast<uint32_t>(width);
-      outHeight = static_cast<uint32_t>(height);
-
-      if (uint8_t *webpData = WebPDecodeRGBA(data, dataSize, &width, &height)) {
-        return webpData;
+      uint8_t *webpRaw = WebPDecodeRGBA(data, dataSize, &width, &height);
+      if (webpRaw) {
+        outWidth = static_cast<uint32_t>(width);
+        outHeight = static_cast<uint32_t>(height);
+        std::vector<uint8_t> result(webpRaw, webpRaw + (width * height * 4));
+        WebPFree(webpRaw);
+        return result;
       }
     }
 
-    std::cerr << "Failed to decode image data: " << stbi_failure_reason() << std::endl;
-    return nullptr;
+    std::cerr << "Failed to decode image: unsupported or corrupt format, URL: " << url_ref << std::endl;
+    return {};
   }
 
   void Image::AllocateMemory(const void *data) const {
