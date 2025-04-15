@@ -6,6 +6,7 @@
 
 #include "Backend/Image/Image.hpp"
 #include "Backend/Image/SvgImage.hpp"
+#include "Backend/Installer/Installer.hpp"
 #include "Backend/Notifications/Notifications.hpp"
 #include "Frontend/Markdown/Markdown.hpp"
 #include "Util/State/State.hpp"
@@ -330,16 +331,22 @@ namespace Infinity {
   void ContentRegion::Render() {
     RenderInstalledWidget();
 
-    auto download_label = "Download Version " + m_GroupData->projects[*m_SelectedAircraft].version;
-    if (RenderDownloadButton(
-            download_label.c_str(), {200.0f, 60.0f},
-            {ImGui::GetWindowWidth() - 100.0f - 60.0f - 10.0f - 200.0f, ImGui::GetWindowHeight() / 3.0f + 50.0f})) {
-      std::cout << "Download button pressed for: " << m_GroupData->projects[*m_SelectedAircraft].name << std::endl;
+    if (auto package = m_GroupData->projects[*m_SelectedAircraft].package; package.has_value()) {
+      std::string download_link = "https://github.com/" + package.value().owner + "/" + package.value().repoName +
+          "/releases/download/" + package.value().version + "/" + package.value().fileName;
+      auto download_label = "Download Version " + m_GroupData->projects[*m_SelectedAircraft].version;
+      if (RenderDownloadButton(
+              download_label.c_str(), {200.0f, 60.0f},
+              {ImGui::GetWindowWidth() - 100.0f - 60.0f - 10.0f - 200.0f, ImGui::GetWindowHeight() / 3.0f + 50.0f})) {
+        std::cout << "Download button pressed for: " << download_link << std::endl;
+        Installer::GetInstance().PushDownload(download_link, Groups::DELTA_SIM::C17);
+      }
+      if (RenderBugReportButton({120.0f, 60.0f},
+                                {ImGui::GetWindowWidth() - 60.0f - 100.0f, ImGui::GetWindowHeight() / 3.0f + 50.0f})) {
+        std::cout << "Bug report button pressed for: " << m_GroupData->projects[*m_SelectedAircraft].name << std::endl;
+      }
     }
-    if (RenderBugReportButton({120.0f, 60.0f},
-                              {ImGui::GetWindowWidth() - 60.0f - 100.0f, ImGui::GetWindowHeight() / 3.0f + 50.0f})) {
-      std::cout << "Bug report button pressed for: " << m_GroupData->projects[*m_SelectedAircraft].name << std::endl;
-    }
+
 
     ImGui::SetCursorPos({40.0f, ImGui::GetWindowHeight() / 3.0f + 50.0f});
     ImGui::PushFont(Application::GetFont("BoldXLarge"));

@@ -12,7 +12,7 @@ namespace Infinity {
 
   void Installer::PushDownload(const std::string &url, const Groups::GroupVariants &download_spec) {
     auto &downloader = Downloads::GetInstance();
-    if (m_download_dir.empty()) m_download_dir = R"(C:\test\Infinity\Downloads\)";
+    if (m_download_dir.empty()) m_download_dir = R"(/home/cameron/Downloads/Infinity.zip)";
     std::lock_guard lock(m_global_downloads_mutex);
     for (auto it = m_global_downloads.begin(); it != m_global_downloads.end(); ++it) {
       if (it->second == download_spec) {
@@ -51,10 +51,11 @@ namespace Infinity {
             std::string output_path(file_path);
             trim_path(output_path);
             extractor.Extract(output_path);
-            if (!extractor.RemoveArchive()) {
-              Errors::Error(Errors::ErrorType::Warning, "Failed to remove archive file: " + extractor.GetArchivePath())
-                  .Dispatch();
-            }
+            // if (!extractor.RemoveArchive()) {
+            //   Errors::Error(Errors::ErrorType::Warning, "Failed to remove archive file: " +
+            //   extractor.GetArchivePath())
+            //       .Dispatch();
+            // }
             break;
           }
         }
